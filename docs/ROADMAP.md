@@ -6,10 +6,10 @@ What comes next, roughly in order. Items marked **good first issue** are self-co
 
 | Item | Why | Size |
 |---|---|---|
-| Move interface strings to `src/i18n/ko.json` with a `t()` helper | Lets people translate the app; today all text is Korean in the code | Medium · **good first issue** |
+| Move interface strings to `src/i18n/ko.json` with a `t()` helper | Lets people translate the app; today all text is Korean in the code | Medium · **good first issue** ([#1](https://github.com/dominkang90/keycast-studio/issues/1)) |
 | English interface (`en.json`) and a language menu | Most visitors cannot read the interface | Medium |
-| Split `src/ui/editor.js` into one file per settings tab and the export dialog | It is still about 900 lines | Medium · **good first issue** |
-| Add Prettier and ESLint with a `npm run lint` step in CI | One style without discussion in reviews | Small · **good first issue** |
+| Split `src/ui/editor.js` into one file per settings tab and the export dialog | It is still about 900 lines | Medium · **good first issue** ([#2](https://github.com/dominkang90/keycast-studio/issues/2)) |
+| Add Prettier and ESLint with a `npm run lint` step in CI | One style without discussion in reviews | Small · **good first issue** ([#3](https://github.com/dominkang90/keycast-studio/issues/3)) |
 | Unit tests for `compositor.js` drawing (render to a canvas in Node) and `exporter.js` timing | The drawing code has no unit tests yet | Medium |
 | Release workflow: build the installer in GitHub Actions on a version tag | Releases should not depend on one computer | Medium |
 
@@ -18,7 +18,7 @@ What comes next, roughly in order. Items marked **good first issue** are self-co
 | Item | Why | Size |
 |---|---|---|
 | Code-sign the installer | Removes the "Windows protected your PC" warning; needs a certificate | Small once a certificate exists |
-| Show a small "keys are being recorded" indicator in the recording bar | Makes recording state obvious at a glance | Small · **good first issue** |
+| Show a small "keys are being recorded" indicator in the recording bar | Makes recording state obvious at a glance | Small · **good first issue** ([#4](https://github.com/dominkang90/keycast-studio/issues/4)) |
 | "Pause key recording" button while recording | Lets you type a password mid-recording even with typing recorded | Small |
 
 ## Features
