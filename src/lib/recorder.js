@@ -4,6 +4,7 @@
 import { platform } from './platform.js';
 import { defaultSettings } from './compositor.js';
 import { autoZoomRegions } from './zoom.js';
+import { keepWithoutTyping } from './keys.js';
 
 function pickMime(candidates) {
   for (const m of candidates) if (window.MediaRecorder && MediaRecorder.isTypeSupported(m)) return m;
@@ -310,7 +311,9 @@ export class Recorder {
       const rawEvents = await platform.endRecording();
       const duration = durationMs / 1000;
       const events = [];
+      const recordTyping = !!this.opts.recordTyping;
       for (const ev of rawEvents) {
+        if (!recordTyping && !keepWithoutTyping(ev)) continue;
         const t = this.toProjectTime(ev.t);
         if (t === null || t > duration) continue;
         const { t: _drop, ...rest } = ev;
@@ -337,6 +340,7 @@ export class Recorder {
         cursorHidden: !!this.ff,
         durationMs,
         inputHooked: this.hooked,
+        typingRecorded: recordTyping,
         events,
         settings,
         zooms: autoZoomRegions(events, duration, settings.zoom.scale),

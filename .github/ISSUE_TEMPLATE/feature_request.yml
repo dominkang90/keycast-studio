@@ -1,0 +1,25 @@
+name: Feature request / 기능 제안
+description: An idea for KeyCast Studio / KeyCast Studio에 대한 아이디어
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What are you trying to make or do? / 무엇을 만들거나 하려고 하나요?
+      description: The video or situation, not the solution yet / 해결책보다 상황을 먼저
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: What would help? / 무엇이 있으면 좋을까요?
+    validations:
+      required: true
+  - type: dropdown
+    id: help
+    attributes:
+      label: Would you like to work on it? / 직접 만들어 볼 생각이 있나요?
+      options:
+        - No / 아니요
+        - Yes, with some guidance / 네, 안내가 있으면
+        - Yes / 네

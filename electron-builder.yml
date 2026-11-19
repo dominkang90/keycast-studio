@@ -1,0 +1,32 @@
+# Windows installer and portable zip, made from the folder that "npm run package" builds.
+# Run: npm run dist
+appId: io.github.dominkang90.keycaststudio
+productName: KeyCast Studio
+copyright: Copyright (c) 2026 dominkang90
+directories:
+  output: release/dist
+  buildResources: build
+win:
+  target:
+    - nsis
+    - zip
+  icon: build/icon.ico
+  artifactName: KeyCast-Studio-${version}-win-x64.${ext}
+nsis:
+  artifactName: KeyCast-Studio-Setup-${version}.${ext}
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: always
+  createStartMenuShortcut: true
+  shortcutName: KeyCast Studio
+  installerIcon: build/icon.ico
+  uninstallerIcon: build/icon.ico
+  multiLanguageInstaller: true
+  installerLanguages:
+    - ko_KR
+    - en_US
+    - ja_JP
+    - zh_CN
+  # recordings in Videos\KeyCast Studio are the user's and stay after uninstalling
+  deleteAppDataOnUninstall: false

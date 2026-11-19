@@ -1,0 +1,53 @@
+name: Test report / 테스트 결과
+description: Tried KeyCast Studio on your computer? Tell us what worked / 내 컴퓨터에서 써 본 결과 알려 주기
+labels: [test report]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        This takes about two minutes and tells us which computers it works on. Thank you.
+        2분이면 됩니다. 어떤 컴퓨터에서 되는지 알 수 있어 큰 도움이 됩니다.
+  - type: input
+    id: version
+    attributes:
+      label: KeyCast Studio version / 버전
+      placeholder: 1.1.0
+    validations:
+      required: true
+  - type: input
+    id: windows
+    attributes:
+      label: Windows version / Windows 버전
+      placeholder: Windows 10 22H2
+    validations:
+      required: true
+  - type: input
+    id: hardware
+    attributes:
+      label: Graphics card, monitors, display scale / 그래픽카드, 모니터 수, 화면 배율
+      placeholder: AMD Radeon 780M, 1 monitor, 125 %
+    validations:
+      required: true
+  - type: checkboxes
+    id: worked
+    attributes:
+      label: What worked? / 잘 된 것 (된 것만 체크)
+      options:
+        - label: Installer and first start / 설치와 첫 실행
+        - label: Whole-screen recording / 전체 화면 녹화
+        - label: Window recording / 창 녹화
+        - label: Recording with the real pointer hidden / 실제 커서 숨기고 녹화
+        - label: Microphone in the recording / 마이크 녹음
+        - label: Computer sound in the recording / 컴퓨터 소리 녹음
+        - label: Webcam bubble, in time with the screen / 웹캠 말풍선이 화면과 맞음
+        - label: Key bubbles in time with the screen / 키 표시가 화면과 맞음
+        - label: Key display toggle on the recording bar / 녹화 막대의 키 표시 토글
+        - label: Automatic zoom on clicks / 클릭 자동 확대
+        - label: Subtitles from voice / 음성 자막 만들기
+        - label: MP4 export / MP4 내보내기
+        - label: GIF export / GIF 내보내기
+        - label: Show keys without recording / 녹화 없이 키만 보여주기
+  - type: textarea
+    id: problems
+    attributes:
+      label: What did not work, or felt wrong? / 안 된 것, 어색했던 것

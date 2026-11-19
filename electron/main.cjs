@@ -110,7 +110,8 @@ function createStudio() {
     height: 860,
     minWidth: 1024,
     minHeight: 640,
-    backgroundColor: '#0d1117',
+    backgroundColor: '#141415',
+    icon: path.join(__dirname, '..', 'build', 'icon.png'),
     title: 'KeyCast Studio',
     show: false,
     webPreferences: {
@@ -135,7 +136,7 @@ function displayFor(displayId) {
 }
 
 function openToolbar(display) {
-  const width = 340;
+  const width = 384;
   const height = 64;
   toolbar = new BrowserWindow({
     width, height,
@@ -148,7 +149,28 @@ function openToolbar(display) {
   toolbar.setAlwaysOnTop(true, 'screen-saver');
   toolbar.setContentProtection(true); // keep the controls out of the recording
   toolbar.loadURL(`${UI_ORIGIN}/toolbar.html`);
+  toolbar.webContents.once('did-finish-load', () => sendKeysVisible());
   toolbar.on('closed', () => { toolbar = null; });
+}
+
+// ---------------------------------------------------------------- live key display while recording
+// Shown only to the person recording (kept out of the file); it can be switched on and off at any time.
+let liveKeys = { display: null, settings: null, visible: false, accel: 'Alt+Shift+K' };
+
+function sendKeysVisible() {
+  if (toolbar && !toolbar.isDestroyed()) toolbar.webContents.send('keys:visible', liveKeys.visible, liveKeys.accel);
+}
+
+function toggleLiveKeys() {
+  if (!liveKeys.display) return;
+  liveKeys.visible = !liveKeys.visible;
+  if (liveKeys.visible) {
+    if (overlay && !overlay.isDestroyed()) overlay.showInactive();
+    else openOverlay(liveKeys.display, liveKeys.settings);
+  } else if (overlay && !overlay.isDestroyed()) {
+    overlay.hide();
+  }
+  sendKeysVisible();
 }
 
 function openOverlay(display, settings, protect = true) {
@@ -310,13 +332,18 @@ function stopKeysOnly() {
 const ACCEL_NAMES = { Control: 'Ctrl', CommandOrControl: 'Ctrl', CmdOrCtrl: 'Ctrl', Super: 'Win', Meta: 'Win', Command: 'Win' };
 function dropShortcutEvents(accel) {
   const names = new Set(String(accel).split('+').map((k) => ACCEL_NAMES[k] || k));
-  // The stop/pause shortcuts are pressed on purpose; leave them out of the key overlay.
+  // The app's own shortcuts are pressed on purpose; leave that one press out of the video.
+  // Only the latest press of each key is removed, so a shortcut being shown just before stays.
   const cutoff = Date.now() - 1500;
-  input.events = input.events.filter((ev) => {
-    if (ev.t < cutoff) return true;
-    if (ev.type !== 'kd' && ev.type !== 'ku') return true;
-    return !names.has(ev.name);
-  });
+  const drop = new Set();
+  for (const name of names) {
+    let lastDown = -1;
+    input.events.forEach((ev, i) => { if (ev.t >= cutoff && ev.type === 'kd' && ev.name === name) lastDown = i; });
+    if (lastDown < 0) continue;
+    // that press, its auto-repeats and its release
+    input.events.forEach((ev, i) => { if (i >= lastDown && ev.name === name && (ev.type === 'kd' || ev.type === 'ku')) drop.add(i); });
+  }
+  input.events = input.events.filter((_ev, i) => !drop.has(i));
 }
 
 // Held only while recording, so other programs keep these keys the rest of the time.
@@ -330,13 +357,14 @@ function unregisterShortcuts() {
 function registerShortcuts(sc = {}) {
   unregisterShortcuts();
   const result = {};
-  for (const [command, fallback, key] of [['stop', 'Alt+Shift+S', 'stop'], ['toggle-pause', 'Alt+Shift+P', 'pause']]) {
+  for (const [command, fallback, key] of [['stop', 'Alt+Shift+S', 'stop'], ['toggle-pause', 'Alt+Shift+P', 'pause'], ['toggle-keys', 'Alt+Shift+K', 'keys']]) {
     const accel = sc[key] || fallback;
     let ok = false;
     try {
       ok = globalShortcut.register(accel, () => {
         dropShortcutEvents(accel);
-        studio?.webContents.send('recorder:command', command);
+        if (command === 'toggle-keys') toggleLiveKeys();
+        else studio?.webContents.send('recorder:command', command);
       });
     } catch { ok = false; }
     if (ok) heldShortcuts.push(accel);
@@ -437,6 +465,7 @@ function registerIpc() {
     const shortcuts = registerShortcuts(opts.shortcuts);
     if (studio) studio.hide();
     openToolbar(display);
+    liveKeys = { display, settings: opts.overlay, visible: !!opts.liveOverlay, accel: opts.shortcuts?.keys || 'Alt+Shift+K' };
     if (opts.liveOverlay) openOverlay(display, opts.overlay);
     return { hooked, shortcuts, display: { width: display.bounds.width, height: display.bounds.height, scaleFactor: display.scaleFactor } };
   });
@@ -444,6 +473,7 @@ function registerIpc() {
   ipcMain.handle('recording:end', () => {
     const events = stopInput();
     unregisterShortcuts();
+    liveKeys = { display: null, settings: null, visible: false, accel: 'Alt+Shift+K' };
     closeRecordingWindows();
     if (studio) {
       studio.show();
@@ -453,6 +483,7 @@ function registerIpc() {
   });
 
   ipcMain.on('toolbar:action', (_e, action) => {
+    if (action === 'toggle-keys') { toggleLiveKeys(); return; }
     studio?.webContents.send('recorder:command', action);
   });
 

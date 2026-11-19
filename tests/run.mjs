@@ -4,7 +4,7 @@ import { createRequire } from 'node:module';
 import { writeFileSync, readFileSync, mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { buildKeyGroups, visibleGroups, DRAG_LABEL } from '../src/lib/keys.js';
+import { buildKeyGroups, visibleGroups, DRAG_LABEL, keepWithoutTyping } from '../src/lib/keys.js';
 import { segments, outDuration, srcToOut, outToSrc, mapCues } from '../src/lib/timemap.js';
 import { autoZoomRegions, cameraAt, CursorTrack, viewRect } from '../src/lib/zoom.js';
 import { shapeSubtitles, toSRT, wrapLines } from '../src/lib/subtitles.js';
@@ -16,6 +16,38 @@ let passed = 0;
 function test(name, fn) {
   try { fn(); passed++; console.log(`ok - ${name}`); } catch (err) { console.error(`FAIL - ${name}\n${err.stack}`); process.exitCode = 1; }
 }
+
+const ALL = { mode: 'all' };
+
+test('shortcuts only by default: typing hidden, shortcuts and F-keys shown', () => {
+  const g = buildKeyGroups([
+    { t: 1, type: 'kd', name: 'H', mods: {} },
+    { t: 1.1, type: 'kd', name: 'I', mods: {} },
+    { t: 2, type: 'kd', name: 'S', mods: { ctrl: true } },
+    { t: 4, type: 'kd', name: 'F5', mods: {} },
+    { t: 6, type: 'kd', name: 'Esc', mods: {} },
+    { t: 8, type: 'kd', name: 'Enter', mods: {} },
+  ]);
+  assert.deepEqual(g.map((x) => x.items.map((i) => i.keys.join('+')).join(' ')), ['Ctrl+S', 'F5', 'Esc']);
+});
+
+test('typing is dropped before saving unless asked for', () => {
+  const ev = [
+    { type: 'kd', name: 'P', mods: {} }, { type: 'ku', name: 'P' },
+    { type: 'kd', name: '1', mods: { shift: true } },
+    { type: 'kd', name: 'Space', mods: {} },
+    { type: 'kd', name: 'Ctrl', mods: { ctrl: true } }, { type: 'kd', name: 'S', mods: { ctrl: true } },
+    { type: 'kd', name: 'Enter', mods: {} }, { type: 'kd', name: 'F5', mods: {} },
+    { type: 'md', button: 1, x: 0.5, y: 0.5 },
+    // number pad digits, AltGr characters and unknown keys are typing too
+    { type: 'kd', name: 'Num 7', mods: {} }, { type: 'kd', name: 'Num .', mods: {} },
+    { type: 'kd', name: 'Q', mods: { ctrl: true, alt: true } },
+    { type: 'kd', name: 'Key 999', mods: {} },
+    { type: 'kd', name: 'Num 1', mods: { alt: true } },
+    { type: 'kd', name: 'T', mods: { meta: true } }, { type: 'ku', name: 'T' }, { type: 'ku', name: 'Ctrl' },
+  ];
+  assert.deepEqual(ev.filter(keepWithoutTyping).map((e) => e.name || e.type), ['Ctrl', 'S', 'Enter', 'F5', 'md', 'T', 'Ctrl']);
+});
 
 test('combo with modifiers', () => {
   const g = buildKeyGroups([
@@ -36,7 +68,7 @@ test('typing merges and shift makes symbols', () => {
     { t: 1.3, type: 'kd', name: '1', mods: { shift: true } },
     { t: 1.35, type: 'ku', name: 'Shift' },
     { t: 5, type: 'kd', name: 'A', mods: {} },
-  ]);
+  ], ALL);
   assert.equal(g.length, 2);
   assert.deepEqual(g[0].items.map((i) => i.keys[0]), ['H', 'I', '!']);
 });
@@ -48,14 +80,14 @@ test('repeats are counted, lone modifier shown, shortcuts mode hides typing', ()
     { t: 1.1, type: 'kd', name: 'Backspace', repeat: true, mods: {} },
     { t: 3, type: 'kd', name: 'Win' }, { t: 3.1, type: 'ku', name: 'Win' },
   ];
-  const g = buildKeyGroups(ev);
+  const g = buildKeyGroups(ev, ALL);
   assert.equal(g[0].items[0].count, 3);
   assert.deepEqual(g[1].items[0].keys, ['Win']);
   assert.equal(buildKeyGroups(ev, { mode: 'shortcuts' }).length, 0);
 });
 
 test('visible groups fade out', () => {
-  const g = buildKeyGroups([{ t: 1, type: 'kd', name: 'A', mods: {} }]);
+  const g = buildKeyGroups([{ t: 1, type: 'kd', name: 'A', mods: {} }], ALL);
   assert.equal(visibleGroups(g, 0.5).length, 0);
   assert.equal(visibleGroups(g, 1.5).length, 1);
   assert.equal(visibleGroups(g, 10).length, 0);

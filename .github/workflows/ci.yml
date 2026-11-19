@@ -1,0 +1,31 @@
+# Runs on every push to main and every pull request: unit tests, then a full build of the
+# interface, the browser version and the packaged Windows app.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test-and-build:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install
+        run: npm ci
+      - name: Unit tests
+        run: npm test
+      - name: Check every source file parses
+        shell: pwsh
+        run: Get-ChildItem src, electron, scripts -Recurse -Include *.js, *.cjs, *.mjs | ForEach-Object { node --check $_.FullName; if ($LASTEXITCODE) { exit 1 } }
+      - name: Build interface, browser version and packaged app
+        run: npm run build

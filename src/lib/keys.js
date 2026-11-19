@@ -23,7 +23,8 @@ function displayLabel(name) {
 
 export const KEY_DEFAULTS = {
   enabled: true,
-  mode: 'all', // 'all' | 'shortcuts' | 'custom'
+  // Shortcuts only by default: what you type stays private and the video shows the keys that matter.
+  mode: 'shortcuts', // 'all' | 'shortcuts' | 'custom'
   allowed: ['Ctrl', 'Alt', 'Win'], // custom filter: bubbles that begin with one of these
   position: 'bottom-center',
   marginX: 36,
@@ -48,6 +49,34 @@ export const KEY_DEFAULTS = {
     panel: true, panelColor: '#000000', panelOpacity: 0.55,
   },
 };
+
+// Keys that act as shortcuts on their own (F5 to refresh, Esc to close, F2 to rename).
+const SOLO_SHORTCUTS = /^(F([1-9]|1\d|2[0-4])|Esc|PrtSc)$/;
+
+/**
+ * Whether a key event may be saved when typing is not recorded: shortcuts, modifiers and keys
+ * such as Enter or arrows stay; letters, digits and symbols typed on their own are dropped, so
+ * text like passwords never reaches the project file.
+ */
+export function keepWithoutTyping(ev) {
+  if (ev.type !== 'kd' && ev.type !== 'ku') return true;
+  const name = ev.name || '';
+  // Named keys that never carry text are kept; everything else (letters, digits, symbols, the
+  // number pad, unknown keys) counts as typing. An allowlist, so a new key name stays private.
+  if (MODIFIERS.has(name) || NAMED_KEYS.has(name) || SOLO_SHORTCUTS.test(name)) return true;
+  if (ev.type !== 'kd') return false;
+  const m = ev.mods || {};
+  // Ctrl+Alt together is also how AltGr types characters such as @ { \ on many layouts.
+  if (m.ctrl && m.alt && !m.meta) return false;
+  // Alt + number pad digits types characters by code (Alt+0169).
+  if (/^Num /.test(name)) return false;
+  return !!(m.ctrl || m.alt || m.meta);
+}
+
+const NAMED_KEYS = new Set([
+  'Enter', 'Tab', 'Backspace', 'Del', 'Ins', 'Home', 'End', 'PgUp', 'PgDn', '←', '↑', '→', '↓',
+  'Caps Lock', 'Num Lock', 'Scroll Lock', 'Menu', '한/영', '한자', 'Kana', 'Convert', 'NoConvert',
+]);
 
 export function isModifier(name) {
   return MODIFIERS.has(name);
@@ -130,7 +159,7 @@ export function buildKeyGroups(events, opts = KEY_DEFAULTS) {
       const strong = ordered.filter((m) => m !== 'Shift');
       const printable = isPrintable(name);
 
-      if (strong.length || (ordered.includes('Shift') && !printable)) {
+      if (strong.length || (ordered.includes('Shift') && !printable) || (opts.mode === 'shortcuts' && SOLO_SHORTCUTS.test(name))) {
         addItem('combo', ev.t, [...ordered, displayLabel(name)], ordered[0] || name);
       } else {
         if (opts.mode === 'shortcuts') continue;

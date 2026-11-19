@@ -10,6 +10,14 @@ function fmt(ms) {
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 }
 
+const keys = document.getElementById('keys');
+let keyAccel = 'Alt+Shift+K';
+keys.addEventListener('click', () => api?.toolbarAction('toggle-keys'));
+api?.onKeysVisible?.((on, accel) => {
+  if (accel) keyAccel = accel;
+  keys.setAttribute('aria-pressed', String(on));
+  keys.title = `화면 키 표시 ${on ? '끄기' : '켜기'} (${keyAccel})`;
+});
 pause.addEventListener('click', () => api?.toolbarAction('toggle-pause'));
 stop.addEventListener('click', () => {
   stop.disabled = true;
@@ -26,4 +34,5 @@ api?.onStatus((s) => {
   const key = s.shortcuts?.pause || 'Alt+Shift+P';
   pause.title = s.paused ? `다시 시작 (${key})` : `일시정지 (${key})`;
   stop.title = `멈추기 (${s.shortcuts?.stop || 'Alt+Shift+S'})`;
+  keyAccel = s.shortcuts?.keys || 'Alt+Shift+K';
 });

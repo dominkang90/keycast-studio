@@ -17,6 +17,7 @@ contextBridge.exposeInMainWorld('keycast', {
   onCommand: (fn) => on('recorder:command', fn),
   onStatus: (fn) => on('recorder:status', fn),
   onLiveInput: (fn) => on('live:input', fn),
+  onKeysVisible: (fn) => on('keys:visible', fn),
   createProject: () => ipcRenderer.invoke('project:create'),
   saveProject: (p) => ipcRenderer.invoke('project:save', p),
   loadProject: (id) => ipcRenderer.invoke('project:load', id),

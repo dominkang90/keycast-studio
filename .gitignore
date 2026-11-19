@@ -19,3 +19,6 @@ tests/*.txt
 Thumbs.db
 desktop.ini
 .DS_Store
+
+# local launcher for this computer
+*.cmd
