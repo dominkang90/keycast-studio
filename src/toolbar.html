@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <title>KeyCast — 녹화 중</title>
+    <style>
+      /* The recording bar: the same graphite surface as the app, a tally light and a timecode. */
+      html, body { margin: 0; height: 100%; background: transparent; overflow: hidden; color: #ededed; user-select: none;
+        font: 13px "Segoe UI Variable Text", "Segoe UI", "Malgun Gothic", sans-serif; -webkit-font-smoothing: antialiased; }
+      .bar { margin: 6px; height: 52px; border-radius: 14px; background: rgba(25, 25, 27, 0.96); border: 1px solid rgba(237, 237, 237, 0.16);
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5); display: flex; align-items: center; gap: 12px; padding: 0 8px 0 16px; -webkit-app-region: drag; }
+      .dot { width: 10px; height: 10px; border-radius: 50%; background: #ff453a; flex: none; animation: blink 1.4s steps(2, jump-none) infinite; }
+      .paused .dot { background: #e3b341; animation: none; }
+      @keyframes blink { 50% { opacity: 0.25; } }
+      .time { font: 500 17px/1 "Cascadia Mono", Consolas, monospace; font-variant-numeric: tabular-nums; min-width: 56px; }
+      .label { color: #a1a1a6; font-size: 12px; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      button { -webkit-app-region: no-drag; height: 36px; display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+        border-radius: 8px; border: 1px solid rgba(237, 237, 237, 0.16); background: #232325; color: #ededed; font: inherit; font-weight: 500;
+        padding: 0 12px; cursor: pointer; transition: background-color 150ms cubic-bezier(0.22, 1, 0.36, 1), transform 150ms cubic-bezier(0.22, 1, 0.36, 1); }
+      button:hover { background: #2c2c2f; }
+      button:active:not(:disabled) { transform: scale(0.97); }
+      button:focus-visible { outline: 2px solid #5b9dff; outline-offset: 2px; }
+      button:disabled { opacity: 0.5; cursor: default; }
+      button.icon-only { width: 36px; padding: 0; }
+      button.stop { background: #ff453a; border-color: transparent; color: #fff; font-weight: 600; }
+      button.stop:hover { background: #ff5a50; }
+      svg { width: 16px; height: 16px; display: block; }
+      #pause .i-play { display: none; }
+      #pause.is-paused .i-play { display: block; }
+      #pause.is-paused .i-pause { display: none; }
+      @media (prefers-reduced-motion: reduce) { .dot { animation: none; } button { transition: none; } }
+    </style>
+  </head>
+  <body>
+    <div class="bar" id="bar">
+      <div class="dot"></div>
+      <div class="time" id="time">0:00</div>
+      <div class="label" id="label">녹화 중</div>
+      <button id="pause" class="icon-only" title="일시정지 (Alt+Shift+P)" aria-label="일시정지">
+        <svg class="i-pause" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M8.5 5.5v13M15.5 5.5v13"/></svg>
+        <svg class="i-play" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13l10.5-6.5z"/></svg>
+      </button>
+      <button id="stop" class="stop" title="멈추고 편집 (Alt+Shift+S)">
+        <svg viewBox="0 0 24 24" fill="currentColor"><rect x="6.5" y="6.5" width="11" height="11" rx="2"/></svg>멈춤
+      </button>
+    </div>
+    <script type="module" src="./toolbar.js"></script>
+  </body>
+</html>

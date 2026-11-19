@@ -1,0 +1,21 @@
+# dependencies and build output
+node_modules/
+dist/
+web/
+release/
+
+# self-test output and logs
+tests/out/
+tests/out-web/
+tests/*.txt
+*.log
+
+# Windows shortcuts hold paths from the machine they were made on
+*.lnk
+
+# editor and OS files
+.vscode/
+.idea/
+Thumbs.db
+desktop.ini
+.DS_Store

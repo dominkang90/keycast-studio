@@ -1,0 +1,666 @@
+// KeyCast Studio — main process.
+// Owns windows, screen-source selection, the global keyboard/mouse hook and file storage.
+const {
+  app, BrowserWindow, ipcMain, desktopCapturer, screen, session, protocol,
+  dialog, shell, globalShortcut, Menu,
+} = require('electron');
+const path = require('path');
+const fs = require('fs');
+const fsp = fs.promises;
+const { Readable } = require('stream');
+const { patchWebmDuration } = require('./webm.cjs');
+const { labelForKey, MODIFIER_NAMES } = require('./keys.cjs');
+const capture = require('./capture.cjs');
+
+let uIOhook = null;
+try {
+  ({ uIOhook } = require('uiohook-napi'));
+} catch (err) {
+  console.error('Global input hook unavailable:', err);
+}
+
+protocol.registerSchemesAsPrivileged([
+  {
+    scheme: 'app',
+    privileges: { standard: true, secure: true, supportFetchAPI: true, stream: true, corsEnabled: true },
+  },
+]);
+
+const UI_ROOT = path.join(__dirname, '..', 'dist');
+const UI_ORIGIN = 'app://local';
+let MEDIA_ROOT = '';
+
+let studio = null;
+let toolbar = null;
+let overlay = null;
+
+// ---------------------------------------------------------------- serving files
+const MIME = {
+  '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.mjs': 'text/javascript',
+  '.css': 'text/css', '.json': 'application/json', '.wasm': 'application/wasm',
+  '.svg': 'image/svg+xml', '.png': 'image/png', '.jpg': 'image/jpeg', '.woff2': 'font/woff2',
+  '.webm': 'video/webm', '.mp4': 'video/mp4', '.m4v': 'video/mp4', '.mkv': 'video/x-matroska', '.mov': 'video/quicktime',
+  '.srt': 'text/plain; charset=utf-8', '.jpeg': 'image/jpeg', '.webp': 'image/webp', '.gif': 'image/gif', '.bmp': 'image/bmp',
+  '.mp3': 'audio/mpeg', '.wav': 'audio/wav', '.m4a': 'audio/mp4', '.aac': 'audio/aac', '.ogg': 'audio/ogg', '.opus': 'audio/ogg', '.flac': 'audio/flac',
+};
+const ISOLATION = {
+  'Cross-Origin-Opener-Policy': 'same-origin',
+  'Cross-Origin-Embedder-Policy': 'credentialless',
+  'Cross-Origin-Resource-Policy': 'same-origin',
+};
+
+function inside(root, target) {
+  const rel = path.relative(root, target);
+  return rel && !rel.startsWith('..') && !path.isAbsolute(rel);
+}
+
+async function serveFile(file, request) {
+  let stat;
+  try {
+    stat = await fsp.stat(file);
+    if (!stat.isFile()) throw new Error('not a file');
+  } catch {
+    return new Response('Not found', { status: 404 });
+  }
+  const type = MIME[path.extname(file).toLowerCase()] || 'application/octet-stream';
+  const headers = { 'Content-Type': type, 'Accept-Ranges': 'bytes', 'Cache-Control': 'no-cache', ...ISOLATION };
+  const range = request.headers.get('range');
+  if (range) {
+    const m = /bytes=(\d*)-(\d*)/.exec(range);
+    let start = 0;
+    let end = stat.size - 1;
+    if (m) {
+      if (m[1]) start = Number(m[1]);
+      if (m[2]) end = Number(m[2]);
+      if (!m[1] && m[2]) { start = Math.max(0, stat.size - Number(m[2])); end = stat.size - 1; }
+    }
+    end = Math.min(end, stat.size - 1);
+    if (start > end) return new Response(null, { status: 416, headers: { 'Content-Range': `bytes */${stat.size}` } });
+    return new Response(Readable.toWeb(fs.createReadStream(file, { start, end })), {
+      status: 206,
+      headers: { ...headers, 'Content-Range': `bytes ${start}-${end}/${stat.size}`, 'Content-Length': String(end - start + 1) },
+    });
+  }
+  return new Response(Readable.toWeb(fs.createReadStream(file)), {
+    status: 200,
+    headers: { ...headers, 'Content-Length': String(stat.size) },
+  });
+}
+
+function registerProtocol() {
+  protocol.handle('app', (request) => {
+    const url = new URL(request.url);
+    const pathname = decodeURIComponent(url.pathname);
+    if (pathname.startsWith('/media/')) {
+      const file = path.resolve(MEDIA_ROOT, pathname.slice('/media/'.length));
+      if (!inside(MEDIA_ROOT, file)) return new Response('Forbidden', { status: 403 });
+      return serveFile(file, request);
+    }
+    let rel = pathname === '/' ? 'index.html' : pathname.slice(1);
+    const file = path.resolve(UI_ROOT, rel);
+    if (!inside(UI_ROOT, file)) return new Response('Forbidden', { status: 403 });
+    return serveFile(file, request);
+  });
+}
+
+// ---------------------------------------------------------------- windows
+function createStudio() {
+  studio = new BrowserWindow({
+    width: 1360,
+    height: 860,
+    minWidth: 1024,
+    minHeight: 640,
+    backgroundColor: '#0d1117',
+    title: 'KeyCast Studio',
+    show: false,
+    webPreferences: {
+      preload: path.join(__dirname, 'preload.cjs'),
+      contextIsolation: true,
+      backgroundThrottling: false,
+    },
+  });
+  studio.once('ready-to-show', () => studio.show());
+  studio.loadURL(`${UI_ORIGIN}/index.html${SELFTEST ? '#selftest' : ''}`);
+  if (SELFTEST) setupSelfTest(studio);
+  studio.on('closed', () => {
+    studio = null;
+    stopKeysOnly();
+    closeRecordingWindows();
+  });
+}
+
+function displayFor(displayId) {
+  const displays = screen.getAllDisplays();
+  return displays.find((d) => String(d.id) === String(displayId)) || screen.getPrimaryDisplay();
+}
+
+function openToolbar(display) {
+  const width = 340;
+  const height = 64;
+  toolbar = new BrowserWindow({
+    width, height,
+    x: Math.round(display.workArea.x + display.workArea.width / 2 - width / 2),
+    y: display.workArea.y + 16,
+    frame: false, resizable: false, alwaysOnTop: true, skipTaskbar: false,
+    transparent: true, hasShadow: false, title: 'KeyCast — 녹화 중',
+    webPreferences: { preload: path.join(__dirname, 'preload.cjs'), contextIsolation: true },
+  });
+  toolbar.setAlwaysOnTop(true, 'screen-saver');
+  toolbar.setContentProtection(true); // keep the controls out of the recording
+  toolbar.loadURL(`${UI_ORIGIN}/toolbar.html`);
+  toolbar.on('closed', () => { toolbar = null; });
+}
+
+function openOverlay(display, settings, protect = true) {
+  const area = display.bounds;
+  overlay = new BrowserWindow({
+    x: area.x, y: area.y, width: area.width, height: area.height,
+    frame: false, transparent: true, resizable: false, movable: false, focusable: false,
+    alwaysOnTop: true, skipTaskbar: true, hasShadow: false,
+    webPreferences: { preload: path.join(__dirname, 'preload.cjs'), contextIsolation: true },
+  });
+  overlay.setIgnoreMouseEvents(true);
+  overlay.setAlwaysOnTop(true, 'screen-saver');
+  // While recording here the editor adds keys to the video itself, so the live ones stay out of it.
+  // In keys-only mode other recorders and screen sharing are meant to see them.
+  overlay.setContentProtection(protect);
+  overlay.loadURL(`${UI_ORIGIN}/overlay.html#${encodeURIComponent(JSON.stringify(settings || {}))}`);
+  overlay.on('closed', () => { overlay = null; });
+}
+
+function closeRecordingWindows() {
+  if (toolbar && !toolbar.isDestroyed()) toolbar.close();
+  if (overlay && !overlay.isDestroyed()) overlay.close();
+  toolbar = null;
+  overlay = null;
+}
+
+// ---------------------------------------------------------------- capture source
+let pendingCapture = { sourceId: null, systemAudio: false };
+
+function setupDisplayMedia() {
+  session.defaultSession.setPermissionRequestHandler((_wc, _perm, cb) => cb(true));
+  session.defaultSession.setDisplayMediaRequestHandler(async (_request, callback) => {
+    try {
+      const sources = await desktopCapturer.getSources({ types: ['screen', 'window'] });
+      const source = sources.find((s) => s.id === pendingCapture.sourceId) || sources[0];
+      const answer = { video: source };
+      if (pendingCapture.systemAudio && process.platform === 'win32') answer.audio = 'loopback';
+      callback(answer);
+    } catch (err) {
+      console.error(err);
+      callback({});
+    }
+  });
+}
+
+// ---------------------------------------------------------------- input hook
+const input = {
+  running: false,
+  events: [],
+  display: null,
+  isScreen: false,
+  down: new Set(),
+  lastMove: 0,
+};
+
+function cursorPoint() {
+  const p = screen.getCursorScreenPoint();
+  const d = input.display;
+  if (!d || !input.isScreen) return { x: null, y: null };
+  const b = d.bounds;
+  return { x: (p.x - b.x) / b.width, y: (p.y - b.y) / b.height };
+}
+
+function overToolbar() {
+  if (!toolbar || toolbar.isDestroyed()) return false;
+  const p = screen.getCursorScreenPoint();
+  const b = toolbar.getBounds();
+  return p.x >= b.x && p.x < b.x + b.width && p.y >= b.y && p.y < b.y + b.height;
+}
+
+function pushEvent(ev) {
+  if (!input.running) return;
+  // Clicks on the recording controls are not part of what is being shown.
+  if ((ev.type === 'md' || ev.type === 'mu') && overToolbar()) return;
+  if (!keysOnly) input.events.push(ev);
+  if (overlay && !overlay.isDestroyed()) {
+    overlay.webContents.send('live:input', ev);
+  }
+}
+
+function mods(e) {
+  return { ctrl: !!e.ctrlKey, alt: !!e.altKey, shift: !!e.shiftKey, meta: !!e.metaKey };
+}
+
+function attachHook() {
+  if (!uIOhook || attachHook.done) return;
+  attachHook.done = true;
+  uIOhook.on('keydown', (e) => {
+    const repeat = input.down.has(e.keycode);
+    input.down.add(e.keycode);
+    const name = labelForKey(e.keycode);
+    pushEvent({ t: Date.now(), type: 'kd', code: e.keycode, name, repeat, mods: mods(e), modifier: MODIFIER_NAMES.has(name) });
+  });
+  uIOhook.on('keyup', (e) => {
+    input.down.delete(e.keycode);
+    pushEvent({ t: Date.now(), type: 'ku', code: e.keycode, name: labelForKey(e.keycode) });
+  });
+  uIOhook.on('mousedown', (e) => {
+    const p = cursorPoint();
+    pushEvent({ t: Date.now(), type: 'md', button: e.button, x: p.x, y: p.y, mods: mods(e) });
+  });
+  uIOhook.on('mouseup', (e) => {
+    const p = cursorPoint();
+    pushEvent({ t: Date.now(), type: 'mu', button: e.button, x: p.x, y: p.y });
+  });
+  uIOhook.on('mousemove', () => {
+    const now = Date.now();
+    if (now - input.lastMove < 16) return;
+    input.lastMove = now;
+    const p = cursorPoint();
+    if (p.x === null) return;
+    pushEvent({ t: now, type: 'mm', x: p.x, y: p.y });
+  });
+  uIOhook.on('wheel', (e) => {
+    const p = cursorPoint();
+    pushEvent({ t: Date.now(), type: 'wh', x: p.x, y: p.y, rotation: e.rotation, direction: e.direction });
+  });
+}
+
+function startInput(display, isScreen) {
+  input.events = [];
+  input.down.clear();
+  input.display = display;
+  input.isScreen = isScreen;
+  input.running = true;
+  if (!uIOhook) return false;
+  attachHook();
+  try {
+    uIOhook.start();
+    return true;
+  } catch (err) {
+    console.error(err);
+    return false;
+  }
+}
+
+function stopInput() {
+  input.running = false;
+  if (uIOhook) {
+    try { uIOhook.stop(); } catch { /* already stopped */ }
+  }
+  const events = input.events;
+  input.events = [];
+  return events;
+}
+
+let keysOnly = false;
+let keysOnlyAccel = null;
+function stopKeysOnly() {
+  if (!keysOnly) return;
+  keysOnly = false;
+  stopInput();
+  if (keysOnlyAccel) { try { globalShortcut.unregister(keysOnlyAccel); } catch { /* not held */ } keysOnlyAccel = null; }
+  if (overlay && !overlay.isDestroyed()) overlay.close();
+  overlay = null;
+  if (studio && !studio.isDestroyed()) studio.webContents.send('keys:state', false);
+}
+
+const ACCEL_NAMES = { Control: 'Ctrl', CommandOrControl: 'Ctrl', CmdOrCtrl: 'Ctrl', Super: 'Win', Meta: 'Win', Command: 'Win' };
+function dropShortcutEvents(accel) {
+  const names = new Set(String(accel).split('+').map((k) => ACCEL_NAMES[k] || k));
+  // The stop/pause shortcuts are pressed on purpose; leave them out of the key overlay.
+  const cutoff = Date.now() - 1500;
+  input.events = input.events.filter((ev) => {
+    if (ev.t < cutoff) return true;
+    if (ev.type !== 'kd' && ev.type !== 'ku') return true;
+    return !names.has(ev.name);
+  });
+}
+
+// Held only while recording, so other programs keep these keys the rest of the time.
+let heldShortcuts = [];
+function unregisterShortcuts() {
+  for (const a of heldShortcuts) { try { globalShortcut.unregister(a); } catch { /* not held */ } }
+  heldShortcuts = [];
+}
+
+/** Returns which of the two shortcuts could be taken (another program may already hold one). */
+function registerShortcuts(sc = {}) {
+  unregisterShortcuts();
+  const result = {};
+  for (const [command, fallback, key] of [['stop', 'Alt+Shift+S', 'stop'], ['toggle-pause', 'Alt+Shift+P', 'pause']]) {
+    const accel = sc[key] || fallback;
+    let ok = false;
+    try {
+      ok = globalShortcut.register(accel, () => {
+        dropShortcutEvents(accel);
+        studio?.webContents.send('recorder:command', command);
+      });
+    } catch { ok = false; }
+    if (ok) heldShortcuts.push(accel);
+    result[key] = ok;
+  }
+  return result;
+}
+
+async function newProjectDir() {
+  const stamp = new Date();
+  const pad = (n) => String(n).padStart(2, '0');
+  let id = `${stamp.getFullYear()}-${pad(stamp.getMonth() + 1)}-${pad(stamp.getDate())}_${pad(stamp.getHours())}-${pad(stamp.getMinutes())}-${pad(stamp.getSeconds())}`;
+  let n = 1;
+  while (fs.existsSync(path.join(MEDIA_ROOT, id))) id = `${id}_${n++}`;
+  await fsp.mkdir(path.join(MEDIA_ROOT, id), { recursive: true });
+  return id;
+}
+
+const IMPORT_TYPES = {
+  video: { name: 'Video', extensions: ['mp4', 'webm', 'mkv', 'mov', 'm4v'] },
+  image: { name: 'Image', extensions: ['png', 'jpg', 'jpeg', 'webp', 'gif', 'bmp'] },
+  audio: { name: 'Audio', extensions: ['mp3', 'wav', 'm4a', 'aac', 'ogg', 'opus', 'flac', 'webm'] },
+};
+async function pickFile(kind) {
+  // The scripted self-test names its files instead of using the file window.
+  const preset = (process.env.KEYCAST_SELFTEST || process.env.KEYCAST_MEDIA_ROOT) && process.env[`KEYCAST_PICK_${String(kind).toUpperCase()}`];
+  if (preset) return preset;
+  const r = await dialog.showOpenDialog(studio, { properties: ['openFile'], filters: [IMPORT_TYPES[kind] || IMPORT_TYPES.video] });
+  return r.canceled || !r.filePaths[0] ? null : r.filePaths[0];
+}
+
+// ---------------------------------------------------------------- storage
+const writers = new Map();
+let writerSeq = 1;
+
+function projectDir(id) {
+  const dir = path.resolve(MEDIA_ROOT, id);
+  if (!inside(MEDIA_ROOT, dir)) throw new Error('Bad project id');
+  return dir;
+}
+
+function safeName(name) {
+  return String(name).replace(/[^a-zA-Z0-9._-]/g, '_');
+}
+
+// ---------------------------------------------------------------- ipc
+function registerIpc() {
+  ipcMain.handle('app:info', () => ({
+    version: app.getVersion(),
+    platform: process.platform,
+    mediaRoot: MEDIA_ROOT,
+    inputHook: !!uIOhook,
+    ffmpeg: !!capture.ffmpegPath(),
+  }));
+
+  // Screen capture through ffmpeg, which can leave the mouse pointer out of the picture.
+  ipcMain.handle('capture:start', (_e, opts) => {
+    const index = Math.max(0, screen.getAllDisplays().findIndex((d) => String(d.id) === String(opts.displayId)));
+    return capture.start({ file: path.join(projectDir(opts.projectId), safeName(opts.name)), index, fps: opts.fps || 60 });
+  });
+  ipcMain.handle('capture:stop', () => capture.stop());
+  ipcMain.handle('capture:abort', () => capture.abort());
+  ipcMain.handle('capture:finish', (_e, opts) => capture.finish(projectDir(opts.projectId), opts.segments.map((s) => ({ ...s, video: safeName(s.video), audio: s.audio ? safeName(s.audio) : null, voice: s.voice ? safeName(s.voice) : null, cam: s.cam ? safeName(s.cam) : null }))));
+
+  ipcMain.handle('sources:list', async () => {
+    const sources = await desktopCapturer.getSources({
+      types: ['screen', 'window'],
+      thumbnailSize: { width: 400, height: 225 },
+      fetchWindowIcons: true,
+    });
+    const displays = screen.getAllDisplays();
+    return sources
+      .filter((s) => !/KeyCast/.test(s.name))
+      .map((s) => {
+        const d = displays.find((x) => String(x.id) === String(s.display_id));
+        return {
+          id: s.id,
+          name: s.name,
+          kind: s.id.startsWith('screen') ? 'screen' : 'window',
+          displayId: s.display_id || null,
+          thumbnail: s.thumbnail.isEmpty() ? null : s.thumbnail.toDataURL(),
+          icon: s.appIcon && !s.appIcon.isEmpty() ? s.appIcon.toDataURL() : null,
+          size: d ? { width: Math.round(d.bounds.width * d.scaleFactor), height: Math.round(d.bounds.height * d.scaleFactor) } : null,
+        };
+      });
+  });
+
+  ipcMain.handle('capture:prepare', (_e, opts) => {
+    pendingCapture = { sourceId: opts.sourceId, systemAudio: !!opts.systemAudio };
+    return true;
+  });
+
+  ipcMain.handle('recording:begin', (_e, opts) => {
+    const display = displayFor(opts.displayId);
+    const isScreen = opts.kind === 'screen';
+    stopKeysOnly();
+    const hooked = startInput(display, isScreen);
+    const shortcuts = registerShortcuts(opts.shortcuts);
+    if (studio) studio.hide();
+    openToolbar(display);
+    if (opts.liveOverlay) openOverlay(display, opts.overlay);
+    return { hooked, shortcuts, display: { width: display.bounds.width, height: display.bounds.height, scaleFactor: display.scaleFactor } };
+  });
+
+  ipcMain.handle('recording:end', () => {
+    const events = stopInput();
+    unregisterShortcuts();
+    closeRecordingWindows();
+    if (studio) {
+      studio.show();
+      studio.focus();
+    }
+    return events;
+  });
+
+  ipcMain.on('toolbar:action', (_e, action) => {
+    studio?.webContents.send('recorder:command', action);
+  });
+
+  ipcMain.on('recorder:status', (_e, status) => {
+    if (toolbar && !toolbar.isDestroyed()) toolbar.webContents.send('recorder:status', status);
+  });
+
+  ipcMain.handle('project:create', () => newProjectDir());
+
+  // Open a video made elsewhere: it is copied into a new project so the original stays untouched.
+  ipcMain.handle('project:import', async () => {
+    const src = await pickFile('video');
+    if (!src) return null;
+    const id = await newProjectDir();
+    const file = `screen${path.extname(src).toLowerCase()}`;
+    await fsp.copyFile(src, path.join(MEDIA_ROOT, id, file));
+    return { id, file, label: path.basename(src) };
+  });
+
+  // Copy a picture, sound or video chosen by the user into the project.
+  ipcMain.handle('asset:import', async (_e, { projectId, kind, prefix }) => {
+    const src = await pickFile(kind);
+    if (!src) return null;
+    const name = `${safeName(prefix || kind)}-${Date.now().toString(36)}${path.extname(src).toLowerCase()}`;
+    await fsp.copyFile(src, path.join(projectDir(projectId), name));
+    return { name, label: path.basename(src) };
+  });
+
+  // Pictures dropped into the wallpapers folder show up as backgrounds.
+  ipcMain.handle('wallpapers:list', async () => {
+    const dir = path.join(MEDIA_ROOT, '_wallpapers');
+    await fsp.mkdir(dir, { recursive: true });
+    const names = await fsp.readdir(dir);
+    return names.filter((n) => /\.(png|jpe?g|webp|bmp)$/i.test(n)).map((n) => `/_wallpapers/${n}`);
+  });
+  ipcMain.handle('wallpapers:open', async () => {
+    const dir = path.join(MEDIA_ROOT, '_wallpapers');
+    await fsp.mkdir(dir, { recursive: true });
+    return shell.openPath(dir);
+  });
+
+  // Keys on screen without recording (like keyviz): for live demos, calls and other recorders.
+  ipcMain.handle('keys:toggle', (_e, opts = {}) => {
+    if (keysOnly) { stopKeysOnly(); return false; }
+    if (input.running) return false;
+    const display = screen.getDisplayNearestPoint(screen.getCursorScreenPoint());
+    if (!startInput(display, true)) { input.running = false; return false; }
+    keysOnly = true;
+    openOverlay(display, opts.overlay, false);
+    if (opts.shortcut) {
+      try { if (globalShortcut.register(opts.shortcut, stopKeysOnly)) keysOnlyAccel = opts.shortcut; } catch { /* taken */ }
+    }
+    return true;
+  });
+  ipcMain.handle('keys:state', () => keysOnly);
+
+  ipcMain.handle('file:open', async (_e, { projectId, name, absolutePath }) => {
+    const file = absolutePath || path.join(projectDir(projectId), safeName(name));
+    const stream = fs.createWriteStream(file);
+    await new Promise((resolve, reject) => { stream.once('open', resolve); stream.once('error', reject); });
+    const handle = writerSeq++;
+    writers.set(handle, { stream, file });
+    return handle;
+  });
+
+  ipcMain.handle('file:write', async (_e, handle, data) => {
+    const w = writers.get(handle);
+    if (!w) throw new Error('Writer closed');
+    const buf = Buffer.from(data);
+    if (!w.stream.write(buf)) await new Promise((r) => w.stream.once('drain', r));
+    return buf.length;
+  });
+
+  ipcMain.handle('file:close', async (_e, handle, opts = {}) => {
+    const w = writers.get(handle);
+    if (!w) return null;
+    writers.delete(handle);
+    await new Promise((r) => w.stream.end(r));
+    if (opts.durationMs && /\.webm$/i.test(w.file)) {
+      try { await patchWebmDuration(w.file, opts.durationMs); } catch (err) { console.warn('duration patch failed', err); }
+    }
+    return w.file;
+  });
+
+  ipcMain.handle('file:abort', async (_e, handle) => {
+    const w = writers.get(handle);
+    if (!w) return;
+    writers.delete(handle);
+    await new Promise((r) => w.stream.end(r));
+    await fsp.rm(w.file, { force: true });
+  });
+
+  ipcMain.handle('project:save', async (_e, project) => {
+    const dir = projectDir(project.id);
+    await fsp.mkdir(dir, { recursive: true });
+    const tmp = path.join(dir, 'project.json.tmp');
+    await fsp.writeFile(tmp, JSON.stringify(project));
+    await fsp.rename(tmp, path.join(dir, 'project.json'));
+    return true;
+  });
+
+  ipcMain.handle('project:load', async (_e, id) => {
+    const text = await fsp.readFile(path.join(projectDir(id), 'project.json'), 'utf8');
+    return JSON.parse(text);
+  });
+
+  ipcMain.handle('project:list', async () => {
+    let entries = [];
+    try { entries = await fsp.readdir(MEDIA_ROOT, { withFileTypes: true }); } catch { return []; }
+    const list = [];
+    for (const ent of entries) {
+      if (!ent.isDirectory()) continue;
+      try {
+        const p = JSON.parse(await fsp.readFile(path.join(MEDIA_ROOT, ent.name, 'project.json'), 'utf8'));
+        list.push({ id: p.id, name: p.name, createdAt: p.createdAt, durationMs: p.durationMs, source: p.source?.name, keyCount: (p.events || []).filter((e) => e.type === 'kd' && !e.repeat).length, subtitles: (p.subtitles || []).length });
+      } catch { /* not a project */ }
+    }
+    list.sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
+    return list;
+  });
+
+  ipcMain.handle('project:delete', async (_e, id) => {
+    // A video that was just open may stay locked for a moment on Windows: keep trying briefly.
+    await fsp.rm(projectDir(id), { recursive: true, force: true, maxRetries: 10, retryDelay: 150 });
+    return true;
+  });
+
+  ipcMain.handle('dialog:save', async (_e, { defaultName, filters }) => {
+    // scripted runs (KEYCAST_SAVE_DIR) save without the window
+    if (process.env.KEYCAST_SAVE_DIR) return path.join(process.env.KEYCAST_SAVE_DIR, defaultName);
+    const result = await dialog.showSaveDialog(studio, {
+      defaultPath: path.join(app.getPath('videos'), defaultName),
+      filters,
+    });
+    return result.canceled ? null : result.filePath;
+  });
+
+  ipcMain.handle('file:writeText', async (_e, file, text) => {
+    await fsp.writeFile(file, text, 'utf8');
+    return file;
+  });
+
+  ipcMain.handle('shell:reveal', (_e, file) => {
+    shell.showItemInFolder(file);
+    return true;
+  });
+
+  ipcMain.handle('shell:openFolder', () => shell.openPath(MEDIA_ROOT));
+}
+
+// ---------------------------------------------------------------- self-test
+// KEYCAST_SELFTEST=<folder> runs the scripted check in the renderer and writes its log there.
+const SELFTEST = process.env.KEYCAST_SELFTEST || '';
+
+function setupSelfTest(win) {
+  fs.mkdirSync(SELFTEST, { recursive: true });
+  const log = [];
+  const finish = (code) => {
+    fs.writeFileSync(path.join(SELFTEST, 'selftest.log'), log.join('\n'));
+    app.exit(code);
+  };
+  ipcMain.handle('selftest:shot', async (_e, name) => {
+    const target = name === 'toolbar' && toolbar && !toolbar.isDestroyed() ? toolbar : win;
+    const img = await target.webContents.capturePage();
+    fs.writeFileSync(path.join(SELFTEST, `${safeName(name)}.png`), img.toPNG());
+    return true;
+  });
+  ipcMain.handle('selftest:path', (_e, name) => path.join(SELFTEST, safeName(name)));
+  win.webContents.on('console-message', (_e, level, message) => {
+    log.push(`[${level}] ${message}`);
+    if (message.startsWith('SELFTEST_DONE')) setTimeout(() => finish(message.includes('FAIL') ? 1 : 0), 300);
+  });
+  win.webContents.on('render-process-gone', (_e, d) => { log.push(`renderer gone: ${d.reason}`); finish(2); });
+  win.webContents.once('did-finish-load', () => {
+    setTimeout(() => win.webContents.executeJavaScript('window.__keycastSelfTest && window.__keycastSelfTest()').catch((err) => log.push(`exec failed ${err}`)), 2500);
+  });
+  setTimeout(() => { log.push('timeout'); finish(3); }, 6 * 60 * 1000);
+}
+
+// ---------------------------------------------------------------- lifecycle
+const single = app.requestSingleInstanceLock();
+if (!single) {
+  app.quit();
+} else {
+  app.on('second-instance', () => {
+    if (studio) {
+      if (studio.isMinimized()) studio.restore();
+      studio.show();
+      studio.focus();
+    }
+  });
+
+  app.whenReady().then(async () => {
+    // KEYCAST_MEDIA_ROOT points a test or demo run at its own folder instead of the user's recordings.
+    MEDIA_ROOT = process.env.KEYCAST_MEDIA_ROOT || path.join(app.getPath('videos'), 'KeyCast Studio');
+    await fsp.mkdir(MEDIA_ROOT, { recursive: true });
+    Menu.setApplicationMenu(null);
+    registerProtocol();
+    setupDisplayMedia();
+    registerIpc();
+    createStudio();
+  });
+
+  app.on('will-quit', () => {
+    globalShortcut.unregisterAll();
+    capture.abort();
+    stopInput();
+  });
+
+  app.on('window-all-closed', () => app.quit());
+}
