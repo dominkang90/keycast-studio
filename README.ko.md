@@ -21,7 +21,7 @@
 
 ![키 표시, 클릭 확대, 자막이 들어간 결과 영상](docs/demo.gif)
 
-> KeyCast Studio로 녹화하고 그대로 내보낸 결과입니다. 시연용 자막은 직접 입력했습니다. 화면은 한국어와 영어를 지원합니다(오른쪽 위 언어 메뉴).
+> KeyCast Studio로 녹화하고 그대로 내보낸 결과입니다. 시연용 자막은 직접 입력했습니다. 화면은 12개 언어를 지원합니다(첫 화면 오른쪽 위 언어 메뉴): 한국어, English, 日本語, 简体中文, 繁體中文, Español, Français, Deutsch, Italiano, Nederlands, Português (Brasil), Русский.
 
 <p align="center"><img src="docs/readme/flow.ko.svg" width="100%" alt="녹화 → 편집 → 내보내기"></p>
 
@@ -70,6 +70,9 @@
 
 **내보내기**
 - MP4·WebM(30/60fps, 720p~4K)과 GIF. 잘라낸 구간, 속도 변경, 추가한 소리가 반영됩니다.
+
+**확장 기능**
+- 배경·키 테마·커서 묶음·클릭 효과·자막 스타일을 더하는 데이터 묶음. 코드는 실행하지 않습니다. 만드는 법은 [docs/EXTENSIONS.md](docs/EXTENSIONS.md)
 
 **녹화 없이 키만 보여주기**
 - 발표·화상 회의·다른 녹화 프로그램을 쓸 때 단축키와 클릭만 화면 위에 띄웁니다.

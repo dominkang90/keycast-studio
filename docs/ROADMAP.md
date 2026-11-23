@@ -6,7 +6,8 @@ What comes next, roughly in order. Items marked **good first issue** are self-co
 
 | Item | Why | Size |
 |---|---|---|
-| Japanese and Chinese interface (`src/i18n/ja.js`, `zh-CN.js`) | English and Korean are done (v1.2.0); copy `en.js` and translate | Small · **good first issue** |
+| Native-speaker review of the 10 machine-assisted translations (`src/i18n/*.js`) | Done in v1.4.0 without native checks | Small per language · **good first issue** |
+| Share extensions (an `extensions/` folder or a list in the README) | Extensions exist since v1.4.0 (docs/EXTENSIONS.md) | Small |
 | English user manual | The manual is Korean only; English opens the README | Medium |
 | Split `src/ui/editor.js` into one file per settings tab and the export dialog | It is still about 900 lines | Medium · **good first issue** ([#2](https://github.com/dominkang90/keycast-studio/issues/2)) |
 | Add Prettier and ESLint with a `npm run lint` step in CI | One style without discussion in reviews | Small · **good first issue** ([#3](https://github.com/dominkang90/keycast-studio/issues/3)) |

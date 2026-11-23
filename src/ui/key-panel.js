@@ -5,6 +5,7 @@ import { KEY_DEFAULTS } from '../lib/keys.js';
 import { KEY_THEMES } from '../lib/compositor.js';
 import { h, toast, inlineSwitch, rangeField, segField, colorField, ALL_POSITIONS, positionField } from './dom.js';
 import { T } from '../lib/i18n.js';
+import { extensionItems } from './state.js';
 /**
  * Everything about how keys look and which keys show. Shared by the editor and the
  * live-overlay settings. `change(rebuild)` is called after each edit; `redraw` after edits
@@ -49,6 +50,13 @@ export function keyPanel(k, change, redraw) {
           style: { background: th.face, border: `2px solid ${th.edge}`, color: th.text, display: 'grid', placeItems: 'center', fontWeight: 700, boxShadow: th.glow ? `0 0 10px ${th.glow}` : null },
           onclick: () => { k.theme = id; change(); redraw(); },
         }, { dark: 'Ctrl', light: 'Shift', neon: 'Alt', key: 'Enter' }[id] || id)),
+        // Key themes from extensions: picking one fills in "custom" with its colours.
+        extensionItems('keyThemes').map((th) => h('div', {
+          class: 'swatch',
+          title: T('{0} ({1}에서)', th.name, th.from),
+          style: { background: th.custom.face, border: `2px solid ${th.custom.borderColor}`, color: th.custom.text, display: 'grid', placeItems: 'center', fontWeight: 700 },
+          onclick: () => { k.theme = 'custom'; k.custom = { ...KEY_DEFAULTS.custom, ...th.custom }; change(); redraw(); },
+        }, h('small', {}, th.name))),
         h('div', { class: `swatch${k.theme === 'custom' ? ' on' : ''}`, style: { background: c.face, color: c.text, border: `2px solid ${c.borderColor}`, display: 'grid', placeItems: 'center', fontWeight: 700, gridColumn: 'span 2' }, onclick: () => { k.theme = 'custom'; change(); redraw(); } }, T('직접 꾸미기')))),
     k.theme === 'custom' ? [
       segField(T('키 모양'), c.capStyle, [{ id: 'raised', name: T('입체') }, { id: 'flat', name: T('납작') }, { id: 'outline', name: T('테두리만') }], (v) => { c.capStyle = v; change(); }),

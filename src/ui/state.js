@@ -2,6 +2,8 @@
 
 import { KEY_DEFAULTS } from '../lib/keys.js';
 import { defaultSettings } from '../lib/compositor.js';
+import { platform } from '../lib/platform.js';
+import { readExtension } from '../lib/extensions.js';
 export const store = {
   get(key, fallback) {
     try { return JSON.parse(localStorage.getItem(`keycast.${key}`)) ?? fallback; } catch { return fallback; }
@@ -44,4 +46,31 @@ export function saveOptions() { store.set('options', state.options); }
 export function liveOverlaySettings() {
   const look = savedLook();
   return { ...look.keys, mouse: { clicks: look.cursor.clicks, effect: look.cursor.effect, scrolls: look.cursor.scrolls !== false, highlight: look.cursor.highlight, color: look.cursor.color, clickSize: look.cursor.clickSize, clickDur: look.cursor.clickDur } };
+}
+
+// ---------------------------------------------------------------- extensions
+let extensionsCache = null;
+
+/** Installed extensions (checked), each with `enabled`. Reloaded with `reload`. */
+export async function loadExtensions(reload = false) {
+  if (extensionsCache && !reload) return extensionsCache;
+  const raw = await platform.listExtensions().catch(() => []);
+  const off = new Set(store.get('extensionsOff', []));
+  extensionsCache = raw.map((r) => (r.error
+    ? { id: r.folder, name: r.folder, error: r.error, count: 0, enabled: false }
+    : { ...readExtension(r.folder, r.json), enabled: !off.has(r.folder) }));
+  return extensionsCache;
+}
+
+/** Items of one kind from every enabled extension, each with the extension's name. */
+export function extensionItems(kind) {
+  return (extensionsCache || []).filter((e) => e.enabled && !e.error).flatMap((e) => (e[kind] || []).map((item) => ({ ...item, from: e.name })));
+}
+
+export function setExtensionEnabled(id, on) {
+  const off = new Set(store.get('extensionsOff', []));
+  if (on) off.delete(id); else off.add(id);
+  store.set('extensionsOff', [...off]);
+  const e = (extensionsCache || []).find((x) => x.id === id);
+  if (e) e.enabled = on;
 }

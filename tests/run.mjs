@@ -9,6 +9,7 @@ import { segments, outDuration, srcToOut, outToSrc, mapCues } from '../src/lib/t
 import { autoZoomRegions, cameraAt, CursorTrack, viewRect } from '../src/lib/zoom.js';
 import { shapeSubtitles, toSRT, wrapLines, cueWords, SUBTITLE_STYLES } from '../src/lib/subtitles.js';
 import { drawSubtitle, drawClicks, CLICK_EFFECTS } from '../src/lib/compositor.js';
+import { readExtension, applyBackground, EXAMPLE_EXTENSION } from '../src/lib/extensions.js';
 
 const require = createRequire(import.meta.url);
 const { patchWebmDuration, locateInfo } = require('../electron/webm.cjs');
@@ -242,6 +243,43 @@ test('every subtitle style and click effect draws without errors', () => {
   }
 });
 
+test('extensions keep only valid data and copy their values into the project', () => {
+  const ext = readExtension('mine', {
+    name: 'Pack', version: '2', author: 'me',
+    backgrounds: [
+      { name: 'G', gradient: ['#112233', 'red', '#445566'], angle: 999 },
+      { name: 'Pic', image: 'sea.jpg' },
+      { name: 'Escape', image: '../../secret.png' },
+      { name: 'Blob', base: '#000000', blobs: [[0.5, 0.5, 0.4, '#ff0000'], [1, 1, 1, 'nope']] },
+      { gradient: ['#000000', '#ffffff'] },
+    ],
+    keyThemes: [{ name: 'K', face: '#abcdef', borderWidth: 99, capStyle: 'weird' }],
+    cursorPacks: [{ name: 'C', fill: '#00ff00', glow: 'javascript:alert(1)' }],
+    clickEffects: [{ name: 'E', effect: 'boom', size: 9 }],
+    subtitleStyles: [{ name: 'S', style: 'pop', position: 'side' }],
+    unknown: [{ name: 'x' }],
+  });
+  assert.equal(ext.name, 'Pack');
+  assert.deepEqual(ext.backgrounds.map((b) => b.name), ['G', 'Pic', 'Blob']);
+  assert.deepEqual(ext.backgrounds[0].stops, ['#112233', '#445566']);
+  assert.equal(ext.backgrounds[0].angle, 360);
+  assert.equal(ext.backgrounds[1].image, '/_extensions/mine/sea.jpg');
+  assert.equal(ext.backgrounds[2].blobs.length, 1);
+  assert.equal(ext.keyThemes[0].custom.borderWidth, 6);
+  assert.equal(ext.keyThemes[0].custom.capStyle, 'raised');
+  assert.equal(ext.cursorPacks[0].look.glow, null);
+  assert.equal(ext.clickEffects[0].values.effect, 'ripple');
+  assert.equal(ext.clickEffects[0].values.clickSize, 2.5);
+  assert.equal(ext.subtitleStyles[0].values.position, 'bottom');
+  assert.equal(ext.count, 7);
+  const frame = { background: 'aurora' };
+  applyBackground(frame, ext.backgrounds[0]);
+  assert.deepEqual(frame, { background: 'custom', custom: { kind: 'gradient', stops: ['#112233', '#445566'], angle: 360 } });
+  ext.backgrounds[0].stops.push('#ffffff');
+  assert.equal(frame.custom.stops.length, 2, 'the project gets its own copy');
+  assert.equal(readExtension('ex', EXAMPLE_EXTENSION).count, 11);
+});
+
 test('every interface text has an English translation', async () => {
   const { default: en } = await import('../src/i18n/en.js');
   const { readdirSync } = await import('node:fs');
@@ -263,6 +301,19 @@ test('every interface text has an English translation', async () => {
     }
   }
   assert.deepEqual([...new Set(missing)], []);
+  // Other languages may lag behind (missing entries show the Korean text), but what they have
+  // must keep the same {0} placeholders. The shipped tables are complete today.
+  const { LANGUAGE_TABLES, LANGS, matchLanguage } = await import('../src/lib/i18n.js');
+  const holes = (s) => (s.match(/\{\d+\}/g) || []).sort().join();
+  for (const [code, table] of Object.entries(LANGUAGE_TABLES)) {
+    const wrong = Object.keys(table).filter((k) => k in en && holes(table[k]) !== holes(en[k]));
+    assert.deepEqual(wrong, [], `${code} changes placeholders`);
+  }
+  assert.equal(LANGS.length, 12);
+  assert.ok(LANGS.every((l) => l.id === 'ko' || LANGUAGE_TABLES[l.id]));
+  assert.equal(matchLanguage('zh-HK'), 'zh-TW');
+  assert.equal(matchLanguage('pt-PT'), 'pt-BR');
+  assert.equal(matchLanguage('sv-SE'), 'en');
 });
 
 test('webm duration patch', () => {

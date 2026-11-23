@@ -2,8 +2,10 @@
 
 import { buildKeyGroups } from '../lib/keys.js';
 import { drawKeys } from '../lib/compositor.js';
-import { h, toast, kbdLabel, accelFromEvent } from './dom.js';
-import { store, state, shortcuts, savedLook } from './state.js';
+import { h, toast, kbdLabel, accelFromEvent, switchEl } from './dom.js';
+import { platform } from '../lib/platform.js';
+import { EXAMPLE_EXTENSION } from '../lib/extensions.js';
+import { store, state, shortcuts, savedLook, loadExtensions, setExtensionEnabled } from './state.js';
 import { keyPanel } from './key-panel.js';
 import { showHome } from './home.js';
 import { T } from '../lib/i18n.js';
@@ -112,3 +114,39 @@ window.addEventListener('keydown', (e) => {
   }
 });
 
+
+/** Installed extensions: turn each on or off, open the folder, add the example pack. */
+export async function openExtensions() {
+  const body = h('div', { class: 'ext-list' }, h('div', { class: 'small muted' }, T('불러오는 중…')));
+  const kinds = [['backgrounds', T('배경')], ['keyThemes', T('키 테마')], ['cursorPacks', T('커서 묶음')], ['clickEffects', T('클릭 효과')], ['subtitleStyles', T('자막 스타일')]];
+  const draw = async (reload) => {
+    const list = await loadExtensions(reload);
+    if (!list.length) {
+      body.replaceChildren(h('div', { class: 'empty' }, T('설치된 확장이 없습니다. 예제를 넣어 보거나, 확장 폴더에 확장을 넣으세요.')));
+      return;
+    }
+    body.replaceChildren(...list.map((e) => h('div', { class: 'ext-item' },
+      h('div', { class: 'grow' },
+        h('b', {}, e.name), e.version ? h('span', { class: 'small muted' }, ` ${e.version}`) : null,
+        e.author ? h('div', { class: 'small muted' }, e.author) : null,
+        e.error
+          ? h('div', { class: 'small', style: { color: 'var(--danger)' } }, T('읽지 못했습니다: {0}', e.error))
+          : h('div', { class: 'small muted' }, kinds.filter(([k]) => e[k]?.length).map(([k, n]) => `${n} ${e[k].length}`).join(' · ') || T('쓸 수 있는 항목이 없습니다'))),
+      e.error ? null : switchEl(e.enabled, (v) => setExtensionEnabled(e.id, v)))));
+  };
+  const bg = h('div', { class: 'modal-bg' }, h('div', { class: 'modal' },
+    h('h2', {}, T('확장 기능')),
+    h('div', { class: 'small muted', style: { marginBottom: '12px' } }, T('확장은 배경·키 테마·커서 묶음·클릭 효과·자막 스타일을 더합니다. 코드는 실행하지 않고 설정 값만 읽습니다. 고른 항목은 프로젝트에 복사되어 확장을 지워도 영상은 그대로입니다.')),
+    body,
+    h('div', { class: 'row', style: { marginTop: '12px', flexWrap: 'wrap' } },
+      h('button', { class: 'btn small', onclick: () => platform.openExtensions() }, T('📁 확장 폴더 열기')),
+      h('button', { class: 'btn small', onclick: () => draw(true) }, T('↻ 다시 읽기')),
+      h('button', { class: 'btn small', onclick: async () => {
+        await platform.addExampleExtension(JSON.stringify(EXAMPLE_EXTENSION, null, 2));
+        await draw(true);
+        toast(T('예제 확장을 넣었습니다.'));
+      } }, T('+ 예제 확장 넣기'))),
+    h('div', { class: 'actions' }, h('button', { class: 'btn primary', onclick: () => { bg.remove(); if (state.editor) state.editor.redrawPanel?.(); } }, T('닫기')))));
+  document.body.append(bg);
+  draw(true);
+}

@@ -20,7 +20,7 @@
 
 ![キー表示、クリックのズーム、字幕が入った録画](docs/demo.gif)
 
-> KeyCast Studio で録画し、そのまま書き出したものです。デモの字幕は手で入力しました。アプリの画面は英語と韓国語に対応しています（[日本語訳に協力する](CONTRIBUTING.md#translating-the-app)）。
+> KeyCast Studio で録画し、そのまま書き出したものです。デモの字幕は手で入力しました。アプリの画面は日本語を含む 12 言語に対応しています（[翻訳の改善に協力する](CONTRIBUTING.md#translating-the-app)）。
 
 <p align="center"><img src="docs/readme/flow.ja.svg" width="100%" alt="録画 → 編集 → 書き出し"></p>
 
@@ -69,6 +69,9 @@
 
 **書き出し**
 - MP4・WebM（30/60fps、720p〜4K）と GIF。カット、速度変更、追加した音が反映されます
+
+**拡張機能**
+- 背景・キーテーマ・ポインターパック・クリック効果・字幕スタイルを追加するデータのパック。コードは実行しません。作り方は [docs/EXTENSIONS.md](docs/EXTENSIONS.md)
 
 **録画せずにキーだけ表示**
 - 発表やビデオ会議、他の録画ソフトを使うときに、ショートカットとクリックだけを画面に表示

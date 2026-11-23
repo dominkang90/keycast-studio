@@ -13,7 +13,7 @@ if (!fs.existsSync(out)) {
   process.exit(1);
 }
 
-const KEEP = new Set(['en-US', 'ko', 'ja', 'zh-CN', 'zh-TW']);
+const KEEP = new Set(['en-US', 'ko', 'ja', 'zh-CN', 'zh-TW', 'es', 'es-419', 'fr', 'de', 'it', 'nl', 'pt-BR', 'ru']);
 const locales = path.join(out, 'locales');
 let removed = 0;
 let bytes = 0;

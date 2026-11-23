@@ -20,7 +20,7 @@
 
 ![A recording with key bubbles, a zoom on the click and a subtitle](docs/demo.gif)
 
-> Recorded and exported with KeyCast Studio. The subtitles in this demo were typed in. The interface is in English and Korean ([add your language](CONTRIBUTING.md#translating-the-app)).
+> Recorded and exported with KeyCast Studio. The subtitles in this demo were typed in. The interface comes in 12 languages: 한국어, English, 日本語, 简体中文, 繁體中文, Español, Français, Deutsch, Italiano, Nederlands, Português (Brasil), Русский ([improve a translation](CONTRIBUTING.md#translating-the-app)).
 
 <p align="center"><img src="docs/readme/flow.en.svg" width="100%" alt="Record → Edit → Export"></p>
 
@@ -69,6 +69,9 @@ KeyCast Studio has to see the keys you press to show them in the video, so pleas
 
 **Export**
 - MP4 and WebM at 30 or 60 fps from 720p to 4K, and GIF; cuts, speed changes and added sound are applied
+
+**Extensions**
+- Data-only packs of backgrounds, key themes, cursor packs, click effects and subtitle styles; no code is run. See [docs/EXTENSIONS.md](docs/EXTENSIONS.md)
 
 **Show keys without recording**
 - Put your shortcuts and clicks on screen for a talk, a video call or another recording program

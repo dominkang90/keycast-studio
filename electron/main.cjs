@@ -549,6 +549,39 @@ function registerIpc() {
     return { name, label: path.basename(src) };
   });
 
+  // Extensions: data-only packs in <recordings>/_extensions/<folder>/extension.json.
+  // The files are read here and checked again in the page (src/lib/extensions.js).
+  const extDir = () => path.join(MEDIA_ROOT, '_extensions');
+  ipcMain.handle('extensions:list', async () => {
+    await fsp.mkdir(extDir(), { recursive: true });
+    const out = [];
+    for (const d of await fsp.readdir(extDir(), { withFileTypes: true })) {
+      if (!d.isDirectory() || out.length >= 100) continue;
+      const file = path.join(extDir(), d.name, 'extension.json');
+      try {
+        const stat = await fsp.stat(file);
+        if (stat.size > 256 * 1024) { out.push({ folder: d.name, error: 'extension.json is larger than 256 KB' }); continue; }
+        out.push({ folder: d.name, json: JSON.parse(await fsp.readFile(file, 'utf8')) });
+      } catch (err) {
+        out.push({ folder: d.name, error: err.code === 'ENOENT' ? 'no extension.json' : err.message });
+      }
+    }
+    return out;
+  });
+  ipcMain.handle('extensions:open', async () => {
+    await fsp.mkdir(extDir(), { recursive: true });
+    return shell.openPath(extDir());
+  });
+  // Writes the sample pack (sent as JSON text) to _extensions/example/ only.
+  ipcMain.handle('extensions:example', async (_e, text) => {
+    if (typeof text !== 'string' || text.length > 64 * 1024) throw new Error('bad example');
+    JSON.parse(text);
+    const dir = path.join(extDir(), 'example');
+    await fsp.mkdir(dir, { recursive: true });
+    await fsp.writeFile(path.join(dir, 'extension.json'), text);
+    return true;
+  });
+
   // Pictures dropped into the wallpapers folder show up as backgrounds.
   ipcMain.handle('wallpapers:list', async () => {
     const dir = path.join(MEDIA_ROOT, '_wallpapers');

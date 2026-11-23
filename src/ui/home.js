@@ -5,8 +5,8 @@ import { fmt } from '../lib/timeline.js';
 import { setLabel } from '../lib/icons.js';
 import { autoZoomRegions } from '../lib/zoom.js';
 import { h, toast, mount, topbar, inlineSwitch, selectField, kbdLabel, langMenu } from './dom.js';
-import { state, shortcuts, savedLook, saveOptions, liveOverlaySettings } from './state.js';
-import { openKeyStyle, openShortcuts } from './dialogs.js';
+import { state, shortcuts, savedLook, saveOptions, liveOverlaySettings, loadExtensions } from './state.js';
+import { openKeyStyle, openShortcuts, openExtensions } from './dialogs.js';
 import { startRecording } from './recording.js';
 import { stopEditor, openEditor } from './editor.js';
 import { T } from '../lib/i18n.js';
@@ -41,6 +41,7 @@ export async function refreshSources() {
 
 
 export async function showHome() {
+  loadExtensions().catch(() => {});
   stopEditor();
   mount(h('div', { class: 'home' }, h('div', { class: 'empty' }, T('불러오는 중…'))));
   if (!state.info) state.info = await platform.info();
@@ -151,6 +152,7 @@ export function renderHome(projects) {
       h('button', { class: 'btn small', title: T('다른 프로그램으로 만든 영상을 불러와 편집합니다'), onclick: importVideo }, T('📂 영상 파일 열기')),
       isDesktop ? h('button', { class: 'btn small', onclick: openShortcuts }, T('⌨ 단축키')) : null,
       isDesktop ? h('button', { class: 'btn small', onclick: async () => { await refreshSources(); drawSources(); } }, T('↻ 새로 고침')) : null,
+      isDesktop ? h('button', { class: 'btn small', onclick: openExtensions }, T('🧩 확장 기능')) : null,
       langMenu()),
     !isDesktop ? h('div', { class: 'banner' }, T('브라우저 미리보기 모드: 녹화·편집·자막·내보내기를 모두 쓸 수 있지만, 키는 이 탭 안에서만 잡히고 녹화는 탭을 닫으면 사라집니다.')) : null,
     h('main', { class: 'home' },

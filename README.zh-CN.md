@@ -20,7 +20,7 @@
 
 ![带按键显示、点击放大和字幕的录像](docs/demo.gif)
 
-> 用 KeyCast Studio 录制并直接导出。演示中的字幕是手动输入的。应用界面支持英语和韩语（[帮忙翻译成中文](CONTRIBUTING.md#translating-the-app)）。
+> 用 KeyCast Studio 录制并直接导出。演示中的字幕是手动输入的。应用界面支持包括简体和繁体中文在内的 12 种语言（[帮忙改进翻译](CONTRIBUTING.md#translating-the-app)）。
 
 <p align="center"><img src="docs/readme/flow.zh-CN.svg" width="100%" alt="录制 → 编辑 → 导出"></p>
 
@@ -69,6 +69,9 @@
 
 **导出**
 - MP4、WebM（30/60fps，720p～4K）和 GIF；剪切、变速和添加的声音都会生效
+
+**扩展**
+- 添加背景、按键主题、指针包、点击效果和字幕样式的数据包，不运行任何代码。制作方法见 [docs/EXTENSIONS.md](docs/EXTENSIONS.md)
 
 **不录制，只显示按键**
 - 在演讲、视频会议或使用其他录屏软件时，把快捷键和点击显示在屏幕上

@@ -277,3 +277,29 @@ input[type="color"] { width: 36px; height: 28px; padding: 0; border: 1px solid v
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
+
+/* extensions */
+.ext-list { display: flex; flex-direction: column; gap: var(--s2); }
+.ext-item { display: flex; align-items: center; gap: var(--s3); background: var(--bg-deep); border: 1px solid var(--line); border-radius: var(--r-ctl); padding: var(--s3); }
+.ext-item b { font-weight: 600; }
+.ext-row { display: flex; flex-wrap: wrap; gap: var(--s2); }
+
+/* Fonts per interface language: Korean fonts draw Japanese and Chinese with uneven spacing. */
+html[lang="ja"] {
+  --font: "Yu Gothic UI", "Meiryo UI", "Meiryo", "Segoe UI", "Hiragino Sans", system-ui, sans-serif;
+  --display: "Yu Gothic UI", "Meiryo UI", "Segoe UI", system-ui, sans-serif;
+  --mono: "Cascadia Mono", Consolas, "Yu Gothic UI", "Meiryo UI", monospace;
+}
+html[lang="zh-CN"] {
+  --font: "Microsoft YaHei UI", "Microsoft YaHei", "Segoe UI", "PingFang SC", system-ui, sans-serif;
+  --display: "Microsoft YaHei UI", "Segoe UI", system-ui, sans-serif;
+  --mono: "Cascadia Mono", Consolas, "Microsoft YaHei UI", monospace;
+}
+html[lang="zh-TW"] {
+  --font: "Microsoft JhengHei UI", "Microsoft JhengHei", "Segoe UI", "PingFang TC", system-ui, sans-serif;
+  --display: "Microsoft JhengHei UI", "Segoe UI", system-ui, sans-serif;
+  --mono: "Cascadia Mono", Consolas, "Microsoft JhengHei UI", monospace;
+}
+/* Long tab names (Japanese, German, Russian…) stay on one line. */
+.side-tabs button > :not(.ic) { max-width: 100%; padding: 0 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ext-row { margin-bottom: var(--s3); }

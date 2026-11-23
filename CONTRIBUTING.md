@@ -87,13 +87,15 @@ Interface text is written in Korean in the code and translated through `T()` (se
 
 ## Translating the app
 
-Every piece of interface text goes through `T()` from `src/lib/i18n.js`: the Korean text is the key, and `src/i18n/en.js` maps it to English. Placeholders are `{0}`, `{1}`, for example `T('자막 {0}개', n)`. The language menu sits at the top right of the home screen; the first start follows the Windows language (Korean on Korean Windows, English everywhere else).
+Every piece of interface text goes through `T()` from `src/lib/i18n.js`: the Korean text is the key, and `src/i18n/<lang>.js` maps it to each language. Placeholders are `{0}`, `{1}`, for example `T('자막 {0}개', n)`. The app ships in 12 languages (ko, en, ja, zh-CN, zh-TW, es, fr, de, it, nl, pt-BR, ru). The language menu sits at the top right of the home screen; the first start follows the Windows language, and English is used for any other.
+
+**Improving a translation** is the most useful help: everything except Korean and English was translated with machine help and has not been checked by native speakers yet. Edit the value in `src/i18n/<lang>.js` and open a pull request.
 
 To add a language:
 
-1. Copy `src/i18n/en.js` to `src/i18n/<code>.js` (for example `ja.js`) and translate the values. The English values are usually the easier starting point.
-2. Add it to `TABLES` and `LANGS` in `src/lib/i18n.js`.
-3. Run `npm test` and open the app with the new language.
+1. Copy `src/i18n/en.js` to `src/i18n/<code>.js` and translate the values (or write one translation per line in the order of `en.js` and run `node scripts/i18n-build.cjs <code> lines.txt`, which checks the count and the placeholders).
+2. Add it to `TABLES`, `LANGS` and `matchLanguage` in `src/lib/i18n.js`, and its Chromium language file to `KEEP` in `scripts/after-package.cjs`.
+3. Run `npm test` (it fails if any entry or placeholder is missing) and open the app with the new language.
 
 Missing entries fall back to Korean, so a partial translation still works. The user manual (`사용설명서.html`) is Korean only; other languages open the README on GitHub.
 

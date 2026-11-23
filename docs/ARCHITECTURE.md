@@ -105,7 +105,8 @@ Old projects are upgraded when opened (`migrate()` in `editor.js`), so new field
 | Add a timeline row | `TRACKS`, `ROWS` and `render()` in `src/lib/timeline.js`, plus `addItem()` in `editor.js` |
 | Add an IPC call | handler in `electron/main.cjs`, bridge in `electron/preload.cjs`, wrapper in `src/lib/platform.js` |
 | Change export | `exportExact()` / `exportGif()` in `src/lib/exporter.js` |
-| Add or change interface text | wrap it in `T()` from `src/lib/i18n.js` and add the English to `src/i18n/en.js` |
+| Add or change interface text | wrap it in `T()` from `src/lib/i18n.js` and add the English to `src/i18n/en.js`; other languages show the Korean text until they are translated |
+| Add an extension kind | `readExtension()` in `src/lib/extensions.js` (+ a test), the editor panel that offers it, and docs/EXTENSIONS.md |
 | Change the animated README pictures | the texts and drawings in `scripts/readme-art.cjs`, then `npm run readme-art` (writes `docs/readme/*.svg` for every language) |
 | Add a subtitle style or click effect | `SUBTITLE_STYLES` + `drawSubtitle()`, or `CLICK_EFFECTS` + `drawClicks()` in `src/lib/compositor.js` |
 

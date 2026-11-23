@@ -2,7 +2,7 @@
 // added sound, key marks and subtitle blocks.
 
 import { newId } from './zoom.js';
-import { T } from './i18n.js';
+import { T, lang } from './i18n.js';
 
 const GUTTER = 64;
 const RULER = 24;
@@ -22,8 +22,10 @@ const ROWS = {
 // reads as a tool and the colour stays in the picture above it.
 const COLORS = { speed: '#e3b341', zoom: '#9d8cff', note: '#e58fb1', audio: '#5ac8c8', sub: '#4cc38a' };
 const INK = { text: '#ededed', text2: '#a1a1a6', text3: '#85858b', row: '#19191b', rec: '#ff453a', cut: '#e5484d' };
-const UI_FONT = '11.5px "Segoe UI Variable Text", "Segoe UI", "Malgun Gothic", sans-serif';
-const MONO_FONT = '11px "Cascadia Mono", Consolas, "Malgun Gothic", monospace';
+// The fallback font for letters the Latin fonts lack follows the interface language.
+const CJK_FONT = { ja: '"Yu Gothic UI", "Meiryo UI"', 'zh-CN': '"Microsoft YaHei UI"', 'zh-TW': '"Microsoft JhengHei UI"' }[lang] || '"Malgun Gothic"';
+const UI_FONT = `11.5px "Segoe UI Variable Text", "Segoe UI", ${CJK_FONT}, sans-serif`;
+const MONO_FONT = `11px "Cascadia Mono", Consolas, ${CJK_FONT}, monospace`;
 const NOTE_NAMES = { text: T('글자'), arrow: T('화살표'), box: T('네모'), image: T('그림'), blur: T('가리기') };
 
 export function listOfKind(project, kind) {

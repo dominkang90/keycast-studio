@@ -171,6 +171,9 @@ export const platform = {
   captureFinish(opts) { return api.captureFinish(opts); },
 
   async listWallpapers() { return isDesktop ? api.listWallpapers() : []; },
+  async listExtensions() { return isDesktop ? api.listExtensions() : []; },
+  openExtensions() { if (isDesktop) api.openExtensions(); },
+  addExampleExtension(text) { return isDesktop ? api.addExampleExtension(text) : Promise.resolve(false); },
   openWallpapers() { if (isDesktop) api.openWallpapers(); },
   async toggleKeys(opts) { return isDesktop ? api.toggleKeys(opts) : false; },
   async keysState() { return isDesktop ? api.keysState() : false; },

@@ -40,7 +40,8 @@ function path(d) {
 }
 
 /** Fill, edge and effects of a pack. */
-function look(style, color) {
+function look(style, color, custom) {
+  if (style === 'custom' && custom) return { fill: custom.fill || '#ffffff', edge: custom.edge || '#111111', width: custom.width || 1.3, glow: custom.glow || null };
   switch (style) {
     case 'white': return { fill: '#ffffff', edge: '#111111', width: 1.3 };
     case 'soft': return { fill: '#ffffff', edge: 'rgba(0,0,0,0.62)', width: 1, soft: true };
@@ -98,8 +99,9 @@ function spinner(ctx, lk, t, r) {
  * @param {string} color effect colour (used by the accent, outline and neon packs)
  * @param {string} [kind] pointer kind from the recording ('arrow' when unknown)
  * @param {number} [t] time in seconds, for the busy spinner
+ * @param {object} [custom] fill, edge, width and glow of a pack from an extension (style 'custom')
  */
-export function cursorShape(ctx, style, s, color, kind = 'arrow', t = 0) {
+export function cursorShape(ctx, style, s, color, kind = 'arrow', t = 0, custom = null) {
   if (style === 'dot' || style === 'ring') {
     ctx.beginPath();
     ctx.arc(0, 0, 9 * s, 0, Math.PI * 2);
@@ -116,7 +118,7 @@ export function cursorShape(ctx, style, s, color, kind = 'arrow', t = 0) {
     ctx.restore();
     return;
   }
-  const lk = look(style, color);
+  const lk = look(style, color, custom);
   if (lk.glow) { ctx.shadowColor = lk.glow; ctx.shadowBlur = 8; }
   switch (kind) {
     case 'pointer': filled(ctx, HAND, lk); break;

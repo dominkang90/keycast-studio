@@ -151,7 +151,18 @@ function paintBackground(ctx, W, H, frame, img) {
     }
     return;
   }
-  const wp = WALLPAPERS.find((w) => w.id === bg);
+  // From an extension: a gradient at an angle, or colour blobs like the built-in wallpapers.
+  const custom = bg === 'custom' ? frame.custom : null;
+  if (custom?.kind === 'gradient' && custom.stops?.length >= 2) {
+    const a = ((custom.angle ?? 135) - 90) * (Math.PI / 180);
+    const len = (Math.abs(W * Math.cos(a)) + Math.abs(H * Math.sin(a))) / 2;
+    const g = ctx.createLinearGradient(W / 2 - Math.cos(a) * len, H / 2 - Math.sin(a) * len, W / 2 + Math.cos(a) * len, H / 2 + Math.sin(a) * len);
+    custom.stops.forEach((c, i) => g.addColorStop(i / (custom.stops.length - 1), c));
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, W, H);
+    return;
+  }
+  const wp = WALLPAPERS.find((w) => w.id === bg) || (custom?.kind === 'blobs' ? custom : null);
   if (wp) {
     ctx.fillStyle = wp.base;
     ctx.fillRect(0, 0, W, H);
@@ -183,7 +194,7 @@ function paintBackground(ctx, W, H, frame, img) {
 
 function drawBackground(ctx, W, H, frame, url) {
   const img = frame.background === 'image' && url ? getImage(url(frame.image)) : null;
-  const key = [W, H, frame.background, frame.image, frame.blur || 0, !!img].join('|');
+  const key = [W, H, frame.background, frame.image, frame.blur || 0, !!img, frame.background === 'custom' ? JSON.stringify(frame.custom) : ''].join('|');
   let c = bgCache.get(key);
   if (!c) {
     // Painted once and reused: a blurred picture is too slow to redo for every frame.
@@ -472,7 +483,7 @@ function drawCursor(ctx, t, derived, rect, view, o, unit, scale, range) {
     ctx.translate(a.x - vx * back, a.y - vy * back);
     ctx.rotate(tilt);
     if (i === 0) { ctx.shadowColor = 'rgba(0,0,0,0.35)'; ctx.shadowBlur = 5 * size; ctx.shadowOffsetY = 1.5 * size; }
-    cursorShape(ctx, o.style || 'arrow', size, o.color || '#ffd33d', kind, t);
+    cursorShape(ctx, o.style || 'arrow', size, o.color || '#ffd33d', kind, t, o.look);
     ctx.restore();
   }
 }

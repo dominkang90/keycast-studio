@@ -11,7 +11,8 @@ import { exportVideo, exportFormats } from '../lib/exporter.js';
 import { setLabel } from '../lib/icons.js';
 import { segments, outDuration, srcToOut, segIndexAt, mapCues, syncAudios } from '../lib/timemap.js';
 import { h, toast, app, mount, topbar, inlineSwitch, rangeField, selectField, segField, colorField, positionField, formatBytes, safeFileName } from './dom.js';
-import { store, state } from './state.js';
+import { store, state, loadExtensions, extensionItems } from './state.js';
+import { applyBackground } from '../lib/extensions.js';
 import { keyPanel } from './key-panel.js';
 import { showHome } from './home.js';
 import { openShortcuts } from './dialogs.js';
@@ -126,7 +127,7 @@ export async function openEditor(id, preloaded) {
     ['cursor', '🖱', T('커서')], ['webcam', '🙂', T('웹캠')], ['audio', '🔊', T('소리')], ['subs', '💬', T('자막')],
   ];
   const drawTabs = () => sideTabs.replaceChildren(...tabs.map(([k, ic, n]) =>
-    h('button', { class: ed.tab === k ? 'on' : '', onclick: () => { ed.tab = k; drawTabs(); drawPanel(); } }, h('span', { class: 'ic' }, ic), n)));
+    h('button', { class: ed.tab === k ? 'on' : '', title: n, onclick: () => { ed.tab = k; drawTabs(); drawPanel(); } }, h('span', { class: 'ic' }, ic), h('span', {}, n))));
 
   const url = (name) => platform.mediaUrl(project.id, name);
   // With the ffmpeg capture the webcam and microphone files begin a moment after the picture.
@@ -373,10 +374,19 @@ export async function openEditor(id, preloaded) {
 
   function loadWallpapers() {
     platform.listWallpapers().then((list) => { ed.wallpapers = list; if (state.editor === ed && ed.tab === 'frame') drawPanel(); }).catch(() => {});
+    loadExtensions().then(() => { if (state.editor === ed) drawPanel(); }).catch(() => {});
+    ed.redrawPanel = () => drawPanel();
   }
   loadWallpapers();
 
   // ---------------- panels
+  /** Buttons for items from extensions; picking one copies its values into the project. */
+  function extRow(title, items, apply) {
+    if (!items.length) return null;
+    return h('div', { class: 'section' }, h('h3', {}, title),
+      h('div', { class: 'ext-row' }, items.map((it) => h('button', { class: 'btn small', title: T('{0}에서', it.from), onclick: () => { apply(it); markDirty(); drawPanel(); } }, it.name))));
+  }
+
   function drawPanel() {
     const s = project.settings;
     const panels = {
@@ -384,7 +394,7 @@ export async function openEditor(id, preloaded) {
         const f = s.frame;
         const setBg = (id, image) => { f.background = id; if (image !== undefined) f.image = image; markDirty(); drawPanel(); };
         const wpCss = (w) => `${w.blobs.map(([x, y, r, c]) => `radial-gradient(circle at ${x * 100}% ${y * 100}%, ${c}, transparent ${r * 100}%)`).join(', ')}, ${w.base}`;
-        const isPicture = f.background === 'image' || WALLPAPERS.some((w) => w.id === f.background);
+        const isPicture = f.background === 'image' || f.background === 'custom' || WALLPAPERS.some((w) => w.id === f.background);
         const ownImage = f.background === 'image' && f.image && !f.image.startsWith('/');
         const c = f.crop;
         const edges = { l: c.x, t: c.y, r: 1 - c.x - c.w, b: 1 - c.y - c.h };
@@ -409,6 +419,13 @@ export async function openEditor(id, preloaded) {
           h('div', { class: 'field' }, h('label', {}, T('배경 그림')),
             h('div', { class: 'swatches' },
               WALLPAPERS.map((w) => h('div', { class: `swatch${f.background === w.id ? ' on' : ''}`, title: w.name, style: { background: wpCss(w) }, onclick: () => setBg(w.id) }, h('small', {}, w.name))),
+              extensionItems('backgrounds').map((b) => {
+                const on = b.kind === 'image' ? f.background === 'image' && f.image === b.image
+                  : f.background === 'custom' && JSON.stringify(f.custom) === JSON.stringify(b.kind === 'gradient' ? { kind: 'gradient', stops: b.stops, angle: b.angle } : { kind: 'blobs', base: b.base, blobs: b.blobs });
+                const css = b.kind === 'image' ? `center / cover url("${platform.mediaUrl(null, b.image)}")`
+                  : b.kind === 'gradient' ? `linear-gradient(${b.angle}deg, ${b.stops.join(', ')})` : wpCss(b);
+                return h('div', { class: `swatch${on ? ' on' : ''}`, title: T('{0} ({1}에서)', b.name, b.from), style: { background: css }, onclick: () => { applyBackground(f, b); markDirty(); drawPanel(); } }, h('small', {}, b.name));
+              }),
               (ed.wallpapers || []).map((p) => h('div', { class: `swatch${f.background === 'image' && f.image === p ? ' on' : ''}`, title: p.split('/').pop(), style: { background: `center / cover url("${platform.mediaUrl(null, p)}")` }, onclick: () => setBg('image', p) })),
               h('div', { class: `swatch${ownImage ? ' on' : ''}`, title: T('내 컴퓨터의 그림을 배경으로'), style: { background: ownImage ? `center / cover url("${url(f.image)}")` : '#21262d', border: '1px dashed rgba(255,255,255,0.28)', display: 'grid', placeItems: 'center', fontSize: '16px', paddingBottom: '14px', color: 'rgba(244,244,245,0.7)' }, onclick: async () => {
                 const picked = await platform.importAsset(project.id, 'image', 'bg');
@@ -580,6 +597,7 @@ export async function openEditor(id, preloaded) {
             rangeField(T('효과 길이'), c.clickDur ?? 0.65, 0.3, 1.5, 0.05, (v) => { c.clickDur = v; markDirty(); }, (v) => T('{0}초', v.toFixed(2))),
             rangeField(T('효과 진하기'), c.clickOpacity ?? 1, 0.1, 1, 0.05, (v) => { c.clickOpacity = v; markDirty(); }, (v) => `${Math.round(v * 100)}%`),
           ] : null,
+          extRow(T('확장 클릭 효과'), extensionItems('clickEffects'), (it) => { Object.assign(c, it.values); c.clicks = true; }),
           inlineSwitch(T('커서 주변 강조'), c.highlight, (v) => { c.highlight = v; markDirty(); }),
           inlineSwitch(T('휠을 굴릴 때 표시'), c.scrolls !== false, (v) => { c.scrolls = v; markDirty(); }),
           colorField(T('효과 색'), c.color, (v) => { c.color = v; markDirty(); }),
@@ -590,7 +608,9 @@ export async function openEditor(id, preloaded) {
             c.show ? [
               project.cursorHidden ? null : h('div', { class: 'hint' }, T('녹화된 실제 커서 위에 겹쳐 그립니다. 실제 커서는 지워지지 않아서 "부드럽게"를 높이면 두 커서가 잠깐 떨어져 보일 수 있습니다.')),
               segField(T('모양'), c.style || 'arrow', CURSOR_STYLES, (v) => { c.style = v; markDirty(); drawPanel(); }, 3),
-              CURSOR_STYLES.find((x) => x.id === (c.style || 'arrow'))?.pack ? inlineSwitch(T('녹화된 커서 종류 따라가기'), c.followKind !== false, (v) => { c.followKind = v; markDirty(); }, kindNote()) : null,
+              c.style === 'custom' ? h('div', { class: 'hint' }, T('확장 커서 묶음 "{0}"을 쓰는 중입니다. 위에서 다른 모양을 고르면 바뀝니다.', c.lookName || '')) : null,
+              extRow(T('확장 커서 묶음'), extensionItems('cursorPacks'), (it) => { c.style = 'custom'; c.look = { ...it.look }; c.lookName = it.name; }),
+              c.style === 'custom' || CURSOR_STYLES.find((x) => x.id === (c.style || 'arrow'))?.pack ? inlineSwitch(T('녹화된 커서 종류 따라가기'), c.followKind !== false, (v) => { c.followKind = v; markDirty(); }, kindNote()) : null,
               rangeField(T('크기'), c.size, 0.8, 4, 0.1, (v) => { c.size = v; markDirty(); }, (v) => `${v.toFixed(1)}×`),
               segField(T('움직임'), c.motion || 'legacy', [...(c.motion ? [] : [{ id: 'legacy', name: T('예전 방식') }]), ...MOTION_PRESETS], (v) => { c.motion = v === 'legacy' ? null : v; markDirty(); drawPanel(); }, 3),
               !c.motion ? rangeField(T('부드럽게'), c.smoothing, 0, 1, 0.05, (v) => { c.smoothing = v; markDirty(); }, (v) => `${Math.round(v * 100)}%`) : null,
@@ -754,6 +774,7 @@ export async function openEditor(id, preloaded) {
       h('div', { class: 'section' },
         h('h3', {}, T('자막 모양')),
         inlineSwitch(T('영상에 자막 넣기'), s.subtitles.enabled, (v) => { s.subtitles.enabled = v; markDirty(); }),
+        extRow(T('확장 자막 스타일'), extensionItems('subtitleStyles'), (it) => { Object.assign(s.subtitles, it.values); }),
         segField(T('스타일'), s.subtitles.style, SUBTITLE_STYLES, (v) => { s.subtitles.style = v; markDirty(); drawPanel(); }, 4),
         ['karaoke', 'pop'].includes(s.subtitles.style) ? h('div', { class: 'hint' }, T('말하는 낱말을 강조합니다. 낱말 시간은 문장 길이로 나눠 어림합니다.')) : null,
         segField(T('위치'), s.subtitles.position, [{ id: 'bottom', name: T('아래') }, { id: 'middle', name: T('가운데') }, { id: 'top', name: T('위') }], (v) => { s.subtitles.position = v; markDirty(); }),
