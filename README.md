@@ -84,7 +84,7 @@ KeyCast Studio has to see the keys you press to show them in the video, so pleas
 
 <p align="center"><img src="docs/readme/size.en.svg" width="100%" alt="Smaller download in v1.2"></p>
 
-**Needs:** Windows 10 or 11, 64-bit
+**Needs:** Windows 10 or 11 (64-bit), macOS 11 or later (Apple silicon or Intel), or 64-bit Linux with X11. The macOS and Linux versions are new in 2.0 and have only been checked automatically so far: [test reports](https://github.com/dominkang90/keycast-studio/issues/new?template=test_report.yml) are very welcome.
 
 From the [latest release](https://github.com/dominkang90/keycast-studio/releases/latest):
 
@@ -94,6 +94,10 @@ From the [latest release](https://github.com/dominkang90/keycast-studio/releases
 | KeyCast-Studio-Portable-x.y.z.exe | One file, nothing to install: just run it. FFmpeg included. Starts a few seconds slower because it unpacks itself first |
 
 > Windows may show **Windows protected your PC** the first time. Choose **More info → Run anyway**. The app is not code-signed yet, which is why the warning appears. Compare the file with the SHA-256 and VirusTotal links on the release page if you want to be sure.
+
+**macOS:** `KeyCast-Studio-x.y.z-mac-arm64.dmg` (Apple silicon) or `-mac-x64.dmg` (Intel). Drag the app to Applications. The app is not notarized yet, so the first time **right-click it → Open → Open** (or run `xattr -cr "/Applications/KeyCast Studio.app"`). Then allow **Accessibility** (to see keys) and **Screen Recording** in System Settings → Privacy & Security; the app has a button that opens both. For recording without the pointer install FFmpeg: `brew install ffmpeg`. Recording the computer's sound is Windows only.
+
+**Linux:** `KeyCast-Studio-x.y.z-linux-x86_64.AppImage` (make it executable and run it) or `KeyCast-Studio-x.y.z-linux-amd64.deb` (`sudo apt install ./KeyCast-Studio-*.deb`). Keys, clicks and recording without the pointer need an **X11** session; under Wayland only the screen itself can be recorded. For recording without the pointer: `sudo apt install ffmpeg`.
 
 The first time you make subtitles, the speech model (about 40 MB to 600 MB, depending on the accuracy you choose) is downloaded from Hugging Face.
 

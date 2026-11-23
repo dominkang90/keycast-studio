@@ -821,6 +821,8 @@ function smokeTest(win, file) {
           title: document.title,
           buttons: document.querySelectorAll('button').length,
         })`);
+        // Written before each step, so a crash still shows how far it got.
+        try { fs.writeFileSync(file, JSON.stringify({ ok: false, stage: 'page drawn', page }, null, 2)); } catch { /* ignore */ }
         const sources = await desktopCapturer.getSources({ types: ['screen'], thumbnailSize: { width: 1, height: 1 } }).then((s) => s.length, (e) => `error: ${e.message}`);
         clearTimeout(timer);
         finish({

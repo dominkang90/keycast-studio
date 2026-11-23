@@ -28,10 +28,19 @@ jobs:
       - name: Build (Apple silicon and Intel)
         run: npm run dist:mac
       - name: Smoke test (Apple silicon)
+        env:
+          ELECTRON_ENABLE_LOGGING: "1"
         run: |
           app="release/dist/mac-arm64/KeyCast Studio.app/Contents/MacOS/KeyCast Studio"
-          KEYCAST_SMOKE="$PWD/smoke-mac.json" "$app" --user-data-dir="$RUNNER_TEMP/kc-profile"
-          cat smoke-mac.json
+          code=0
+          KEYCAST_SMOKE="$PWD/smoke-mac.json" "$app" --user-data-dir="$RUNNER_TEMP/kc-profile" || code=$?
+          cat smoke-mac.json || true
+          if [ "$code" != "0" ]; then
+            ls -t ~/Library/Logs/DiagnosticReports 2>/dev/null | head -3
+            f=$(ls -t ~/Library/Logs/DiagnosticReports/*KeyCast* 2>/dev/null | head -1)
+            [ -n "$f" ] && head -120 "$f"
+            exit "$code"
+          fi
       - uses: actions/upload-artifact@v4
         with:
           name: mac

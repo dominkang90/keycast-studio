@@ -85,7 +85,7 @@
 
 <p align="center"><img src="docs/readme/size.ko.svg" width="100%" alt="v1.2에서 더 가벼워진 설치 파일"></p>
 
-**필요한 것:** Windows 10 또는 11 (64비트)
+**필요한 것:** Windows 10·11 (64비트), macOS 11 이상(Apple 실리콘·Intel), 또는 X11을 쓰는 64비트 Linux. 맥·리눅스판은 2.0에서 처음 나왔고 아직 자동 검사만 거쳤습니다. 써 보시면 [테스트 결과](https://github.com/dominkang90/keycast-studio/issues/new?template=test_report.yml)를 꼭 알려 주세요.
 
 [최신 릴리즈](https://github.com/dominkang90/keycast-studio/releases/latest)에서 받으세요.
 
@@ -95,6 +95,10 @@
 | KeyCast-Studio-Portable-x.y.z.exe | 파일 하나, 설치 없이 바로 실행. FFmpeg 포함. 실행할 때마다 먼저 풀어서 몇 초 늦게 열립니다 |
 
 > 처음 실행할 때 **Windows의 PC 보호** 창이 뜨면 **추가 정보 → 실행**을 누르세요. 아직 코드 서명 인증서가 없어서 나오는 안내입니다. 릴리즈 페이지의 SHA-256 값과 VirusTotal 결과로 파일을 확인할 수 있습니다.
+
+**macOS:** `KeyCast-Studio-x.y.z-mac-arm64.dmg`(Apple 실리콘) 또는 `-mac-x64.dmg`(Intel)를 받아 앱을 응용 프로그램 폴더로 끌어 넣습니다. 아직 Apple 공증을 받지 않아 처음에는 **앱을 마우스 오른쪽 버튼 → 열기 → 열기**로 실행하세요(또는 `xattr -cr "/Applications/KeyCast Studio.app"`). 그다음 시스템 설정 → 개인정보 보호 및 보안에서 **손쉬운 사용**(키 기록)과 **화면 기록**을 허용합니다. 앱의 **권한 설정 열기** 버튼이 이 화면을 열어 줍니다. 커서 숨김 녹화에는 FFmpeg가 필요합니다: `brew install ffmpeg`. 컴퓨터 소리 녹음은 Windows에서만 됩니다.
+
+**Linux:** `KeyCast-Studio-x.y.z-linux-x86_64.AppImage`(실행 권한을 주고 실행) 또는 `KeyCast-Studio-x.y.z-linux-amd64.deb`(`sudo apt install ./KeyCast-Studio-*.deb`). 키·클릭 기록과 커서 숨김 녹화는 **X11** 세션에서만 됩니다. Wayland에서는 화면만 녹화됩니다. 커서 숨김 녹화: `sudo apt install ffmpeg`.
 
 자막을 처음 만들 때 음성 인식 모델(정확도에 따라 약 40MB~600MB)을 Hugging Face에서 한 번 내려받습니다.
 
