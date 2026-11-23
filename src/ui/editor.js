@@ -3,7 +3,7 @@
 import { platform, isDesktop } from '../lib/platform.js';
 import { buildKeyGroups, KEY_DEFAULTS } from '../lib/keys.js';
 import { clicksOf, CursorTrack, autoZoomRegions, newId } from '../lib/zoom.js';
-import { renderFrame, projectOutputSize, BACKGROUNDS, WALLPAPERS, CURSOR_STYLES, CLICK_EFFECTS, NOTE_TYPES, defaultSettings, newNote, noteRect } from '../lib/compositor.js';
+import { renderFrame, projectOutputSize, BACKGROUNDS, WALLPAPERS, CURSOR_STYLES, CLICK_EFFECTS, MOTION_PRESETS, NOTE_TYPES, defaultSettings, newNote, noteRect } from '../lib/compositor.js';
 import { Timeline, fmt, listOfKind } from '../lib/timeline.js';
 import { transcribe, MODELS, LANGUAGES } from '../lib/transcribe.js';
 import { toSRT, SUBTITLE_STYLES } from '../lib/subtitles.js';
@@ -28,7 +28,10 @@ export function derive(project) {
 
 export function migrate(project) {
   const d = defaultSettings();
+  // Projects from before v1.3 keep their averaging smoothing instead of the new spring.
+  const oldCursor = project.settings?.cursor && !('motion' in project.settings.cursor);
   project.settings = project.settings || d;
+  if (oldCursor) project.settings.cursor.motion = null;
   for (const k of Object.keys(d)) project.settings[k] = { ...d[k], ...(project.settings[k] || {}) };
   project.settings.keys.custom = { ...KEY_DEFAULTS.custom, ...(project.settings.keys.custom || {}) };
   project.settings.frame.crop = { x: 0, y: 0, w: 1, h: 1, ...(project.settings.frame.crop || {}) };
@@ -563,6 +566,10 @@ export async function openEditor(id, preloaded) {
       },
       cursor: () => {
         const c = s.cursor;
+        const kindNote = () => {
+          const kinds = new Set((ed.derived.cursor.kinds || []).map((k) => k.kind));
+          return kinds.size ? T('이 녹화에 기록된 커서 종류 {0}개', kinds.size) : T('이 녹화에는 커서 종류 기록이 없어 화살표로 그립니다');
+        };
         return [
           h('h3', {}, T('커서와 클릭')),
           !ed.derived.cursor.available ? h('div', { class: 'hint warn' }, T('이 녹화에는 마우스 위치 기록이 없어 커서와 클릭 효과를 그릴 수 없습니다 (전체 화면 녹화에서 사용 가능).')) : null,
@@ -571,6 +578,7 @@ export async function openEditor(id, preloaded) {
             segField(T('효과 모양'), c.effect || 'ripple', CLICK_EFFECTS.filter((x) => x.id !== 'none'), (v) => { c.effect = v; markDirty(); }, 4),
             rangeField(T('효과 크기'), c.clickSize ?? 1, 0.5, 2.5, 0.05, (v) => { c.clickSize = v; markDirty(); }, (v) => `${Math.round(v * 100)}%`),
             rangeField(T('효과 길이'), c.clickDur ?? 0.65, 0.3, 1.5, 0.05, (v) => { c.clickDur = v; markDirty(); }, (v) => T('{0}초', v.toFixed(2))),
+            rangeField(T('효과 진하기'), c.clickOpacity ?? 1, 0.1, 1, 0.05, (v) => { c.clickOpacity = v; markDirty(); }, (v) => `${Math.round(v * 100)}%`),
           ] : null,
           inlineSwitch(T('커서 주변 강조'), c.highlight, (v) => { c.highlight = v; markDirty(); }),
           inlineSwitch(T('휠을 굴릴 때 표시'), c.scrolls !== false, (v) => { c.scrolls = v; markDirty(); }),
@@ -581,13 +589,22 @@ export async function openEditor(id, preloaded) {
             inlineSwitch(project.cursorHidden ? T('커서 그리기') : T('커서를 크게 다시 그리기'), c.show, (v) => { c.show = v; markDirty(); drawPanel(); }),
             c.show ? [
               project.cursorHidden ? null : h('div', { class: 'hint' }, T('녹화된 실제 커서 위에 겹쳐 그립니다. 실제 커서는 지워지지 않아서 "부드럽게"를 높이면 두 커서가 잠깐 떨어져 보일 수 있습니다.')),
-              segField(T('모양'), c.style || 'arrow', CURSOR_STYLES, (v) => { c.style = v; markDirty(); }, 4),
+              segField(T('모양'), c.style || 'arrow', CURSOR_STYLES, (v) => { c.style = v; markDirty(); drawPanel(); }, 3),
+              CURSOR_STYLES.find((x) => x.id === (c.style || 'arrow'))?.pack ? inlineSwitch(T('녹화된 커서 종류 따라가기'), c.followKind !== false, (v) => { c.followKind = v; markDirty(); }, kindNote()) : null,
               rangeField(T('크기'), c.size, 0.8, 4, 0.1, (v) => { c.size = v; markDirty(); }, (v) => `${v.toFixed(1)}×`),
-              rangeField(T('부드럽게'), c.smoothing, 0, 1, 0.05, (v) => { c.smoothing = v; markDirty(); }, (v) => `${Math.round(v * 100)}%`),
+              segField(T('움직임'), c.motion || 'legacy', [...(c.motion ? [] : [{ id: 'legacy', name: T('예전 방식') }]), ...MOTION_PRESETS], (v) => { c.motion = v === 'legacy' ? null : v; markDirty(); drawPanel(); }, 3),
+              !c.motion ? rangeField(T('부드럽게'), c.smoothing, 0, 1, 0.05, (v) => { c.smoothing = v; markDirty(); }, (v) => `${Math.round(v * 100)}%`) : null,
+              c.motion === 'custom' ? [
+                rangeField(T('스프링 세기'), c.springStiffness ?? 1, 0.2, 4, 0.05, (v) => { c.springStiffness = v; markDirty(); }, (v) => `${v.toFixed(2)}×`),
+                rangeField(T('스프링 감쇠'), c.springDamping ?? 1, 0.2, 3, 0.05, (v) => { c.springDamping = v; markDirty(); }, (v) => `${v.toFixed(2)}×`),
+                rangeField(T('스프링 무게'), c.springMass ?? 1, 0.3, 4, 0.05, (v) => { c.springMass = v; markDirty(); }, (v) => `${v.toFixed(2)}×`),
+              ] : null,
               rangeField(T('빠르게 움직일 때 잔상'), c.motionBlur, 0, 1, 0.05, (v) => { c.motionBlur = v; markDirty(); }, (v) => `${Math.round(v * 100)}%`),
               rangeField(T('클릭할 때 눌리는 정도'), c.bounce, 0, 1, 0.05, (v) => { c.bounce = v; markDirty(); }, (v) => `${Math.round(v * 100)}%`),
+              c.bounce > 0 ? rangeField(T('눌림 속도'), c.bounceDur ?? 0.28, 0.12, 0.8, 0.02, (v) => { c.bounceDur = v; markDirty(); }, (v) => T('{0}초', v.toFixed(2))) : null,
               rangeField(T('움직이는 쪽으로 기울기'), c.sway, 0, 1, 0.05, (v) => { c.sway = v; markDirty(); }, (v) => `${Math.round(v * 100)}%`),
               rangeField(T('멈춰 있으면 숨기기'), c.idleHide || 0, 0, 5, 0.5, (v) => { c.idleHide = v; markDirty(); }, (v) => (v ? T('{0}초 뒤', v) : T('안 숨김'))),
+              inlineSwitch(T('실제 커서가 숨으면 같이 숨기기'), c.hideWhenHidden !== false, (v) => { c.hideWhenHidden = v; markDirty(); }, T('글자를 칠 때나 동영상을 볼 때처럼 Windows가 커서를 감출 때')),
               inlineSwitch(T('끝날 때 처음 위치로 돌아가기'), c.loop, (v) => { c.loop = v; markDirty(); }, T('반복 재생하는 영상·GIF가 매끄럽게 이어집니다')),
             ] : null),
         ];

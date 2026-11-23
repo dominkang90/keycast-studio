@@ -43,6 +43,66 @@ export class CursorTrack {
       .filter((e) => (e.type === 'mm' || e.type === 'md' || e.type === 'mu') && e.x !== null && e.x !== undefined)
       .map((e) => ({ t: e.t, x: e.x, y: e.y }))
       .sort((a, b) => a.t - b.t);
+    // Pointer kind changes ('ct' events): arrow, pointer, text, …
+    this.kinds = events.filter((e) => e.type === 'ct' && e.cursor).map((e) => ({ t: e.t, kind: e.cursor })).sort((a, b) => a.t - b.t);
+    this.springs = new Map();
+  }
+
+  /** Pointer kind shown at time t ('arrow' when the recording has none). */
+  kindAt(t) {
+    const k = this.kinds;
+    if (!k.length || t < k[0].t) return k.length && k[0].t < 0.5 ? k[0].kind : 'arrow';
+    let lo = 0;
+    let hi = k.length - 1;
+    while (lo < hi) {
+      const mid = (lo + hi + 1) >> 1;
+      if (k[mid].t <= t) lo = mid; else hi = mid - 1;
+    }
+    return k[lo].kind;
+  }
+
+  /**
+   * Position at t of a pointer pulled toward the recorded one by a spring.
+   * The whole path is simulated once per set of values (240 steps a second) and then looked up,
+   * so preview, seeking and export always agree.
+   * @param {{stiffness:number,damping:number,mass:number}} sp
+   */
+  springAt(t, sp) {
+    if (!this.points.length) return null;
+    const key = `${sp.stiffness}|${sp.damping}|${sp.mass}`;
+    let path = this.springs.get(key);
+    if (!path) {
+      const rate = 240;
+      const end = this.points[this.points.length - 1].t + 2;
+      const n = Math.max(2, Math.ceil(end * rate) + 1);
+      const xs = new Float32Array(n);
+      const ys = new Float32Array(n);
+      const p0 = this.at(0);
+      let x = p0.x;
+      let y = p0.y;
+      let vx = 0;
+      let vy = 0;
+      const dt = 1 / rate;
+      const m = Math.max(0.1, sp.mass);
+      for (let i = 0; i < n; i++) {
+        const target = this.at(i * dt);
+        // Semi-implicit Euler: stable for these stiffness values at 240 Hz.
+        vx += ((sp.stiffness * (target.x - x) - sp.damping * vx) / m) * dt;
+        vy += ((sp.stiffness * (target.y - y) - sp.damping * vy) / m) * dt;
+        x += vx * dt;
+        y += vy * dt;
+        xs[i] = x;
+        ys[i] = y;
+      }
+      path = { rate, xs, ys };
+      if (this.springs.size > 6) this.springs.clear();
+      this.springs.set(key, path);
+    }
+    const f = Math.max(0, Math.min(path.xs.length - 1, t * path.rate));
+    const i = Math.floor(f);
+    const j = Math.min(path.xs.length - 1, i + 1);
+    const k = f - i;
+    return { x: path.xs[i] + (path.xs[j] - path.xs[i]) * k, y: path.ys[i] + (path.ys[j] - path.ys[i]) * k };
   }
 
   get available() {

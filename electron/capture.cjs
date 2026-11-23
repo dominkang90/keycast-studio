@@ -1,5 +1,6 @@
-// Screen capture through ffmpeg (Windows desktop duplication). Unlike the browser's own
-// capture it can leave the mouse pointer out, so the editor can draw a nicer one instead.
+// Screen capture without the mouse pointer, so the editor can draw a nicer one instead.
+// Preferred: wgc-capture.exe (Windows Graphics Capture with hardware H.264, from Recordly, see
+// scripts/bundle-wgc.cjs). Fallback: ffmpeg's gfxcapture filter (the same Windows API).
 // A recording is made of segments (one per stretch between pauses); each is later joined
 // with its sound and all of them are put together into one file.
 const { spawn, spawnSync } = require('child_process');
@@ -23,6 +24,21 @@ function ffmpegPath() {
   return cached;
 }
 
+/** wgc-capture.exe shipped next to the app, or one named in KEYCAST_WGC_PATH (development). */
+function wgcPath() {
+  if (process.platform !== 'win32') return null;
+  const local = path.join(__dirname, '..', 'bin', 'wgc-capture.exe');
+  if (fs.existsSync(local)) return local;
+  const env = process.env.KEYCAST_WGC_PATH;
+  return env && fs.existsSync(env) ? env : null;
+}
+
+/** Which capture program a recording without the pointer uses: 'wgc', 'ffmpeg' or null. */
+function backend() {
+  if (wgcPath()) return 'wgc';
+  return ffmpegPath() ? 'ffmpeg' : null;
+}
+
 function run(args) {
   return new Promise((resolve, reject) => {
     const p = spawn(ffmpegPath(), ['-y', '-hide_banner', '-loglevel', 'error', ...args], { windowsHide: true });
@@ -36,8 +52,41 @@ function run(args) {
 let cap = null;
 
 /** Starts one segment. Resolves once pictures are really being written. */
-function start({ file, index, fps }) {
+function start(opts) {
   if (cap) return Promise.reject(new Error('capture already running'));
+  return wgcPath() ? startWgc(opts) : startFfmpeg(opts);
+}
+
+function startWgc({ file, fps, display }) {
+  // The monitor is found by its handle (Electron's display id) or else by its bounds in pixels.
+  const config = { outputPath: file, fps, displayId: Number(display?.id) || 0, ...(display?.bounds || {}) };
+  const proc = spawn(wgcPath(), [JSON.stringify(config)], { windowsHide: true });
+  const c = { proc, file, t0: Infinity, out: 0, err: '', closed: null, kind: 'wgc' };
+  cap = c;
+  c.closed = new Promise((resolve) => proc.on('close', resolve));
+  proc.stderr.on('data', (d) => { c.err = (c.err + d).slice(-2000); });
+  return new Promise((resolve, reject) => {
+    const fail = (msg) => { clearTimeout(timer); if (cap === c) cap = null; reject(new Error(msg)); };
+    const timer = setTimeout(() => { abort(); fail(`Screen capture did not start. ${c.err.trim()}`); }, 10000);
+    let text = '';
+    proc.stdout.on('data', (d) => {
+      text += d;
+      // "Recording started" is printed once the first picture has been encoded.
+      if (c.t0 === Infinity && text.includes('Recording started')) {
+        c.t0 = Date.now();
+        clearTimeout(timer);
+        resolve(true);
+      }
+    });
+    proc.on('error', (err) => fail(err.message));
+    proc.on('close', (code) => {
+      if (c.t0 === Infinity) fail(`Screen capture stopped. ${c.err.trim() || `exit ${code}`}`);
+      else if (cap === c && !c.stopping) cap = null;
+    });
+  });
+}
+
+function startFfmpeg({ file, index, fps }) {
   const args = [
     '-y', '-hide_banner', '-loglevel', 'error', '-nostats', '-progress', 'pipe:1', '-stats_period', '0.1',
     // Windows Graphics Capture: full frame rate and no mouse pointer (desktop duplication keeps
@@ -84,11 +133,14 @@ async function stop() {
   const c = cap;
   if (!c) return null;
   c.stopping = true;
-  try { c.proc.stdin.write('q\n'); } catch { /* already gone */ }
+  const stoppedAt = Date.now();
+  try { c.proc.stdin.write(c.kind === 'wgc' ? 'stop\n' : 'q\n'); } catch { /* already gone */ }
   const killer = setTimeout(() => { try { c.proc.kill(); } catch { /* gone */ } }, 8000);
   await c.closed;
   clearTimeout(killer);
   cap = null;
+  // wgc-capture reports no running time: the segment lasts from its first picture to Stop.
+  if (c.kind === 'wgc') c.out = Math.max(0, (stoppedAt - c.t0) / 1000);
   return { t0: c.t0, duration: c.out };
 }
 
@@ -172,4 +224,4 @@ async function finish(dir, segments) {
   return { file: 'screen.mp4', audio, voice, webcam, duration: segments.reduce((sum, s) => sum + s.duration, 0) };
 }
 
-module.exports = { ffmpegPath, start, stop, abort, finish };
+module.exports = { ffmpegPath, wgcPath, backend, start, stop, abort, finish };

@@ -11,6 +11,7 @@ const { Readable } = require('stream');
 const { patchWebmDuration } = require('./webm.cjs');
 const { labelForKey, MODIFIER_NAMES } = require('./keys.cjs');
 const capture = require('./capture.cjs');
+const cursorType = require('./cursor-type.cjs');
 
 let uIOhook = null;
 try {
@@ -296,6 +297,8 @@ function startInput(display, isScreen) {
   input.display = display;
   input.isScreen = isScreen;
   input.running = true;
+  // The kind of pointer (arrow, hand, text…) so the editor can draw the matching shape.
+  cursorType.watch((cursor) => pushEvent({ t: Date.now(), type: 'ct', cursor }));
   if (!uIOhook) return false;
   attachHook();
   try {
@@ -309,6 +312,7 @@ function startInput(display, isScreen) {
 
 function stopInput() {
   input.running = false;
+  cursorType.stop();
   if (uIOhook) {
     try { uIOhook.stop(); } catch { /* already stopped */ }
   }
@@ -418,12 +422,18 @@ function registerIpc() {
     mediaRoot: MEDIA_ROOT,
     inputHook: !!uIOhook,
     ffmpeg: !!capture.ffmpegPath(),
+    captureBackend: capture.backend(),
   }));
 
   // Screen capture through ffmpeg, which can leave the mouse pointer out of the picture.
   ipcMain.handle('capture:start', (_e, opts) => {
-    const index = Math.max(0, screen.getAllDisplays().findIndex((d) => String(d.id) === String(opts.displayId)));
-    return capture.start({ file: path.join(projectDir(opts.projectId), safeName(opts.name)), index, fps: opts.fps || 60 });
+    const displays = screen.getAllDisplays();
+    const index = Math.max(0, displays.findIndex((d) => String(d.id) === String(opts.displayId)));
+    const d = displays[index];
+    // Bounds in real pixels: how wgc-capture finds the monitor when the id does not match.
+    const px = (v) => Math.round(v * d.scaleFactor);
+    const display = { id: d.id, bounds: { displayX: px(d.bounds.x), displayY: px(d.bounds.y), displayW: px(d.bounds.width), displayH: px(d.bounds.height) } };
+    return capture.start({ file: path.join(projectDir(opts.projectId), safeName(opts.name)), index, display, fps: opts.fps || 60 });
   });
   ipcMain.handle('capture:stop', () => capture.stop());
   ipcMain.handle('capture:abort', () => capture.abort());
@@ -500,8 +510,35 @@ function registerIpc() {
     const id = await newProjectDir();
     const file = `screen${path.extname(src).toLowerCase()}`;
     await fsp.copyFile(src, path.join(MEDIA_ROOT, id, file));
-    return { id, file, label: path.basename(src) };
+    return { id, file, label: path.basename(src), events: await pointerFileEvents(src) };
   });
+
+  /**
+   * Pointer movements, clicks and pointer kinds saved next to a recording by another recorder
+   * (Recordly writes <video>.cursor.json), turned into KeyCast events. Empty when there is none.
+   */
+  async function pointerFileEvents(video) {
+    let json;
+    try { json = JSON.parse(await fsp.readFile(`${video}.cursor.json`, 'utf8')); } catch { return []; }
+    const samples = Array.isArray(json?.samples) ? json.samples : [];
+    const events = [];
+    let kind = null;
+    for (const s of samples) {
+      const t = Number(s.timeMs) / 1000;
+      const x = Number(s.cx);
+      const y = Number(s.cy);
+      if (!Number.isFinite(t) || !Number.isFinite(x) || !Number.isFinite(y)) continue;
+      const at = { t: Math.round(t * 1000) / 1000, x: Math.min(1, Math.max(0, x)), y: Math.min(1, Math.max(0, y)) };
+      if (typeof s.cursorType === 'string' && s.cursorType !== kind) {
+        kind = s.cursorType;
+        events.push({ t: at.t, type: 'ct', cursor: kind });
+      }
+      if (s.interactionType === 'click') events.push({ ...at, type: 'md', button: 1 });
+      else if (s.interactionType === 'mouseup') events.push({ ...at, type: 'mu', button: 1 });
+      else events.push({ ...at, type: 'mm' });
+    }
+    return events;
+  }
 
   // Copy a picture, sound or video chosen by the user into the project.
   ipcMain.handle('asset:import', async (_e, { projectId, kind, prefix }) => {

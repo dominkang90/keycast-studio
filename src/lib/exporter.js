@@ -4,7 +4,8 @@ import { Muxer as Mp4Muxer, StreamTarget as Mp4Target } from 'mp4-muxer';
 import { Muxer as WebmMuxer, StreamTarget as WebmTarget } from 'webm-muxer';
 import { GIFEncoder, quantize, applyPalette } from 'gifenc';
 import { renderFrame, projectOutputSize, preloadImages } from './compositor.js';
-import { segments, outDuration, outToSrc, syncAudios } from './timemap.js';
+import { segments, outDuration, outToSrc, srcToOut, syncAudios } from './timemap.js';
+import { Input, UrlSource, ALL_FORMATS, VideoSampleSink, AudioBufferSink } from 'mediabunny';
 import { T } from './i18n.js';
 
 export function exportFormats() {
@@ -56,6 +57,17 @@ export async function exportVideo(o) {
   if (gif) return exportGif(o, { screen, webcam, W, H });
   const audioCtx = new AudioContext();
   const plan = await encodingPlan(o.format, W, H, o.fps, audioCtx.sampleRate).catch(() => null);
+  // Faster than real time: frames are decoded straight from the file and the sound is mixed
+  // offline. Speed changes still use the playback route, which keeps the voice's pitch.
+  if (plan && o.fast !== false && canExportFast(project, screen)) {
+    let fast = null;
+    try { fast = await openFast(o); } catch (err) { console.warn('fast export unavailable:', err); }
+    if (fast) {
+      audioCtx.close().catch(() => {});
+      release(screen, webcam);
+      return exportFast(o, { W, H, plan, ...fast });
+    }
+  }
   if (!plan) {
     // This computer cannot encode frame by frame: record the playback instead (frame rate may vary,
     // and cut-out parts and speed changes are not applied).
@@ -363,6 +375,220 @@ async function exportExact(o, { screen, webcam, W, H, audioCtx, plan }) {
   return o.writer.close(plan.mp4 ? {} : { durationMs: Math.round((total / fps) * 1000) });
 }
 
+// ------------------------------------------------------------------ fast export
+
+// Up to this size the decoded frames draw quickly enough that reading the file beats playing it
+// (11 s at 1920x1200: 6.2 s instead of 11.4 s). Larger recordings, such as 2880x1800, draw too
+// slowly on common graphics chips (22.5 s instead of 11.6 s) and are played back instead.
+const FAST_MAX_PIXELS = 1920 * 1200;
+
+function canExportFast(project, screen) {
+  if (typeof window === 'undefined' || !window.VideoDecoder) return false;
+  if (!(screen.videoWidth * screen.videoHeight <= FAST_MAX_PIXELS)) return false;
+  return segments(project).every((g) => Math.abs(g.speed - 1) < 1e-6);
+}
+
+/** Opens the recording (and webcam) for frame-by-frame reading. Throws if the file cannot be read. */
+async function openFast(o) {
+  const open = async (url) => {
+    const input = new Input({ source: new UrlSource(url), formats: ALL_FORMATS });
+    const video = await input.getPrimaryVideoTrack();
+    if (!video || !(await video.canDecode())) throw new Error('video track cannot be decoded');
+    const audio = await input.getPrimaryAudioTrack();
+    return { input, video, audio: audio && (await audio.canDecode()) ? audio : null };
+  };
+  const screen = await open(o.screenUrl);
+  const webcam = o.webcamUrl && o.project.settings.webcam.enabled ? await open(o.webcamUrl).catch(() => null) : null;
+  return { src: screen, cam: webcam };
+}
+
+/** Mixes the recording's sound and added sound files for the finished video, offline. */
+async function mixAudio(o, segs, total, rate, src) {
+  const { project } = o;
+  const ctx = new OfflineAudioContext(CHANNELS, Math.max(1, Math.ceil(total * rate)), rate);
+  const volume = project.settings.audio?.volume ?? 1;
+  if (src.audio && volume > 0) {
+    const gain = ctx.createGain();
+    gain.gain.value = volume;
+    gain.connect(ctx.destination);
+    const sink = new AudioBufferSink(src.audio);
+    for (const g of segs) {
+      for await (const { buffer, timestamp, duration } of sink.buffers(g.s0, g.s1)) {
+        // Only the part of this piece that falls inside the segment.
+        const from = Math.max(timestamp, g.s0);
+        const to = Math.min(timestamp + duration, g.s1);
+        if (to <= from) continue;
+        const node = ctx.createBufferSource();
+        node.buffer = buffer;
+        node.connect(gain);
+        node.start(g.o0 + (from - g.s0), from - timestamp, to - from);
+      }
+    }
+  }
+  // Added sound files play continuously from where they start on the finished video's timeline.
+  for (const a of project.audios || []) {
+    try {
+      const data = await (await fetch(o.url(a.file))).arrayBuffer();
+      const buffer = await ctx.decodeAudioData(data);
+      const outStart = srcToOut(segs, a.start);
+      const outEnd = Math.min(total, srcToOut(segs, a.end));
+      const offset = a.offset || 0;
+      const len = Math.min(outEnd - outStart, buffer.duration - offset);
+      if (len <= 0) continue;
+      const gain = ctx.createGain();
+      gain.gain.value = Math.min(1, Math.max(0, a.volume ?? 1));
+      gain.connect(ctx.destination);
+      const node = ctx.createBufferSource();
+      node.buffer = buffer;
+      node.connect(gain);
+      node.start(outStart, offset, len);
+    } catch (err) {
+      console.warn('sound file skipped:', a.file, err);
+    }
+  }
+  return ctx.startRendering();
+}
+
+/**
+ * A video encoder setting that really starts on this computer: the graphics card's encoder can
+ * refuse to start (for example while another program holds it), so one frame is tried first and
+ * the software encoder is used when that fails.
+ */
+async function workingVideoConfig(config, W, H) {
+  for (const c of [config, { ...config, hardwareAcceleration: 'prefer-software' }]) {
+    let error = null;
+    const enc = new VideoEncoder({ output: () => {}, error: (e) => { error = e; } });
+    try {
+      enc.configure(c);
+      const canvas = new OffscreenCanvas(W, H);
+      canvas.getContext('2d').fillRect(0, 0, W, H);
+      const frame = new VideoFrame(canvas, { timestamp: 0 });
+      enc.encode(frame, { keyFrame: true });
+      frame.close();
+      await enc.flush();
+    } catch (err) {
+      error = error || err;
+    } finally {
+      try { if (enc.state !== 'closed') enc.close(); } catch { /* closed */ }
+    }
+    if (!error) return c;
+    console.warn('video encoder setting refused:', c.hardwareAcceleration || 'default', error.message);
+  }
+  throw new Error('No video encoder could be started.');
+}
+
+async function exportFast(o, { W, H, plan, src, cam }) {
+  const videoConfig = await workingVideoConfig(plan.video.config, W, H);
+  const { project } = o;
+  const fps = o.fps;
+  const segs = segments(project);
+  const outLen = outDuration(segs);
+  const total = Math.max(1, Math.round(outLen * fps));
+  const canvas = document.createElement('canvas');
+  canvas.width = W;
+  canvas.height = H;
+  const ctx = canvas.getContext('2d', { alpha: false });
+
+  let pending = Promise.resolve();
+  let failure = null;
+  let written = 0;
+  const onData = (data, position) => {
+    if (position !== written) { failure = failure || new Error(T('영상 파일을 순서대로 쓰지 못했습니다.')); return; }
+    written += data.byteLength;
+    const copy = data.slice();
+    pending = pending.then(() => o.writer.write(copy));
+  };
+  const muxer = plan.mp4
+    ? new Mp4Muxer({
+      target: new Mp4Target({ onData }),
+      video: { codec: plan.video.mux, width: W, height: H, frameRate: fps },
+      audio: { codec: plan.audio.mux, numberOfChannels: CHANNELS, sampleRate: plan.audio.config.sampleRate },
+      fastStart: 'fragmented',
+      firstTimestampBehavior: 'offset',
+    })
+    : new WebmMuxer({
+      target: new WebmTarget({ onData }),
+      streaming: true,
+      video: { codec: plan.video.mux, width: W, height: H, frameRate: fps },
+      audio: { codec: plan.audio.mux, numberOfChannels: CHANNELS, sampleRate: plan.audio.config.sampleRate },
+      firstTimestampBehavior: 'offset',
+    });
+  const fail = (err) => { failure = failure || err; };
+  const venc = new VideoEncoder({ output: (chunk, meta) => { try { muxer.addVideoChunk(chunk, meta); } catch (err) { fail(err); } }, error: (e) => fail(new Error(`video encoder: ${e.message}`)) });
+  venc.configure(videoConfig);
+  const aenc = new AudioEncoder({ output: (chunk, meta) => { try { muxer.addAudioChunk(chunk, meta); } catch (err) { fail(err); } }, error: (e) => fail(new Error(`audio encoder: ${e.message}`)) });
+  aenc.configure(plan.audio.config);
+
+  const cancelled = () => !!o.signal?.aborted;
+  const camOff = project.offsets?.webcam || 0;
+  try {
+    // ---- sound first (small), so the encoder can interleave it with the picture
+    const rate = plan.audio.config.sampleRate;
+    const mixed = await mixAudio(o, segs, outLen, rate, src);
+    const step = rate; // one second per piece
+    for (let i = 0; i < mixed.length; i += step) {
+      const n = Math.min(step, mixed.length - i);
+      const buf = new Float32Array(n * CHANNELS);
+      for (let c = 0; c < CHANNELS; c++) buf.set(mixed.getChannelData(Math.min(c, mixed.numberOfChannels - 1)).subarray(i, i + n), c * n);
+      const data = new AudioData({ format: 'f32-planar', sampleRate: rate, numberOfFrames: n, numberOfChannels: CHANNELS, timestamp: Math.round((i / rate) * 1e6), data: buf });
+      aenc.encode(data);
+      data.close();
+    }
+
+    // ---- picture: the frame shown at each output time, read in order from the file
+    const times = function* (offset) { for (let s = 0; s < total; s++) yield Math.max(0, outToSrc(segs, s / fps) - offset); };
+    const screens = new VideoSampleSink(src.video).samplesAtTimestamps(times(0));
+    const cams = cam ? new VideoSampleSink(cam.video).samplesAtTimestamps(times(camOff)) : null;
+    const keyEvery = Math.max(1, Math.round(fps * 2));
+    const frameUs = 1e6 / fps;
+    let lastScreen = null;
+    let lastCam = null;
+    for (let slot = 0; slot < total; slot++) {
+      if (cancelled()) break;
+      if (failure) throw failure;
+      const s = (await screens.next()).value;
+      if (s) { lastScreen?.close(); lastScreen = s.toVideoFrame(); s.close(); }
+      if (cams) {
+        const c = (await cams.next()).value;
+        if (c) { lastCam?.close(); lastCam = c.toVideoFrame(); c.close(); }
+      }
+      renderFrame(ctx, { W, H, t: outToSrc(segs, slot / fps), screen: lastScreen, webcam: lastCam, project, derived: o.derived, burnSubtitles: o.burnSubtitles, url: o.url });
+      const frame = new VideoFrame(canvas, { timestamp: Math.round(slot * frameUs), duration: Math.round(frameUs) });
+      venc.encode(frame, { keyFrame: slot % keyEvery === 0 });
+      frame.close();
+      // Let the encoder keep up instead of queueing every frame in memory.
+      while (venc.encodeQueueSize > 16) await new Promise((r) => setTimeout(r, 1));
+      if (slot % 4 === 0) o.onProgress?.(slot / total);
+    }
+    lastScreen?.close();
+    lastCam?.close();
+    await screens.return?.();
+    await cams?.return?.();
+    if (cancelled()) {
+      await pending.catch(() => {});
+      await o.writer.abort();
+      return null;
+    }
+    await venc.flush();
+    await aenc.flush();
+    if (failure) throw failure;
+    muxer.finalize();
+    if (failure) throw failure;
+    await pending;
+    o.onProgress?.(1);
+  } catch (err) {
+    await pending.catch(() => {});
+    await o.writer.abort().catch(() => {});
+    throw err;
+  } finally {
+    try { if (venc.state !== 'closed') venc.close(); } catch { /* closed */ }
+    try { if (aenc.state !== 'closed') aenc.close(); } catch { /* closed */ }
+    src.input.dispose?.();
+    cam?.input.dispose?.();
+  }
+  return o.writer.close(plan.mp4 ? {} : { durationMs: Math.round((total / fps) * 1000) });
+}
+
 /** GIF: every frame is found by seeking (no sound), reduced to 256 colours and written at the end. */
 async function exportGif(o, { screen, webcam, W, H }) {
   const { project } = o;
@@ -509,3 +735,4 @@ async function exportRealtime(o) {
   const durationMs = Math.round((end - start) * 1000);
   return o.writer.close(o.format.ext === 'webm' ? { durationMs } : {});
 }
+

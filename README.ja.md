@@ -158,6 +158,9 @@ npm start
 | [Transformers.js](https://github.com/huggingface/transformers.js) / ONNX Runtime Web | 音声認識（Whisper） | Apache-2.0 / MIT |
 | [mp4-muxer](https://github.com/Vanilagy/mp4-muxer), [webm-muxer](https://github.com/Vanilagy/webm-muxer) | 動画ファイルの作成 | MIT |
 | [gifenc](https://github.com/mattdesl/gifenc) | GIF の作成 | MIT |
+| [mediabunny](https://github.com/Vanilagy/mediabunny) | 高速書き出しのための動画読み込み | MPL-2.0 |
+| [koffi](https://koffi.dev/) | Windows が表示しているポインターの種類の取得 | MIT |
+| [wgc-capture](https://github.com/webadderallorg/Recordly/tree/v1.4.0/electron/native/wgc-capture) ([Recordly](https://github.com/webadderallorg/Recordly)) | Windows Graphics Capture による画面キャプチャ。無改変で同梱し、別プログラムとして実行します | AGPL-3.0 |
 | [FFmpeg](https://ffmpeg.org/) | ポインターなしの画面キャプチャ。インストーラーとポータブル exe に無改変で同梱し、別プログラムとして起動します | GPL-3.0（[ソース](https://ffmpeg.org/download.html)） |
 
 ## ライセンス

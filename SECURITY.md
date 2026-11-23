@@ -6,7 +6,7 @@ KeyCast Studio reads the keyboard and mouse of the whole computer, because that 
 
 - **Only while you record.** The global keyboard and mouse hook starts when a recording begins and stops when it ends (`recording:begin` / `recording:end` in `electron/main.cjs`). The "show keys without recording" mode also starts it, but only draws the keys on screen and never stores them (`pushEvent`, `keysOnly`).
 - **Typing is dropped by default.** While a recording runs, the app holds the key events in memory, as it must to draw them live. When the recording is saved, every key that can type text is removed before anything is written to disk: letters, digits, symbols, the number pad, AltGr characters and any key the app does not know. What stays is modifiers, Ctrl/Alt/Win shortcuts, F-keys, Esc, Enter, Tab, Backspace, the arrow and navigation keys (`keepWithoutTyping` in `src/lib/keys.js`, used in `src/lib/recorder.js`). This is an allowlist, so a key that is not on it is treated as typing. Turning on **타이핑한 글자도 기록** (also record typing) before a recording keeps everything.
-- **Mouse:** clicks, drags, wheel turns and the pointer position (about 60 times a second) during a whole-screen recording. Clicks on the recording bar are ignored.
+- **Mouse:** clicks, drags, wheel turns and the pointer position (about 60 times a second) during a whole-screen recording, and which kind of pointer Windows shows (arrow, hand, text cursor; `electron/cursor-type.cjs`) so the editor can draw the matching shape. Clicks on the recording bar are ignored.
 - **The stop, pause and key-display shortcuts** are removed from the recording.
 - **Screen, sound and camera:** only what you chose on the home screen (screen or window, microphone, computer sound, webcam).
 

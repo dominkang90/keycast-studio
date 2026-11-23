@@ -60,7 +60,7 @@
 - 앞뒤 자르기, 중간 잘라내기, 구간별 속도(0.25×~4×), 되돌리기·다시 하기
 - 글자·화살표·네모·그림 주석, 개인 정보를 흐리게 가리기
 - 배경(색·그라데이션·배경 그림·내 그림), 여백, 둥근 모서리, 그림자, 크롭, 화면 비율(16:9, 9:16, 1:1, 4:3)
-- 커서: 모양 7종, 클릭 효과 4종(물결·겹물결·빛 번짐·터짐)과 크기·길이, 부드럽게, 잔상, 멈춰 있으면 숨기기
+- 커서: 녹화 때 Windows가 보여 준 커서 종류(화살표·손가락·글자 입력·크기 조절 등)를 따라가는 커서 묶음 6종, 스프링 움직임(프리셋 또는 세기·감쇠·무게 직접), 클릭 효과 4종(물결·겹물결·빛 번짐·터짐)과 크기·길이·진하기, 잔상, 멈춰 있으면 숨기기
 - 웹캠 말풍선, 배경 음악·효과음
 
 **자막**
@@ -159,6 +159,9 @@ npm start
 | [Transformers.js](https://github.com/huggingface/transformers.js) / ONNX Runtime Web | 음성 인식(Whisper) | Apache-2.0 / MIT |
 | [mp4-muxer](https://github.com/Vanilagy/mp4-muxer), [webm-muxer](https://github.com/Vanilagy/webm-muxer) | 영상 파일 만들기 | MIT |
 | [gifenc](https://github.com/mattdesl/gifenc) | GIF 만들기 | MIT |
+| [mediabunny](https://github.com/Vanilagy/mediabunny) | 빠른 내보내기용 영상 읽기 | MPL-2.0 |
+| [koffi](https://koffi.dev/) | Windows가 보여 주는 커서 종류 읽기 | MIT |
+| [wgc-capture](https://github.com/webadderallorg/Recordly/tree/v1.4.0/electron/native/wgc-capture) ([Recordly](https://github.com/webadderallorg/Recordly)) | Windows Graphics Capture로 화면 캡처. 고치지 않은 상태로 들어 있고 별도 프로그램으로 실행됩니다 | AGPL-3.0 |
 | [FFmpeg](https://ffmpeg.org/) | 커서 없는 화면 캡처. 설치 파일과 휴대용 exe에 고치지 않은 상태로 들어 있고 별도 프로그램으로 실행됩니다 | GPL-3.0 ([소스](https://ffmpeg.org/download.html)) |
 
 ## 라이선스

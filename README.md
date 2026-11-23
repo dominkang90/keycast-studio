@@ -47,7 +47,7 @@ KeyCast Studio has to see the keys you press to show them in the video, so pleas
 </p>
 
 **Recording**
-- Record the whole screen or one window, with the microphone, the computer's sound and a webcam
+- Record the whole screen or one window, with the microphone, the computer's sound and a webcam; recordings without the pointer use Windows Graphics Capture and start in about half a second
 - Keys, clicks, drags and wheel turns from any program, with their times
 - Leave the real mouse pointer out of the recording and draw a larger, smoother one when editing (FFmpeg included in the installer)
 - Turn the on-screen keys on and off while recording (keyboard button on the recording bar, or `Alt` + `Shift` + `K`)
@@ -59,7 +59,7 @@ KeyCast Studio has to see the keys you press to show them in the video, so pleas
 - Trim the ends, cut out parts in the middle, change speed by range (0.25× to 4×), undo and redo
 - Text, arrow, box and picture notes, and blur to hide private details
 - Backgrounds (colours, gradients, pictures or your own image), padding, rounded corners, shadow, crop, aspect ratio (16:9, 9:16, 1:1, 4:3)
-- Pointer: 7 pointer shapes, 4 click effects (ripple, echo, glow, burst) with size and length, smoothing, motion trail and hiding when still
+- Pointer: 6 cursor packs that follow the pointer kind Windows showed (arrow, hand, text, resize, …), spring motion presets or your own stiffness, damping and mass, 4 click effects (ripple, echo, glow, burst) with size, length and strength, motion trail and hiding when still
 - Webcam bubble, background music and sound effects
 
 **Subtitles**
@@ -158,6 +158,9 @@ The feature set was inspired by [Recordly](https://github.com/webadderallorg/Rec
 | [Transformers.js](https://github.com/huggingface/transformers.js) / ONNX Runtime Web | Speech recognition (Whisper) | Apache-2.0 / MIT |
 | [mp4-muxer](https://github.com/Vanilagy/mp4-muxer), [webm-muxer](https://github.com/Vanilagy/webm-muxer) | Writing video files | MIT |
 | [gifenc](https://github.com/mattdesl/gifenc) | GIF export | MIT |
+| [mediabunny](https://github.com/Vanilagy/mediabunny) | Reading video files for fast export | MPL-2.0 |
+| [koffi](https://koffi.dev/) | Reading which pointer Windows shows | MIT |
+| [wgc-capture](https://github.com/webadderallorg/Recordly/tree/v1.4.0/electron/native/wgc-capture) from [Recordly](https://github.com/webadderallorg/Recordly) | Screen capture with Windows Graphics Capture. Shipped unmodified, started as a separate program | AGPL-3.0 ([source](https://github.com/webadderallorg/Recordly/tree/v1.4.0/electron/native/wgc-capture)) |
 | [FFmpeg](https://ffmpeg.org/) | Recording without the pointer. Shipped unmodified in the installer and the portable exe, started as a separate program | GPL-3.0 ([source](https://ffmpeg.org/download.html)) |
 
 ## License

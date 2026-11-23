@@ -195,6 +195,23 @@ test('word times cover the cue in order; text without spaces is cut', () => {
   assert.equal(given[1].start, 1);
 });
 
+test('pointer spring settles on the target and kinds are looked up by time', () => {
+  const c = new CursorTrack([
+    { t: 0, type: 'mm', x: 0.1, y: 0.1 }, { t: 1, type: 'mm', x: 0.9, y: 0.5 },
+    { t: 0.2, type: 'ct', cursor: 'arrow' }, { t: 1.5, type: 'ct', cursor: 'pointer' }, { t: 3, type: 'ct', cursor: 'text' },
+  ]);
+  const sp = { stiffness: 170, damping: 26, mass: 1 };
+  const mid = c.springAt(1, sp);
+  assert.ok(mid.x < c.at(1).x, 'the spring lags behind a moving pointer');
+  const end = c.springAt(2.5, sp);
+  assert.ok(Math.abs(end.x - 0.9) < 0.01 && Math.abs(end.y - 0.5) < 0.01, 'and settles where it stopped');
+  assert.deepEqual(c.springAt(1, sp), mid, 'the same answer every time (export = preview)');
+  assert.equal(c.kindAt(0.1), 'arrow');
+  assert.equal(c.kindAt(2), 'pointer');
+  assert.equal(c.kindAt(9), 'text');
+  assert.equal(new CursorTrack([]).kindAt(1), 'arrow');
+});
+
 test('pointer rest time', () => {
   const c = new CursorTrack([{ t: 1, type: 'mm', x: 0.1, y: 0.1 }, { t: 2, type: 'mm', x: 0.2, y: 0.2 }]);
   assert.equal(c.idleFor(0.5), 0);

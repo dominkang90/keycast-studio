@@ -313,13 +313,23 @@ export class Recorder {
       const duration = durationMs / 1000;
       const events = [];
       const recordTyping = !!this.opts.recordTyping;
+      let kindBefore = null;
       for (const ev of rawEvents) {
         if (!recordTyping && !keepWithoutTyping(ev)) continue;
-        const t = this.toProjectTime(ev.t);
+        let t = this.toProjectTime(ev.t);
+        // The pointer kind shown when the picture starts is reported a moment earlier: keep the
+        // latest one from before the start, at the very beginning.
+        if (t === null && ev.type === 'ct' && !events.length) { kindBefore = ev; continue; }
+        if (kindBefore && t !== null) {
+          if (ev.type !== 'ct' || t > 0) events.push({ type: 'ct', cursor: kindBefore.cursor, t: 0 });
+          kindBefore = null;
+        }
         if (t === null || t > duration) continue;
+        if (t < 0) t = 0;
         const { t: _drop, ...rest } = ev;
         events.push({ ...rest, t: Math.round(t * 1000) / 1000 });
       }
+      if (kindBefore) events.push({ type: 'ct', cursor: kindBefore.cursor, t: 0 });
       events.sort((a, b) => a.t - b.t);
       const createdAt = new Date().toISOString();
       // Start from the look used last time, so a style only has to be set up once.

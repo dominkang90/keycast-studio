@@ -5,6 +5,7 @@
 import { visibleGroups, KEY_DEFAULTS, isModifier } from './keys.js';
 import { cameraAt, viewRect } from './zoom.js';
 import { cueAt, cueWords, lineLimit, SUBTITLE_DEFAULTS } from './subtitles.js';
+import { CURSOR_STYLES, cursorShape, isCentred } from './cursors.js';
 import { T } from './i18n.js';
 
 export const FONT = '"Segoe UI", "Malgun Gothic", "Apple SD Gothic Neo", "Noto Sans KR", system-ui, sans-serif';
@@ -42,8 +43,9 @@ export function defaultSettings() {
     frame: { aspect: '16:9', background: 'aurora', image: null, blur: 0, padding: 7, radius: 14, shadow: true, shadowSize: 1, crop: { ...FULL_CROP } },
     zoom: { enabled: true, scale: 1.8, follow: true, ramp: 0.55 },
     cursor: {
-      clicks: true, effect: 'ripple', clickSize: 1, clickDur: 0.65, highlight: false, color: '#ffd33d', scrolls: true,
-      show: false, style: 'arrow', size: 1.6, smoothing: 0.25, motionBlur: 0.3, bounce: 0.5, sway: 0.3, loop: false, idleHide: 0,
+      clicks: true, effect: 'ripple', clickSize: 1, clickDur: 0.65, clickOpacity: 1, highlight: false, color: '#ffd33d', scrolls: true,
+      show: false, style: 'arrow', size: 1.6, smoothing: 0.25, motionBlur: 0.3, bounce: 0.5, bounceDur: 0.28, sway: 0.3, loop: false, idleHide: 0,
+      motion: 'smooth', springStiffness: 1, springDamping: 1, springMass: 1, followKind: true, hideWhenHidden: true,
     },
     keys: { ...KEY_DEFAULTS, custom: { ...KEY_DEFAULTS.custom } },
     webcam: { enabled: true, position: 'bottom-left', x: 0.9, y: 0.9, size: 22, mirror: true, margin: 28, roundness: 100, shadow: 0.45, reactToZoom: false },
@@ -128,6 +130,7 @@ export async function preloadImages(project, url) {
 
 // ------------------------------------------------------------------ background
 const bgCache = new Map();
+const shadowCache = new Map();
 
 function paintBackground(ctx, W, H, frame, img) {
   const bg = frame.background;
@@ -210,22 +213,34 @@ function drawScreen(ctx, video, rect, view, frame, scaleUnit) {
   const radius = frame.background === 'none' ? 0 : (frame.radius ?? 14) * scaleUnit;
   const shadow = frame.shadow ? (frame.shadowSize ?? 1) : 0;
   if (shadow > 0 && frame.background !== 'none') {
-    ctx.save();
-    ctx.shadowColor = `rgba(0,0,0,${Math.min(0.9, 0.45 * shadow)})`;
-    ctx.shadowBlur = 40 * scaleUnit * shadow;
-    ctx.shadowOffsetY = 14 * scaleUnit * shadow;
-    roundRect(ctx, rect.x, rect.y, rect.w, rect.h, radius);
-    ctx.fillStyle = '#000';
-    ctx.fill();
-    ctx.restore();
+    // A big soft shadow is slow to draw; it only changes with the layout, so it is drawn once.
+    const W = ctx.canvas.width;
+    const H = ctx.canvas.height;
+    const key = [W, H, rect.x, rect.y, rect.w, rect.h, radius, shadow].map((v) => Math.round(v * 10)).join('|');
+    let c = shadowCache.get(key);
+    if (!c) {
+      if (shadowCache.size > 5) shadowCache.delete(shadowCache.keys().next().value);
+      c = document.createElement('canvas');
+      c.width = W;
+      c.height = H;
+      const s = c.getContext('2d');
+      s.shadowColor = `rgba(0,0,0,${Math.min(0.9, 0.45 * shadow)})`;
+      s.shadowBlur = 40 * scaleUnit * shadow;
+      s.shadowOffsetY = 14 * scaleUnit * shadow;
+      roundRect(s, rect.x, rect.y, rect.w, rect.h, radius);
+      s.fillStyle = '#000';
+      s.fill();
+      shadowCache.set(key, c);
+    }
+    ctx.drawImage(c, 0, 0);
   }
   ctx.save();
   roundRect(ctx, rect.x, rect.y, rect.w, rect.h, radius);
   ctx.clip();
   ctx.fillStyle = '#0d1117';
   ctx.fillRect(rect.x, rect.y, rect.w, rect.h);
-  const vw = video?.videoWidth || 0;
-  const vh = video?.videoHeight || 0;
+  const vw = video?.videoWidth || video?.displayWidth || 0;
+  const vh = video?.videoHeight || video?.displayHeight || 0;
   if (vw && vh) {
     ctx.imageSmoothingQuality = 'high';
     ctx.drawImage(video, view.x * vw, view.y * vh, view.w * vw, view.h * vh, rect.x, rect.y, rect.w, rect.h);
@@ -249,6 +264,7 @@ export function drawClicks(ctx, t, clicks, rect, view, cursorOpts, unit, scale) 
   if (effect === 'none') return;
   const dur = Math.max(0.2, cursorOpts.clickDur ?? 0.65);
   const size = (cursorOpts.clickSize ?? 1) * unit * Math.sqrt(scale);
+  const op = cursorOpts.clickOpacity ?? 1;
   for (const c of clicks) {
     const age = t - c.t;
     if (age < 0) break;
@@ -261,7 +277,7 @@ export function drawClicks(ctx, t, clicks, rect, view, cursorOpts, unit, scale) 
     if (effect === 'spotlight') {
       const radius = (30 - 8 * k) * size;
       const g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, radius);
-      g.addColorStop(0, rgba(color, (1 - k) * 0.6));
+      g.addColorStop(0, rgba(color, (1 - k) * 0.6 * op));
       g.addColorStop(1, rgba(color, 0));
       ctx.fillStyle = g;
       ctx.beginPath();
@@ -272,7 +288,7 @@ export function drawClicks(ctx, t, clicks, rect, view, cursorOpts, unit, scale) 
       ctx.strokeStyle = color;
       ctx.lineCap = 'round';
       ctx.lineWidth = 3.2 * size * (1 - k * 0.6);
-      ctx.globalAlpha = 1 - k;
+      ctx.globalAlpha = op * (1 - k);
       for (let i = 0; i < 8; i++) {
         const ang = (i / 8) * Math.PI * 2 + 0.2;
         const r0 = (8 + 18 * e) * size;
@@ -282,7 +298,7 @@ export function drawClicks(ctx, t, clicks, rect, view, cursorOpts, unit, scale) 
         ctx.lineTo(p.x + Math.cos(ang) * r1, p.y + Math.sin(ang) * r1);
         ctx.stroke();
       }
-      ctx.globalAlpha = (1 - k) * 0.5;
+      ctx.globalAlpha = op * ((1 - k) * 0.5);
       ctx.fillStyle = color;
       ctx.beginPath();
       ctx.arc(p.x, p.y, 6 * size * (1 - k), 0, Math.PI * 2);
@@ -295,14 +311,14 @@ export function drawClicks(ctx, t, clicks, rect, view, cursorOpts, unit, scale) 
         if (ki < 0 || ki > 1) continue;
         const e = easeOut(ki);
         const radius = (10 + 34 * e) * size;
-        ctx.globalAlpha = (1 - ki) * (i === 0 ? 0.9 : 0.6);
+        ctx.globalAlpha = op * ((1 - ki) * (i === 0 ? 0.9 : 0.6));
         ctx.lineWidth = (i === 0 ? 4 : 2.6) * size;
         ctx.strokeStyle = color;
         ctx.beginPath();
         ctx.arc(p.x, p.y, radius, 0, Math.PI * 2);
         ctx.stroke();
         if (i === 0) {
-          ctx.globalAlpha = (1 - ki) * 0.3;
+          ctx.globalAlpha = op * ((1 - ki) * 0.3);
           ctx.fillStyle = color;
           ctx.fill();
         }
@@ -358,61 +374,36 @@ export function drawHighlight(ctx, p, unit, color) {
   ctx.restore();
 }
 
-// Arrow outline on a 24-unit grid, tip at (0, 0).
-const ARROW = [[0, 0], [0, 17.2], [4.4, 13.4], [7.3, 20], [10, 18.8], [7.1, 12.4], [12.6, 12.4]];
-// Pointing hand on the same grid, fingertip at (0, 0).
-const HAND = 'M0.6 -0.2 C1.9 -0.2 2.6 0.7 2.6 2 L2.6 7.4 C3.2 6.9 4.6 6.9 5.2 7.9 C5.9 7.3 7.4 7.4 7.9 8.6 ' +
-  'C8.7 8.1 10.4 8.4 10.4 10 L10.4 14.6 C10.4 18.2 8.4 20.4 5 20.4 L3.2 20.4 C0.8 20.4 -0.6 19.2 -2 17 ' +
-  'L-5 12.2 C-5.8 10.9 -4.3 9.6 -3 10.6 L-1.4 12 L-1.4 2 C-1.4 0.7 -0.7 -0.2 0.6 -0.2 Z';
-export const CURSOR_STYLES = [
-  { id: 'arrow', name: T('검은 화살표') }, { id: 'white', name: T('흰 화살표') },
-  { id: 'accent', name: T('색 화살표') }, { id: 'outline', name: T('테두리 화살표') },
-  { id: 'hand', name: T('손가락') }, { id: 'dot', name: T('점') }, { id: 'ring', name: T('고리') },
+export { CURSOR_STYLES, cursorShape };
+
+/** How the redrawn pointer follows the real one: a spring with these values (mass 1 = normal). */
+export const MOTION_PRESETS = [
+  { id: 'raw', name: T('그대로'), spring: null },
+  { id: 'precise', name: T('정확하게'), spring: { stiffness: 600, damping: 49, mass: 1 } },
+  { id: 'snappy', name: T('빠릿하게'), spring: { stiffness: 320, damping: 30, mass: 1 } },
+  { id: 'smooth', name: T('부드럽게'), spring: { stiffness: 170, damping: 26, mass: 1 } },
+  { id: 'floaty', name: T('느긋하게'), spring: { stiffness: 90, damping: 15, mass: 1.2 } },
+  { id: 'custom', name: T('직접'), spring: null },
 ];
 
-let handPath = null;
-export function cursorShape(ctx, style, s, color) {
-  if (style === 'dot' || style === 'ring') {
-    ctx.beginPath();
-    ctx.arc(0, 0, 9 * s, 0, Math.PI * 2);
-    if (style === 'dot') { ctx.fillStyle = color; ctx.fill(); }
-    ctx.lineWidth = (style === 'ring' ? 3.2 : 2) * s;
-    ctx.strokeStyle = style === 'ring' ? color : '#ffffff';
-    ctx.stroke();
-    return;
+/** The spring for the pointer settings, or null to follow the recording as it is. */
+export function cursorSpring(o) {
+  if (!o.motion) return null; // projects from before v1.3 keep their averaging smoothing
+  if (o.motion === 'custom') {
+    return { stiffness: 170 * (o.springStiffness ?? 1), damping: 26 * (o.springDamping ?? 1), mass: o.springMass ?? 1 };
   }
-  ctx.lineJoin = 'round';
-  if (style === 'hand' && typeof Path2D !== 'undefined') {
-    if (!handPath) handPath = new Path2D(HAND);
-    ctx.save();
-    ctx.scale(s, s);
-    ctx.lineWidth = 1.6;
-    ctx.strokeStyle = '#111111';
-    ctx.fillStyle = '#ffffff';
-    ctx.fill(handPath);
-    ctx.stroke(handPath);
-    ctx.restore();
-    return;
-  }
-  ctx.beginPath();
-  ARROW.forEach(([x, y], i) => (i ? ctx.lineTo(x * s, y * s) : ctx.moveTo(x * s, y * s)));
-  ctx.closePath();
-  const fills = { white: '#ffffff', accent: color, outline: 'rgba(255,255,255,0.08)' };
-  const lines = { white: '#111111', accent: '#ffffff', outline: color };
-  ctx.lineWidth = (style === 'outline' ? 2.6 : 2.2) * s;
-  ctx.strokeStyle = lines[style] || '#ffffff';
-  ctx.stroke();
-  ctx.fillStyle = fills[style] || '#111111';
-  ctx.fill();
+  return MOTION_PRESETS.find((m) => m.id === o.motion)?.spring || null;
 }
 
 /** Position of the redrawn cursor: smoothed, and brought back to where it began when looping. */
 function cursorPos(cursor, t, o, range, clicks) {
-  const radius = (o.smoothing || 0) * 0.3;
-  let p = radius > 0.01 ? cursor.smooth(t, radius) : cursor.at(t);
+  const spring = cursorSpring(o);
+  const radius = o.motion ? 0 : (o.smoothing || 0) * 0.3;
+  let p = spring && cursor.springAt ? cursor.springAt(t, spring) : radius > 0.01 ? cursor.smooth(t, radius) : cursor.at(t);
+  const eased = !!spring || radius > 0.01;
   // Around a click the cursor must sit exactly where the click happened, however much
   // smoothing is on, or the click effect appears beside it.
-  if (p && radius > 0.01 && clicks?.length) {
+  if (p && eased && clicks?.length) {
     let near = Infinity;
     for (let i = clicks.length - 1; i >= 0; i--) {
       const d = Math.abs(t - clicks[i].t);
@@ -449,10 +440,11 @@ function drawCursor(ctx, t, derived, rect, view, o, unit, scale, range) {
   let size = (o.size || 1.6) * unit * Math.sqrt(scale) * 1.25;
   // Click bounce: press in, spring back.
   if (o.bounce > 0) {
+    const dur = Math.max(0.1, o.bounceDur ?? 0.28);
     for (let i = derived.clicks.length - 1; i >= 0; i--) {
       const age = t - derived.clicks[i].t;
       if (age < 0) continue;
-      if (age < 0.28) size *= 1 - 0.3 * o.bounce * Math.sin(Math.PI * (age / 0.28));
+      if (age < dur) size *= 1 - 0.3 * o.bounce * Math.sin(Math.PI * (age / dur));
       break;
     }
   }
@@ -463,7 +455,14 @@ function drawCursor(ctx, t, derived, rect, view, o, unit, scale, range) {
     fade = 1 - clamp01((idle - o.idleHide) / 0.4);
     if (fade <= 0) return;
   }
-  const tilt = Math.max(-0.45, Math.min(0.45, (vx / (1400 * unit)) * (o.sway || 0)));
+  // The pointer kind from the recording (hand over links, text cursor over text, …).
+  let kind = o.followKind !== false && cursor.kindAt ? cursor.kindAt(t) : 'arrow';
+  if (kind === 'hidden') {
+    if (o.hideWhenHidden !== false) return;
+    kind = 'arrow';
+  }
+  if (kind === 'other' || kind === 'up-arrow') kind = 'arrow';
+  const tilt = isCentred(kind) ? 0 : Math.max(-0.45, Math.min(0.45, (vx / (1400 * unit)) * (o.sway || 0)));
   const speed = Math.hypot(vx, vy);
   const ghosts = o.motionBlur > 0 && speed > 500 * unit ? 4 : 0;
   for (let i = ghosts; i >= 0; i--) {
@@ -473,14 +472,14 @@ function drawCursor(ctx, t, derived, rect, view, o, unit, scale, range) {
     ctx.translate(a.x - vx * back, a.y - vy * back);
     ctx.rotate(tilt);
     if (i === 0) { ctx.shadowColor = 'rgba(0,0,0,0.35)'; ctx.shadowBlur = 5 * size; ctx.shadowOffsetY = 1.5 * size; }
-    cursorShape(ctx, o.style || 'arrow', size, o.color || '#ffd33d');
+    cursorShape(ctx, o.style || 'arrow', size, o.color || '#ffd33d', kind, t);
     ctx.restore();
   }
 }
 
 // ------------------------------------------------------------------ webcam
 function drawWebcam(ctx, video, W, H, opts, unit, avoidBottom, camScale) {
-  if (!video || !video.videoWidth) return;
+  if (!video || !(video.videoWidth || video.displayWidth)) return;
   let d = (Math.min(W, H) * (opts.size || 22)) / 100;
   // Optionally step back a little while the screen is zoomed in.
   if (opts.reactToZoom && camScale > 1) d /= 1 + (camScale - 1) * 0.45;
@@ -510,8 +509,8 @@ function drawWebcam(ctx, video, W, H, opts, unit, avoidBottom, camScale) {
   ctx.save();
   roundRect(ctx, x, y, d, d, r);
   ctx.clip();
-  const vw = video.videoWidth;
-  const vh = video.videoHeight;
+  const vw = video.videoWidth || video.displayWidth;
+  const vh = video.videoHeight || video.displayHeight;
   const s = Math.min(vw, vh);
   if (opts.mirror !== false) {
     ctx.translate(x + d, y);
@@ -974,8 +973,8 @@ export function renderFrame(ctx, f) {
   const { W, H, t, project, derived } = f;
   const s = project.settings;
   const unit = Math.min(W, H) / 1080;
-  const srcW = f.screen?.videoWidth || project.source?.width || 1920;
-  const srcH = f.screen?.videoHeight || project.source?.height || 1080;
+  const srcW = f.screen?.videoWidth || f.screen?.displayWidth || project.source?.width || 1920;
+  const srcH = f.screen?.videoHeight || f.screen?.displayHeight || project.source?.height || 1080;
   const crop = cropOf(project);
 
   drawBackground(ctx, W, H, s.frame, f.url);

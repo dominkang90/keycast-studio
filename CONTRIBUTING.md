@@ -44,7 +44,7 @@ npm run start:packaged
 |---|---|
 | `npm test` | Unit tests (key grouping, zoom, time mapping, subtitles, typing filter). Runs in a second |
 | `npm run build` | Interface, browser version and the packaged app in `release\KeyCast Studio-win32-x64` |
-| `npm run dist` | Installer and single-file portable exe in `release\dist`. Bundles FFmpeg 8+ from `FFMPEG_PATH` or your PATH; releases use the smaller essentials build (`winget install Gyan.FFmpeg.Essentials`) |
+| `npm run dist` | Installer and single-file portable exe in `release\dist`. Bundles FFmpeg 8+ from `FFMPEG_PATH` or your PATH (releases use the essentials build, `winget install Gyan.FFmpeg.Essentials`) and downloads `wgc-capture.exe` from Recordly v1.4.0, checking its SHA-256 (`scripts/bundle-wgc.cjs`). For `npm start`, set `KEYCAST_WGC_PATH` to a copy of it, or recording without the pointer uses FFmpeg |
 | `npm run icon` | Redraws `build/icon.png` and `build/icon.ico` from `build/icon.svg` |
 
 ### The self-test

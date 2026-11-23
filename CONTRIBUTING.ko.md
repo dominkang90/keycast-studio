@@ -44,7 +44,7 @@ npm run start:packaged
 |---|---|
 | `npm test` | 단위 테스트(키 묶기, 줌, 시간 계산, 자막, 타이핑 제외). 1초 안에 끝납니다 |
 | `npm run build` | 화면, 브라우저 버전, `release\KeyCast Studio-win32-x64` 패키지 |
-| `npm run dist` | `release\dist`에 설치 파일과 한 파일짜리 휴대용 exe. `FFMPEG_PATH`나 PATH의 FFmpeg 8 이상을 함께 넣습니다. 릴리즈는 더 작은 essentials판을 씁니다(`winget install Gyan.FFmpeg.Essentials`) |
+| `npm run dist` | `release\dist`에 설치 파일과 한 파일짜리 휴대용 exe. `FFMPEG_PATH`나 PATH의 FFmpeg 8 이상을 함께 넣습니다. 릴리즈는 더 작은 essentials판을 씁니다(`winget install Gyan.FFmpeg.Essentials`). Recordly v1.4.0의 `wgc-capture.exe`를 내려받아 SHA-256을 확인한 뒤 넣습니다(`scripts/bundle-wgc.cjs`). `npm start`로 쓸 때는 `KEYCAST_WGC_PATH`에 그 파일 경로를 넣지 않으면 FFmpeg로 녹화합니다 |
 | `npm run icon` | `build/icon.svg`로 `build/icon.png`, `build/icon.ico`를 다시 만듭니다 |
 
 ### 자체 점검

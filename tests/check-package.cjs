@@ -14,6 +14,7 @@ const required = [
   'dist/overlay.html',
   'dist/manual.html',
   'node_modules/uiohook-napi/package.json',
+  'node_modules/koffi/src/koffi/index.cjs',
 ];
 
 // Every local file main.cjs requires must be there too.

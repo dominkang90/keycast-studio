@@ -158,6 +158,9 @@ npm start
 | [Transformers.js](https://github.com/huggingface/transformers.js) / ONNX Runtime Web | 语音识别（Whisper） | Apache-2.0 / MIT |
 | [mp4-muxer](https://github.com/Vanilagy/mp4-muxer), [webm-muxer](https://github.com/Vanilagy/webm-muxer) | 生成视频文件 | MIT |
 | [gifenc](https://github.com/mattdesl/gifenc) | 生成 GIF | MIT |
+| [mediabunny](https://github.com/Vanilagy/mediabunny) | 为快速导出读取视频 | MPL-2.0 |
+| [koffi](https://koffi.dev/) | 读取 Windows 当前显示的指针类型 | MIT |
+| [wgc-capture](https://github.com/webadderallorg/Recordly/tree/v1.4.0/electron/native/wgc-capture) ([Recordly](https://github.com/webadderallorg/Recordly)) | 使用 Windows Graphics Capture 捕获屏幕。以未修改的形式包含，作为独立程序运行 | AGPL-3.0 |
 | [FFmpeg](https://ffmpeg.org/) | 不带指针的屏幕捕获。以未修改的形式包含在安装包和便携 exe 中，作为独立程序运行 | GPL-3.0（[源代码](https://ffmpeg.org/download.html)） |
 
 ## 许可证

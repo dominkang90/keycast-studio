@@ -3,6 +3,7 @@
 import { platform, isDesktop } from '../lib/platform.js';
 import { fmt } from '../lib/timeline.js';
 import { setLabel } from '../lib/icons.js';
+import { autoZoomRegions } from '../lib/zoom.js';
 import { h, toast, mount, topbar, inlineSwitch, selectField, kbdLabel, langMenu } from './dom.js';
 import { state, shortcuts, savedLook, saveOptions, liveOverlaySettings } from './state.js';
 import { openKeyStyle, openShortcuts } from './dialogs.js';
@@ -209,12 +210,18 @@ export async function importVideo() {
     settings.frame.crop = { x: 0, y: 0, w: 1, h: 1 };
     settings.webcam.enabled = false;
     const createdAt = new Date().toISOString();
+    // A pointer file saved next to the video (Recordly's .cursor.json) brings back the pointer,
+    // its clicks and kinds: such recordings are made without the real pointer.
+    const events = (picked.events || []).filter((e) => e.t <= duration);
+    const pointer = events.some((e) => e.type === 'mm');
+    if (pointer) settings.cursor.show = true;
     const project = {
       version: 1, id: picked.id, name: picked.label.replace(/\.[^.]+$/, ''), createdAt,
-      source: { name: picked.label, kind: 'file', ...size },
+      source: { name: picked.label, kind: pointer ? 'screen' : 'file', ...size },
       files: { screen: picked.file, voice: null, audio: null, webcam: null },
-      durationMs: Math.round(duration * 1000), inputHooked: false, events: [], settings,
-      zooms: [], subtitles: [], cuts: [], speeds: [], annotations: [], audios: [], trim: { start: 0, end: duration },
+      durationMs: Math.round(duration * 1000), inputHooked: pointer, cursorHidden: pointer, events, settings,
+      zooms: pointer ? autoZoomRegions(events, duration, settings.zoom.scale) : [],
+      subtitles: [], cuts: [], speeds: [], annotations: [], audios: [], trim: { start: 0, end: duration },
     };
     await platform.saveProject(project);
     openEditor(project.id, project);
