@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="620" height="380" viewBox="0 0 620 380" role="img" aria-label="보기 좋은 커서">
+<title>보기 좋은 커서</title>
+<style>
+text{font-family:'Segoe UI Variable Display','Segoe UI',-apple-system,BlinkMacSystemFont,'Helvetica Neue',Arial,'Malgun Gothic','Apple SD Gothic Neo','Noto Sans CJK KR','Hiragino Sans','Microsoft YaHei',sans-serif}
+.mono{font-family:'Cascadia Mono',Consolas,'SF Mono',Menlo,monospace}
+*{transform-box:view-box}
+
+.e{opacity:0;animation:e 2.4s cubic-bezier(0.22,1,0.36,1) infinite}
+.r1{animation-delay:0.25s}.r2{animation-delay:0.5s}
+@keyframes e{0%{opacity:0.95;transform:scale(0.25)}70%,100%{opacity:0;transform:scale(1.5)}}
+.ray{animation:ray 2.4s cubic-bezier(0.22,1,0.36,1) infinite;opacity:0}
+@keyframes ray{0%{opacity:1;transform:scale(0.4)}60%,100%{opacity:0;transform:scale(1.35)}}
+.glow{animation:glow 2.4s ease-out infinite}
+@keyframes glow{0%{opacity:0.9;transform:scale(0.6)}70%,100%{opacity:0;transform:scale(1.25)}}
+.c{animation:c 2.4s infinite}
+@keyframes c{0%,100%{transform:scale(1)}6%{transform:scale(0.8)}14%{transform:scale(1)}}
+.shape{animation:shape 9s infinite}
+.s1{animation-delay:-3s}.s2{animation-delay:-6s}
+@keyframes shape{0%,30%{opacity:1}34%,96%{opacity:0}100%{opacity:1}}
+@media (prefers-reduced-motion: reduce){*{animation:none!important}}
+</style>
+<rect width="620" height="380" rx="20" fill="#19191b" stroke="rgba(255,255,255,0.08)"/>
+<clipPath id="cc"><rect width="620" height="380" rx="20"/></clipPath>
+<g clip-path="url(#cc)">
+<circle cx="527" cy="-20" r="190" fill="#ff453a" opacity="0.10"/>
+
+<defs><radialGradient id="gl"><stop offset="0" stop-color="#5b9dff" stop-opacity="0.7"/><stop offset="1" stop-color="#5b9dff" stop-opacity="0"/></radialGradient></defs>
+<circle class="e" style="transform-origin:130px 140px" cx="130" cy="140" r="44" fill="rgba(255,211,61,0.18)" stroke="#ffd33d" stroke-width="3.5"/>
+<circle class="e r0" style="transform-origin:310px 140px" cx="310" cy="140" r="44" fill="none" stroke="#5b9dff" stroke-width="3.5"/><circle class="e r1" style="transform-origin:310px 140px" cx="310" cy="140" r="44" fill="none" stroke="#5b9dff" stroke-width="2"/><circle class="e r2" style="transform-origin:310px 140px" cx="310" cy="140" r="44" fill="none" stroke="#5b9dff" stroke-width="2"/>
+<g class="ray" style="transform-origin:490px 140px"><line x1="511.5614647125073" y1="144.37072527749135" x2="535.0830625806971" y2="149.1387892165728" stroke="#4cc38a" stroke-width="4" stroke-linecap="round"/><line x1="502.1556884281108" y1="158.33682739294596" x2="515.4164394405952" y2="178.34063909434155" stroke="#4cc38a" stroke-width="4" stroke-linecap="round"/><line x1="485.6292747225087" y1="161.5614647125073" x2="480.86121078342717" y2="185.08306258069712" stroke="#4cc38a" stroke-width="4" stroke-linecap="round"/><line x1="471.66317260705404" y1="152.15568842811078" x2="451.65936090565845" y2="165.4164394405953" stroke="#4cc38a" stroke-width="4" stroke-linecap="round"/><line x1="468.4385352874927" y1="135.62927472250865" x2="444.9169374193029" y2="130.86121078342717" stroke="#4cc38a" stroke-width="4" stroke-linecap="round"/><line x1="477.8443115718892" y1="121.66317260705404" x2="464.5835605594047" y2="101.65936090565845" stroke="#4cc38a" stroke-width="4" stroke-linecap="round"/><line x1="494.3707252774914" y1="118.43853528749268" x2="499.13878921657283" y2="94.91693741930288" stroke="#4cc38a" stroke-width="4" stroke-linecap="round"/><line x1="508.33682739294596" y1="127.84431157188921" x2="528.3406390943416" y2="114.5835605594047" stroke="#4cc38a" stroke-width="4" stroke-linecap="round"/></g>
+<g style="transform-origin:130px 140px" class="c"><g transform="translate(130,140) scale(2)">
+<path class="shape s0" d="M0 0 L0 17.2 L4.4 13.4 L7.3 20 L10 18.8 L7.1 12.4 L12.6 12.4 Z" fill="#111" stroke="#fff" stroke-width="1.2" stroke-linejoin="round"/>
+<path class="shape s1" d="M0.6 -0.2 C1.9 -0.2 2.6 0.7 2.6 2 L2.6 7.4 C3.2 6.9 4.6 6.9 5.2 7.9 C5.9 7.3 7.4 7.4 7.9 8.6 C8.7 8.1 10.4 8.4 10.4 10 L10.4 14.6 C10.4 18.2 8.4 20.4 5 20.4 L3.2 20.4 C0.8 20.4 -0.6 19.2 -2 17 L-5 12.2 C-5.8 10.9 -4.3 9.6 -3 10.6 L-1.4 12 L-1.4 2 C-1.4 0.7 -0.7 -0.2 0.6 -0.2 Z" fill="#fff" stroke="#111" stroke-width="1" stroke-linejoin="round"/>
+<path class="shape s2" d="M0 0 L0 17.2 L4.4 13.4 L7.3 20 L10 18.8 L7.1 12.4 L12.6 12.4 Z" fill="rgba(255,255,255,0.08)" stroke="#ffd33d" stroke-width="1.4" stroke-linejoin="round"/>
+</g></g>
+<g style="transform-origin:310px 140px" class="c"><g transform="translate(310,140) scale(2)">
+<path class="shape s0" d="M0 0 L0 17.2 L4.4 13.4 L7.3 20 L10 18.8 L7.1 12.4 L12.6 12.4 Z" fill="#fff" stroke="#111" stroke-width="1.2" stroke-linejoin="round"/>
+<path class="shape s1" d="M0.6 -0.2 C1.9 -0.2 2.6 0.7 2.6 2 L2.6 7.4 C3.2 6.9 4.6 6.9 5.2 7.9 C5.9 7.3 7.4 7.4 7.9 8.6 C8.7 8.1 10.4 8.4 10.4 10 L10.4 14.6 C10.4 18.2 8.4 20.4 5 20.4 L3.2 20.4 C0.8 20.4 -0.6 19.2 -2 17 L-5 12.2 C-5.8 10.9 -4.3 9.6 -3 10.6 L-1.4 12 L-1.4 2 C-1.4 0.7 -0.7 -0.2 0.6 -0.2 Z" fill="#fff" stroke="#111" stroke-width="1" stroke-linejoin="round"/>
+<path class="shape s2" d="M0 0 L0 17.2 L4.4 13.4 L7.3 20 L10 18.8 L7.1 12.4 L12.6 12.4 Z" fill="rgba(255,255,255,0.08)" stroke="#5b9dff" stroke-width="1.4" stroke-linejoin="round"/>
+</g></g>
+<g style="transform-origin:490px 140px" class="c"><g transform="translate(490,140) scale(2)">
+<path class="shape s0" d="M0 0 L0 17.2 L4.4 13.4 L7.3 20 L10 18.8 L7.1 12.4 L12.6 12.4 Z" fill="#5b9dff" stroke="#fff" stroke-width="1.2" stroke-linejoin="round"/>
+<path class="shape s1" d="M0.6 -0.2 C1.9 -0.2 2.6 0.7 2.6 2 L2.6 7.4 C3.2 6.9 4.6 6.9 5.2 7.9 C5.9 7.3 7.4 7.4 7.9 8.6 C8.7 8.1 10.4 8.4 10.4 10 L10.4 14.6 C10.4 18.2 8.4 20.4 5 20.4 L3.2 20.4 C0.8 20.4 -0.6 19.2 -2 17 L-5 12.2 C-5.8 10.9 -4.3 9.6 -3 10.6 L-1.4 12 L-1.4 2 C-1.4 0.7 -0.7 -0.2 0.6 -0.2 Z" fill="#fff" stroke="#111" stroke-width="1" stroke-linejoin="round"/>
+<path class="shape s2" d="M0 0 L0 17.2 L4.4 13.4 L7.3 20 L10 18.8 L7.1 12.4 L12.6 12.4 Z" fill="rgba(255,255,255,0.08)" stroke="#4cc38a" stroke-width="1.4" stroke-linejoin="round"/>
+</g></g>
+<text x="130" y="232" text-anchor="middle" font-size="13" fill="#85858b" class="mono">Ripple</text><text x="310" y="232" text-anchor="middle" font-size="13" fill="#85858b" class="mono">Echo</text><text x="490" y="232" text-anchor="middle" font-size="13" fill="#85858b" class="mono">Burst</text>
+</g>
+<rect x="28" y="288" width="4" height="56" rx="2" fill="#ff453a"/>
+<text x="46" y="318" font-size="24" font-weight="700" fill="#ededed">보기 좋은 커서</text>
+<text x="46" y="346" font-size="15" fill="#a1a1a6">모양 7종 · 물결·겹물결·빛 번짐·터짐</text>
+</svg>

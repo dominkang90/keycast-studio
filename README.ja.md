@@ -1,6 +1,4 @@
-<p align="center"><img src="build/icon.png" width="96" alt="KeyCast Studio のアイコン"></p>
-
-<h1 align="center">KeyCast Studio</h1>
+<p align="center"><img src="docs/readme/hero.ja.svg" width="100%" alt="KeyCast Studio — 押したショートカットが そのまま映る画面録画"></p>
 
 <p align="center">
   <a href="README.md">English</a> · <a href="README.ko.md">한국어</a> · <b>日本語</b> · <a href="README.zh-CN.md">简体中文</a>
@@ -24,7 +22,11 @@
 
 > KeyCast Studio で録画し、そのまま書き出したものです。デモの字幕は手で入力しました。アプリの画面は英語と韓国語に対応しています（[日本語訳に協力する](CONTRIBUTING.md#translating-the-app)）。
 
+<p align="center"><img src="docs/readme/flow.ja.svg" width="100%" alt="録画 → 編集 → 書き出し"></p>
+
 ## キーボードの記録について
+
+<p align="center"><img src="docs/readme/privacy.ja.svg" width="100%" alt="何が保存される？ — 単独で打った文字は保存前に捨て、ショートカットだけ残します。"></p>
 
 動画にキーを表示するため、押したキーを読み取ります。インストールの前にお読みください。
 
@@ -34,6 +36,15 @@
 - **自分で確かめる:** ソースコードはすべてここにあり、リリースごとに SHA-256 と VirusTotal の検査結果を載せています。詳しくは [SECURITY.md](SECURITY.md) をご覧ください。
 
 ## 主な機能
+
+<p align="center">
+  <img src="docs/readme/keys.ja.svg" width="49%" alt="ショートカットを画面に">
+  <img src="docs/readme/zoom.ja.svg" width="49%" alt="クリックした所へズーム">
+</p>
+<p align="center">
+  <img src="docs/readme/subtitles.ja.svg" width="49%" alt="声から字幕">
+  <img src="docs/readme/pointer.ja.svg" width="49%" alt="見やすいポインター">
+</p>
 
 **録画**
 - 画面全体またはウィンドウ 1 つを、マイク・パソコンの音・Web カメラと一緒に録画
@@ -48,10 +59,12 @@
 - 前後のトリミング、途中のカット、区間ごとの速度変更（0.25×〜4×）、元に戻す・やり直す
 - 文字・矢印・四角・画像の注釈、個人情報をぼかして隠す機能
 - 背景（色・グラデーション・背景画像・自分の画像）、余白、角丸、影、クロップ、アスペクト比（16:9、9:16、1:1、4:3）
+- ポインター：7 種類の形、クリック効果 4 種類（波紋・二重波紋・光・はじけ）とサイズ・長さ、なめらかさ、残像、止まったら隠す
 - Web カメラの吹き出し、BGM・効果音
 
 **字幕**
 - 声をこのパソコンの中で文字に起こし（Whisper）、文単位の字幕を作成。韓国語・英語・日本語・中国語・スペイン語・ドイツ語・フランス語に対応
+- カラオケ・強調ポップなど話している単語を強調するものを含む 7 スタイル、文字色・強調色、登場アニメーション、上・中央・下
 - 編集して動画に焼き込むか、SRT ファイルとして保存
 
 **書き出し**
@@ -65,6 +78,8 @@
 | ![ホーム画面](docs/home.png) | ![エディターのキー設定](docs/editor-keys.png) |
 
 ## インストール
+
+<p align="center"><img src="docs/readme/size.ja.svg" width="100%" alt="v1.2 で軽くなったダウンロード"></p>
 
 **必要なもの:** Windows 10 または 11（64 ビット）
 

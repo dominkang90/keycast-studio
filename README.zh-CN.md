@@ -1,6 +1,4 @@
-<p align="center"><img src="build/icon.png" width="96" alt="KeyCast Studio 图标"></p>
-
-<h1 align="center">KeyCast Studio</h1>
+<p align="center"><img src="docs/readme/hero.zh-CN.svg" width="100%" alt="KeyCast Studio — 把你按下的每个快捷键 都录进视频"></p>
 
 <p align="center">
   <a href="README.md">English</a> · <a href="README.ko.md">한국어</a> · <a href="README.ja.md">日本語</a> · <b>简体中文</b>
@@ -24,7 +22,11 @@
 
 > 用 KeyCast Studio 录制并直接导出。演示中的字幕是手动输入的。应用界面支持英语和韩语（[帮忙翻译成中文](CONTRIBUTING.md#translating-the-app)）。
 
+<p align="center"><img src="docs/readme/flow.zh-CN.svg" width="100%" alt="录制 → 编辑 → 导出"></p>
+
 ## 关于键盘记录
+
+<p align="center"><img src="docs/readme/privacy.zh-CN.svg" width="100%" alt="会保存什么 — 单独输入的字符在保存前丢弃，只保留快捷键。"></p>
 
 为了在视频中显示按键，软件需要读取你按下的键。安装前请先阅读。
 
@@ -34,6 +36,15 @@
 - **自行核实：** 全部源代码都在这里，每个版本都附有 SHA-256 校验值和 VirusTotal 扫描结果。详见 [SECURITY.md](SECURITY.md)。
 
 ## 主要功能
+
+<p align="center">
+  <img src="docs/readme/keys.zh-CN.svg" width="49%" alt="快捷键显示在画面上">
+  <img src="docs/readme/zoom.zh-CN.svg" width="49%" alt="点哪里放大哪里">
+</p>
+<p align="center">
+  <img src="docs/readme/subtitles.zh-CN.svg" width="49%" alt="语音生成字幕">
+  <img src="docs/readme/pointer.zh-CN.svg" width="49%" alt="好看的指针">
+</p>
 
 **录制**
 - 录制整个屏幕或单个窗口，同时录入麦克风、电脑声音和摄像头
@@ -48,10 +59,12 @@
 - 裁剪首尾、剪掉中间部分、按区间调整速度（0.25×～4×）、撤销与重做
 - 文字、箭头、方框、图片标注，以及模糊遮挡隐私内容
 - 背景（颜色、渐变、背景图、自己的图片）、边距、圆角、阴影、裁切、画面比例（16:9、9:16、1:1、4:3）
+- 指针：7 种形状，4 种点击效果（波纹、回声、光晕、迸发）可调大小和时长，平滑、拖影、静止时隐藏
 - 摄像头气泡、背景音乐和音效
 
 **字幕**
 - 在本机把语音转写成文字（Whisper），按句生成字幕；支持韩语、英语、日语、中文、西班牙语、德语、法语
+- 7 种样式，包括高亮当前单词的卡拉 OK 和强调弹出，文字色与高亮色、出现动画、上中下位置
 - 可编辑，可烧录进视频或保存为 SRT 文件
 
 **导出**
@@ -65,6 +78,8 @@
 | ![主界面](docs/home.png) | ![编辑器中的按键设置](docs/editor-keys.png) |
 
 ## 安装
+
+<p align="center"><img src="docs/readme/size.zh-CN.svg" width="100%" alt="v1.2 下载更小"></p>
 
 **需要：** Windows 10 或 11（64 位）
 

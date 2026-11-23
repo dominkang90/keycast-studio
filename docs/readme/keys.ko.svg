@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="620" height="380" viewBox="0 0 620 380" role="img" aria-label="누른 단축키를 화면에">
+<title>누른 단축키를 화면에</title>
+<style>
+text{font-family:'Segoe UI Variable Display','Segoe UI',-apple-system,BlinkMacSystemFont,'Helvetica Neue',Arial,'Malgun Gothic','Apple SD Gothic Neo','Noto Sans CJK KR','Hiragino Sans','Microsoft YaHei',sans-serif}
+.mono{font-family:'Cascadia Mono',Consolas,'SF Mono',Menlo,monospace}
+*{transform-box:view-box}
+
+.k{opacity:0;animation:k 7s cubic-bezier(0.22,1,0.36,1) infinite}
+.k0{animation-delay:0s}.k1{animation-delay:0.9s}.k2{animation-delay:1.8s}
+@keyframes k{0%{opacity:0;transform:translateY(18px) scale(0.9)}8%,60%{opacity:1;transform:none}70%,100%{opacity:0;transform:translateY(-10px)}}
+.cnt{opacity:0;animation:cnt 7s infinite;animation-delay:0.9s}
+@keyframes cnt{0%,10%{opacity:0}12%,58%{opacity:1}68%,100%{opacity:0}}
+.t{animation:t 7s infinite}
+.t0{animation-delay:2.8s}.t1{animation-delay:3.02s}.t2{animation-delay:3.2399999999999998s}.t3{animation-delay:3.46s}.t4{animation-delay:3.6799999999999997s}
+@keyframes t{0%{opacity:0;transform:translateY(0)}2%{opacity:0.9}8%{opacity:0;transform:translateY(-26px)}100%{opacity:0}}
+.drop{animation:drop 7s infinite;animation-delay:2.8s;opacity:0}
+@keyframes drop{0%{opacity:0}3%,20%{opacity:1}26%,100%{opacity:0}}
+@media (prefers-reduced-motion: reduce){*{animation:none!important}}
+</style>
+<rect width="620" height="380" rx="20" fill="#19191b" stroke="rgba(255,255,255,0.08)"/>
+<clipPath id="cc"><rect width="620" height="380" rx="20"/></clipPath>
+<g clip-path="url(#cc)">
+<circle cx="527" cy="-20" r="190" fill="#5b9dff" opacity="0.10"/>
+<g class="k k0" style="transform-origin:310px 70px"><rect x="235.49" y="42" width="149.02" height="58" rx="13" fill="rgba(13,17,23,0.85)" stroke="rgba(255,255,255,0.07)"/>
+<g transform="translate(247.49,52)"><g>
+<rect x="0" y="3" width="68.02" height="36.1" rx="7.9799999999999995" fill="#0a0b0d"/>
+<rect x="0" y="0" width="68.02" height="36.1" rx="7.9799999999999995" fill="#2f6fd6" stroke="rgba(255,255,255,0.10)"/>
+<text x="34.01" y="24.89" text-anchor="middle" font-size="19" font-weight="650" fill="#ffffff" class="mono">Ctrl</text>
+</g>
+<text x="78.47" y="24.7" text-anchor="middle" font-size="17.1" fill="rgba(255,255,255,0.6)">+</text>
+<g>
+<rect x="88.92" y="3" width="36.1" height="36.1" rx="7.9799999999999995" fill="#0a0b0d"/>
+<rect x="88.92" y="0" width="36.1" height="36.1" rx="7.9799999999999995" fill="#26292f" stroke="rgba(255,255,255,0.10)"/>
+<text x="106.97" y="24.89" text-anchor="middle" font-size="19" font-weight="650" fill="#ffffff" class="mono">C</text>
+</g></g></g>
+<g class="k k1" style="transform-origin:310px 132px"><rect x="235.49" y="104" width="149.02" height="58" rx="13" fill="rgba(13,17,23,0.85)" stroke="rgba(255,255,255,0.07)"/>
+<g transform="translate(247.49,114)"><g>
+<rect x="0" y="3" width="68.02" height="36.1" rx="7.9799999999999995" fill="#0a0b0d"/>
+<rect x="0" y="0" width="68.02" height="36.1" rx="7.9799999999999995" fill="#2f6fd6" stroke="rgba(255,255,255,0.10)"/>
+<text x="34.01" y="24.89" text-anchor="middle" font-size="19" font-weight="650" fill="#ffffff" class="mono">Ctrl</text>
+</g>
+<text x="78.47" y="24.7" text-anchor="middle" font-size="17.1" fill="rgba(255,255,255,0.6)">+</text>
+<g>
+<rect x="88.92" y="3" width="36.1" height="36.1" rx="7.9799999999999995" fill="#0a0b0d"/>
+<rect x="88.92" y="0" width="36.1" height="36.1" rx="7.9799999999999995" fill="#26292f" stroke="rgba(255,255,255,0.10)"/>
+<text x="106.97" y="24.89" text-anchor="middle" font-size="19" font-weight="650" fill="#ffffff" class="mono">V</text>
+</g></g><text class="cnt" x="394.51" y="140" font-size="18" font-weight="700" fill="#ffd33d">×2</text></g>
+<g class="k k2" style="transform-origin:310px 194px"><rect x="185.14" y="166" width="249.72" height="58" rx="13" fill="rgba(13,17,23,0.85)" stroke="rgba(255,255,255,0.07)"/>
+<g transform="translate(197.14,176)"><g>
+<rect x="0" y="3" width="68.02" height="36.1" rx="7.9799999999999995" fill="#0a0b0d"/>
+<rect x="0" y="0" width="68.02" height="36.1" rx="7.9799999999999995" fill="#2f6fd6" stroke="rgba(255,255,255,0.10)"/>
+<text x="34.01" y="24.89" text-anchor="middle" font-size="19" font-weight="650" fill="#ffffff" class="mono">Ctrl</text>
+</g>
+<text x="78.47" y="24.7" text-anchor="middle" font-size="17.1" fill="rgba(255,255,255,0.6)">+</text>
+<g>
+<rect x="88.92" y="3" width="79.8" height="36.1" rx="7.9799999999999995" fill="#0a0b0d"/>
+<rect x="88.92" y="0" width="79.8" height="36.1" rx="7.9799999999999995" fill="#2f6fd6" stroke="rgba(255,255,255,0.10)"/>
+<text x="128.82" y="24.89" text-anchor="middle" font-size="19" font-weight="650" fill="#ffffff" class="mono">Shift</text>
+</g>
+<text x="179.17" y="24.7" text-anchor="middle" font-size="17.1" fill="rgba(255,255,255,0.6)">+</text>
+<g>
+<rect x="189.62" y="3" width="36.1" height="36.1" rx="7.9799999999999995" fill="#0a0b0d"/>
+<rect x="189.62" y="0" width="36.1" height="36.1" rx="7.9799999999999995" fill="#26292f" stroke="rgba(255,255,255,0.10)"/>
+<text x="207.67000000000002" y="24.89" text-anchor="middle" font-size="19" font-weight="650" fill="#ffffff" class="mono">T</text>
+</g></g></g>
+<g><text class="t t0" x="470" y="230" font-size="22" fill="#a1a1a6" opacity="0" font-family="'Cascadia Mono',Consolas,'SF Mono',Menlo,monospace">h</text><text class="t t1" x="492" y="230" font-size="22" fill="#a1a1a6" opacity="0" font-family="'Cascadia Mono',Consolas,'SF Mono',Menlo,monospace">e</text><text class="t t2" x="514" y="230" font-size="22" fill="#a1a1a6" opacity="0" font-family="'Cascadia Mono',Consolas,'SF Mono',Menlo,monospace">l</text><text class="t t3" x="536" y="230" font-size="22" fill="#a1a1a6" opacity="0" font-family="'Cascadia Mono',Consolas,'SF Mono',Menlo,monospace">l</text><text class="t t4" x="558" y="230" font-size="22" fill="#a1a1a6" opacity="0" font-family="'Cascadia Mono',Consolas,'SF Mono',Menlo,monospace">o</text></g>
+<g class="drop"><rect x="458" y="240" width="124" height="24" rx="12" fill="rgba(229,72,77,0.15)"/><text x="520" y="257" text-anchor="middle" font-size="13" fill="#ff8a8e">✕ 입력</text></g>
+</g>
+<rect x="28" y="288" width="4" height="56" rx="2" fill="#5b9dff"/>
+<text x="46" y="318" font-size="24" font-weight="700" fill="#ededed">누른 단축키를 화면에</text>
+<text x="46" y="346" font-size="15" fill="#a1a1a6">기본은 단축키만 · 타이핑한 글자는 저장 안 함</text>
+</svg>

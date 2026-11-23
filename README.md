@@ -1,6 +1,4 @@
-<p align="center"><img src="build/icon.png" width="96" alt="KeyCast Studio icon"></p>
-
-<h1 align="center">KeyCast Studio</h1>
+<p align="center"><img src="docs/readme/hero.en.svg" width="100%" alt="KeyCast Studio — Screen recordings that show every shortcut you press"></p>
 
 <p align="center">
   <b>English</b> · <a href="README.ko.md">한국어</a> · <a href="README.ja.md">日本語</a> · <a href="README.zh-CN.md">简体中文</a>
@@ -24,7 +22,11 @@
 
 > Recorded and exported with KeyCast Studio. The subtitles in this demo were typed in. The interface is in English and Korean ([add your language](CONTRIBUTING.md#translating-the-app)).
 
+<p align="center"><img src="docs/readme/flow.en.svg" width="100%" alt="Record → Edit → Export"></p>
+
 ## About keyboard recording
+
+<p align="center"><img src="docs/readme/privacy.en.svg" width="100%" alt="What gets saved — Typed letters are dropped before saving. Shortcuts stay."></p>
 
 KeyCast Studio has to see the keys you press to show them in the video, so please read this before installing.
 
@@ -34,6 +36,15 @@ KeyCast Studio has to see the keys you press to show them in the video, so pleas
 - **Check it yourself:** the source code is all here, and each release lists its SHA-256 checksums and a VirusTotal scan. Details in [SECURITY.md](SECURITY.md).
 
 ## Features
+
+<p align="center">
+  <img src="docs/readme/keys.en.svg" width="49%" alt="Every shortcut, on screen">
+  <img src="docs/readme/zoom.en.svg" width="49%" alt="Zoom where you click">
+</p>
+<p align="center">
+  <img src="docs/readme/subtitles.en.svg" width="49%" alt="Subtitles from your voice">
+  <img src="docs/readme/pointer.en.svg" width="49%" alt="A pointer worth watching">
+</p>
 
 **Recording**
 - Record the whole screen or one window, with the microphone, the computer's sound and a webcam
@@ -67,6 +78,8 @@ KeyCast Studio has to see the keys you press to show them in the video, so pleas
 | ![Home screen](docs/home.png) | ![Key settings in the editor](docs/editor-keys.png) |
 
 ## Install
+
+<p align="center"><img src="docs/readme/size.en.svg" width="100%" alt="Smaller download in v1.2"></p>
 
 **Needs:** Windows 10 or 11, 64-bit
 

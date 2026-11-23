@@ -1,6 +1,4 @@
-<p align="center"><img src="build/icon.png" width="96" alt="KeyCast Studio 아이콘"></p>
-
-<h1 align="center">KeyCast Studio</h1>
+<p align="center"><img src="docs/readme/hero.ko.svg" width="100%" alt="KeyCast Studio — 누른 단축키가 그대로 보이는 화면 녹화 프로그램"></p>
 
 <p align="center">
   <a href="README.md">English</a> · <b>한국어</b> · <a href="README.ja.md">日本語</a> · <a href="README.zh-CN.md">简体中文</a>
@@ -25,7 +23,11 @@
 
 > KeyCast Studio로 녹화하고 그대로 내보낸 결과입니다. 시연용 자막은 직접 입력했습니다. 화면은 한국어와 영어를 지원합니다(오른쪽 위 언어 메뉴).
 
+<p align="center"><img src="docs/readme/flow.ko.svg" width="100%" alt="녹화 → 편집 → 내보내기"></p>
+
 ## 키보드 기록에 대해
+
+<p align="center"><img src="docs/readme/privacy.ko.svg" width="100%" alt="무엇이 저장될까요 — 혼자 친 글자는 저장 전에 버리고, 단축키만 남깁니다."></p>
 
 영상에 키를 보여 주려면 누른 키를 알아야 합니다. 설치하기 전에 읽어 주세요.
 
@@ -35,6 +37,15 @@
 - **직접 확인:** 소스 코드가 모두 여기 있고, 릴리즈마다 SHA-256 값과 VirusTotal 검사 결과를 붙입니다. 자세한 내용은 [SECURITY.md](SECURITY.md)에 있습니다.
 
 ## 주요 기능
+
+<p align="center">
+  <img src="docs/readme/keys.ko.svg" width="49%" alt="누른 단축키를 화면에">
+  <img src="docs/readme/zoom.ko.svg" width="49%" alt="클릭한 곳으로 확대">
+</p>
+<p align="center">
+  <img src="docs/readme/subtitles.ko.svg" width="49%" alt="목소리로 자막">
+  <img src="docs/readme/pointer.ko.svg" width="49%" alt="보기 좋은 커서">
+</p>
 
 **녹화**
 - 전체 화면 또는 창 하나를 녹화하고, 마이크·컴퓨터 소리·웹캠을 함께 담습니다.
@@ -68,6 +79,8 @@
 | ![처음 화면](docs/home.png) | ![편집 화면의 키 설정](docs/editor-keys.png) |
 
 ## 설치
+
+<p align="center"><img src="docs/readme/size.ko.svg" width="100%" alt="v1.2에서 더 가벼워진 설치 파일"></p>
 
 **필요한 것:** Windows 10 또는 11 (64비트)
 

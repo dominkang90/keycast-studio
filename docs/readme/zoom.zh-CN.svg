@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="620" height="380" viewBox="0 0 620 380" role="img" aria-label="点哪里放大哪里">
+<title>点哪里放大哪里</title>
+<style>
+text{font-family:'Segoe UI Variable Display','Segoe UI',-apple-system,BlinkMacSystemFont,'Helvetica Neue',Arial,'Malgun Gothic','Apple SD Gothic Neo','Noto Sans CJK KR','Hiragino Sans','Microsoft YaHei',sans-serif}
+.mono{font-family:'Cascadia Mono',Consolas,'SF Mono',Menlo,monospace}
+*{transform-box:view-box}
+
+.cam{transform-origin:430px 180px;animation:cam 7s cubic-bezier(0.22,1,0.36,1) infinite}
+@keyframes cam{0%,22%{transform:scale(1)}36%,62%{transform:scale(1.9)}80%,100%{transform:scale(1)}}
+.cur{animation:cur 7s cubic-bezier(0.22,1,0.36,1) infinite}
+@keyframes cur{0%{transform:translate(150px,90px)}18%,70%{transform:translate(430px,180px)}88%,100%{transform:translate(150px,90px)}}
+.rip{transform-origin:430px 180px;opacity:0;animation:rip 7s cubic-bezier(0.22,1,0.36,1) infinite}
+@keyframes rip{0%,21.9%{opacity:0;transform:scale(0.2)}22%{opacity:1;transform:scale(0.2)}33%,100%{opacity:0;transform:scale(1.4)}}
+.vf{transform-origin:430px 180px;opacity:0;animation:vf 7s cubic-bezier(0.22,1,0.36,1) infinite}
+@keyframes vf{0%,20%{opacity:0;transform:scale(1.9)}34%{opacity:1;transform:scale(1)}60%{opacity:0.0}100%{opacity:0}}
+.tl{animation:tl 7s linear infinite}
+@keyframes tl{from{transform:translateX(0)}to{transform:translateX(480px)}}
+@media (prefers-reduced-motion: reduce){*{animation:none!important}}
+</style>
+<rect width="620" height="380" rx="20" fill="#19191b" stroke="rgba(255,255,255,0.08)"/>
+<clipPath id="cc"><rect width="620" height="380" rx="20"/></clipPath>
+<g clip-path="url(#cc)">
+<circle cx="527" cy="-20" r="190" fill="#4cc38a" opacity="0.10"/>
+
+<clipPath id="zc"><rect x="70" y="30" width="480" height="230" rx="10"/></clipPath>
+<rect x="70" y="30" width="480" height="230" rx="10" fill="#1b1c20" stroke="rgba(255,255,255,0.12)"/>
+<g clip-path="url(#zc)"><g class="cam">
+<rect x="94" y="56" width="200" height="9" rx="4.5" fill="rgba(255,255,255,0.3)"/><rect x="94" y="84" width="150" height="9" rx="4.5" fill="rgba(255,255,255,0.12)"/><rect x="94" y="112" width="230" height="9" rx="4.5" fill="rgba(255,255,255,0.12)"/><rect x="94" y="140" width="120" height="9" rx="4.5" fill="rgba(255,255,255,0.12)"/><rect x="94" y="168" width="180" height="9" rx="4.5" fill="rgba(255,255,255,0.12)"/>
+<rect x="370" y="160" width="120" height="40" rx="9" fill="#4cc38a"/>
+<rect x="396" y="176" width="68" height="8" rx="4" fill="rgba(0,0,0,0.35)"/>
+<circle class="rip" cx="430" cy="180" r="30" fill="rgba(255,211,61,0.2)" stroke="#ffd33d" stroke-width="3"/>
+<g class="cur"><g transform="scale(1.4)"><path d="M0 0 L0 17.2 L4.4 13.4 L7.3 20 L10 18.8 L7.1 12.4 L12.6 12.4 Z" fill="#111" stroke="#fff" stroke-width="1.4" stroke-linejoin="round"/></g></g>
+</g></g>
+<rect class="vf" x="303.6842105263158" y="119.47368421052632" width="252.63157894736844" height="121.05263157894737" rx="8" fill="none" stroke="#4cc38a" stroke-width="2" stroke-dasharray="7 6"/>
+<rect x="70" y="274" width="480" height="8" rx="4" fill="rgba(255,255,255,0.07)"/>
+<rect x="175.6" y="274" width="230.39999999999998" height="8" rx="4" fill="rgba(76,195,138,0.55)"/>
+<rect class="tl" x="69" y="268" width="2" height="20" rx="1" fill="#ff453a"/>
+</g>
+<rect x="28" y="288" width="4" height="56" rx="2" fill="#4cc38a"/>
+<text x="46" y="318" font-size="24" font-weight="700" fill="#ededed">点哪里放大哪里</text>
+<text x="46" y="346" font-size="15" fill="#a1a1a6">平滑跟随指针的镜头</text>
+</svg>

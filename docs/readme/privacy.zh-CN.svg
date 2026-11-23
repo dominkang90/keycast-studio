@@ -1,0 +1,75 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="210" viewBox="0 0 1280 210" role="img" aria-label="会保存什么 — 单独输入的字符在保存前丢弃，只保留快捷键。">
+<title>会保存什么 — 单独输入的字符在保存前丢弃，只保留快捷键。</title>
+<style>
+text{font-family:'Segoe UI Variable Display','Segoe UI',-apple-system,BlinkMacSystemFont,'Helvetica Neue',Arial,'Malgun Gothic','Apple SD Gothic Neo','Noto Sans CJK KR','Hiragino Sans','Microsoft YaHei',sans-serif}
+.mono{font-family:'Cascadia Mono',Consolas,'SF Mono',Menlo,monospace}
+*{transform-box:view-box}
+
+.it{animation:move 8s linear infinite}
+@keyframes move{from{transform:translateX(0)}to{transform:translateX(1160px)}}
+.typed{animation:typed 8s linear infinite}
+@keyframes typed{0%,55.2%{opacity:1;transform:translateY(0)}60.3%,100%{opacity:0;transform:translateY(26px)}}
+.gate{animation:gate 1.4s ease-in-out infinite alternate}
+@keyframes gate{from{opacity:0.55}to{opacity:1}}
+@media (prefers-reduced-motion: reduce){*{animation:none!important}}
+</style>
+
+<rect width="1280" height="210" rx="22" fill="#19191b" stroke="rgba(255,255,255,0.08)"/>
+<clipPath id="pc"><rect x="20" y="60" width="1240" height="90"/></clipPath>
+<text x="40" y="44" font-size="22" font-weight="700" fill="#ededed">会保存什么</text>
+<text x="1240" y="44" text-anchor="end" font-size="15" fill="#a1a1a6">单独输入的字符在保存前丢弃，只保留快捷键。</text>
+<g clip-path="url(#pc)"><g class="it" style="animation-delay:0s"><g class="typed" style="animation-delay:0s"><g transform="translate(40,84)"><g>
+<rect x="0" y="3" width="32.3" height="32.3" rx="7.14" fill="#0a0b0d"/>
+<rect x="0" y="0" width="32.3" height="32.3" rx="7.14" fill="#2a2d33" stroke="rgba(255,255,255,0.10)"/>
+<text x="16.15" y="22.27" text-anchor="middle" font-size="17" font-weight="650" fill="#ffffff" class="mono">h</text>
+</g></g></g></g>
+<g class="it" style="animation-delay:-0.8s"><g class="typed" style="animation-delay:-0.8s"><g transform="translate(40,84)"><g>
+<rect x="0" y="3" width="32.3" height="32.3" rx="7.14" fill="#0a0b0d"/>
+<rect x="0" y="0" width="32.3" height="32.3" rx="7.14" fill="#2a2d33" stroke="rgba(255,255,255,0.10)"/>
+<text x="16.15" y="22.27" text-anchor="middle" font-size="17" font-weight="650" fill="#ffffff" class="mono">i</text>
+</g></g></g></g>
+<g class="it" style="animation-delay:-1.6s"><g class="" style="animation-delay:-1.6s"><g transform="translate(40,84)"><g>
+<rect x="0" y="3" width="81.94" height="32.3" rx="7.14" fill="#0a0b0d"/>
+<rect x="0" y="0" width="81.94" height="32.3" rx="7.14" fill="#2f6fd6" stroke="rgba(255,255,255,0.10)"/>
+<text x="40.97" y="22.27" text-anchor="middle" font-size="17" font-weight="650" fill="#ffffff" class="mono">Ctrl+C</text>
+</g></g></g></g>
+<g class="it" style="animation-delay:-2.4000000000000004s"><g class="typed" style="animation-delay:-2.4000000000000004s"><g transform="translate(40,84)"><g>
+<rect x="0" y="3" width="32.3" height="32.3" rx="7.14" fill="#0a0b0d"/>
+<rect x="0" y="0" width="32.3" height="32.3" rx="7.14" fill="#2a2d33" stroke="rgba(255,255,255,0.10)"/>
+<text x="16.15" y="22.27" text-anchor="middle" font-size="17" font-weight="650" fill="#ffffff" class="mono">p</text>
+</g></g></g></g>
+<g class="it" style="animation-delay:-3.2s"><g class="typed" style="animation-delay:-3.2s"><g transform="translate(40,84)"><g>
+<rect x="0" y="3" width="32.3" height="32.3" rx="7.14" fill="#0a0b0d"/>
+<rect x="0" y="0" width="32.3" height="32.3" rx="7.14" fill="#2a2d33" stroke="rgba(255,255,255,0.10)"/>
+<text x="16.15" y="22.27" text-anchor="middle" font-size="17" font-weight="650" fill="#ffffff" class="mono">w</text>
+</g></g></g></g>
+<g class="it" style="animation-delay:-4s"><g class="" style="animation-delay:-4s"><g transform="translate(40,84)"><g>
+<rect x="0" y="3" width="81.94" height="32.3" rx="7.14" fill="#0a0b0d"/>
+<rect x="0" y="0" width="81.94" height="32.3" rx="7.14" fill="#2f6fd6" stroke="rgba(255,255,255,0.10)"/>
+<text x="40.97" y="22.27" text-anchor="middle" font-size="17" font-weight="650" fill="#ffffff" class="mono">Ctrl+V</text>
+</g></g></g></g>
+<g class="it" style="animation-delay:-4.800000000000001s"><g class="typed" style="animation-delay:-4.800000000000001s"><g transform="translate(40,84)"><g>
+<rect x="0" y="3" width="32.3" height="32.3" rx="7.14" fill="#0a0b0d"/>
+<rect x="0" y="0" width="32.3" height="32.3" rx="7.14" fill="#2a2d33" stroke="rgba(255,255,255,0.10)"/>
+<text x="16.15" y="22.27" text-anchor="middle" font-size="17" font-weight="650" fill="#ffffff" class="mono">1</text>
+</g></g></g></g>
+<g class="it" style="animation-delay:-5.6000000000000005s"><g class="typed" style="animation-delay:-5.6000000000000005s"><g transform="translate(40,84)"><g>
+<rect x="0" y="3" width="32.3" height="32.3" rx="7.14" fill="#0a0b0d"/>
+<rect x="0" y="0" width="32.3" height="32.3" rx="7.14" fill="#2a2d33" stroke="rgba(255,255,255,0.10)"/>
+<text x="16.15" y="22.27" text-anchor="middle" font-size="17" font-weight="650" fill="#ffffff" class="mono">2</text>
+</g></g></g></g>
+<g class="it" style="animation-delay:-6.4s"><g class="" style="animation-delay:-6.4s"><g transform="translate(40,84)"><g>
+<rect x="0" y="3" width="39.78" height="32.3" rx="7.14" fill="#0a0b0d"/>
+<rect x="0" y="0" width="39.78" height="32.3" rx="7.14" fill="#2a2d33" stroke="rgba(255,255,255,0.10)"/>
+<text x="19.89" y="22.27" text-anchor="middle" font-size="17" font-weight="650" fill="#ffffff" class="mono">F5</text>
+</g></g></g></g>
+<g class="it" style="animation-delay:-7.2s"><g class="typed" style="animation-delay:-7.2s"><g transform="translate(40,84)"><g>
+<rect x="0" y="3" width="32.3" height="32.3" rx="7.14" fill="#0a0b0d"/>
+<rect x="0" y="0" width="32.3" height="32.3" rx="7.14" fill="#2a2d33" stroke="rgba(255,255,255,0.10)"/>
+<text x="16.15" y="22.27" text-anchor="middle" font-size="17" font-weight="650" fill="#ffffff" class="mono">x</text>
+</g></g></g></g></g>
+<g class="gate"><rect x="700" y="64" width="6" height="86" rx="3" fill="#4cc38a"/>
+<rect x="660" y="60" width="86" height="94" rx="10" fill="rgba(76,195,138,0.07)" stroke="rgba(76,195,138,0.35)"/></g>
+<text x="640" y="182" text-anchor="end" font-size="14" fill="#85858b">输入 →</text>
+<text x="766" y="182" font-size="14" fill="#4cc38a">→ 保存</text>
+</svg>
