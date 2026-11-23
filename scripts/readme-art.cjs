@@ -20,7 +20,7 @@ const L = {
     title: 'KeyCast Studio',
     tag: ['Screen recordings that show', 'every shortcut you press'],
     sub: 'Key bubbles · zoom on clicks · subtitles from your voice',
-    chips: ['Windows 10 / 11', 'Free & open source', 'Works offline'],
+    chips: ['Windows · macOS · Linux', 'Free & open source', 'Works offline'],
     save: 'Save', words: ['Press', 'Ctrl+S', 'to', 'save'],
     cards: {
       keys: ['Every shortcut, on screen', 'Shortcuts only by default — typing stays private'],
@@ -32,13 +32,13 @@ const L = {
     flow: [['Record', 'screen, mic, webcam, keys'], ['Edit', 'zoom, cut, notes, subtitles'], ['Export', 'MP4, WebM, GIF, SRT']],
     privacy: ['What gets saved', 'Typed letters are dropped before saving. Shortcuts stay.'],
     typed: 'typed', kept: 'saved',
-    size: ['Smaller download in v1.2', 'Installer', 'Installed', 'MB'],
+    size: ['Windows download, v1.1 and today', 'Installer', 'Installed', 'MB'],
   },
   ko: {
     title: 'KeyCast Studio',
     tag: ['누른 단축키가 그대로 보이는', '화면 녹화 프로그램'],
     sub: '키 말풍선 · 클릭하면 확대 · 목소리로 자막',
-    chips: ['Windows 10 / 11', '무료 · 오픈 소스', '인터넷 없이 동작'],
+    chips: ['Windows · macOS · Linux', '무료 · 오픈 소스', '인터넷 없이 동작'],
     save: '저장', words: ['Ctrl+S로', '바로', '저장하세요'],
     cards: {
       keys: ['누른 단축키를 화면에', '기본은 단축키만 · 타이핑한 글자는 저장 안 함'],
@@ -50,13 +50,13 @@ const L = {
     flow: [['녹화', '화면·마이크·웹캠·키'], ['편집', '확대·자르기·주석·자막'], ['내보내기', 'MP4·WebM·GIF·SRT']],
     privacy: ['무엇이 저장될까요', '혼자 친 글자는 저장 전에 버리고, 단축키만 남깁니다.'],
     typed: '입력', kept: '저장',
-    size: ['v1.2에서 더 가벼워진 설치 파일', '설치 파일', '설치 후', 'MB'],
+    size: ['Windows 설치 파일, v1.1과 지금', '설치 파일', '설치 후', 'MB'],
   },
   ja: {
     title: 'KeyCast Studio',
     tag: ['押したショートカットが', 'そのまま映る画面録画'],
     sub: 'キー表示 · クリックでズーム · 声から字幕',
-    chips: ['Windows 10 / 11', '無料 · オープンソース', 'オフラインで動作'],
+    chips: ['Windows · macOS · Linux', '無料 · オープンソース', 'オフラインで動作'],
     save: '保存', words: ['Ctrl+Sで', 'すぐに', '保存'],
     cards: {
       keys: ['ショートカットを画面に', '既定はショートカットのみ · 入力文字は保存しない'],
@@ -68,13 +68,13 @@ const L = {
     flow: [['録画', '画面・マイク・カメラ・キー'], ['編集', 'ズーム・カット・注釈・字幕'], ['書き出し', 'MP4・WebM・GIF・SRT']],
     privacy: ['何が保存される？', '単独で打った文字は保存前に捨て、ショートカットだけ残します。'],
     typed: '入力', kept: '保存',
-    size: ['v1.2 で軽くなったダウンロード', 'インストーラー', 'インストール後', 'MB'],
+    size: ['Windows 版のサイズ：v1.1 と現在', 'インストーラー', 'インストール後', 'MB'],
   },
   'zh-CN': {
     title: 'KeyCast Studio',
     tag: ['把你按下的每个快捷键', '都录进视频'],
     sub: '按键气泡 · 点击即放大 · 语音生成字幕',
-    chips: ['Windows 10 / 11', '免费 · 开源', '离线可用'],
+    chips: ['Windows · macOS · Linux', '免费 · 开源', '离线可用'],
     save: '保存', words: ['按', 'Ctrl+S', '保存'],
     cards: {
       keys: ['快捷键显示在画面上', '默认只显示快捷键 · 打字内容不保存'],
@@ -86,7 +86,7 @@ const L = {
     flow: [['录制', '屏幕、麦克风、摄像头、按键'], ['编辑', '放大、剪切、注释、字幕'], ['导出', 'MP4、WebM、GIF、SRT']],
     privacy: ['会保存什么', '单独输入的字符在保存前丢弃，只保留快捷键。'],
     typed: '输入', kept: '保存',
-    size: ['v1.2 下载更小', '安装包', '安装后', 'MB'],
+    size: ['Windows 版大小：v1.1 与现在', '安装包', '安装后', 'MB'],
   },
 };
 
@@ -506,7 +506,8 @@ function privacy(t) {
 function sizes(t) {
   const W = 1280;
   const H = 250;
-  const rows = [[t.size[1], 142, 107], [t.size[2], 529, 354]];
+  // Windows installer and installed folder, measured for each release (v2.0.0: 108 MB and 363 MB).
+  const rows = [[t.size[1], 142, 108], [t.size[2], 529, 363]];
   const max = 560;
   const x0 = 220;
   const bw = W - x0 - 140;
@@ -522,7 +523,7 @@ function sizes(t) {
 <rect width="${W}" height="${H}" rx="22" fill="${C.surface}" stroke="rgba(255,255,255,0.08)"/>
 <text x="40" y="48" font-size="22" font-weight="700" fill="${C.text}">${esc(t.size[0])}</text>
 <g font-size="13" fill="${C.text3}"><rect x="${W - 260}" y="34" width="12" height="12" rx="3" fill="rgba(255,255,255,0.22)"/><text x="${W - 242}" y="45">v1.1</text>
-<rect x="${W - 180}" y="34" width="12" height="12" rx="3" fill="${C.accent}"/><text x="${W - 162}" y="45">v1.2</text></g>
+<rect x="${W - 180}" y="34" width="12" height="12" rx="3" fill="${C.accent}"/><text x="${W - 162}" y="45">v2.0</text></g>
 ${rows.map((r, i) => {
     const y = 84 + i * 80;
     const a = (r[1] / max) * bw;

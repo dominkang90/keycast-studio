@@ -12,7 +12,7 @@ What comes next, roughly in order. Items marked **good first issue** are self-co
 | Split `src/ui/editor.js` into one file per settings tab and the export dialog | It is still about 900 lines | Medium · **good first issue** ([#2](https://github.com/dominkang90/keycast-studio/issues/2)) |
 | Add Prettier and ESLint with a `npm run lint` step in CI | One style without discussion in reviews | Small · **good first issue** ([#3](https://github.com/dominkang90/keycast-studio/issues/3)) |
 | Unit tests for `compositor.js` drawing (render to a canvas in Node) and `exporter.js` timing | The drawing code has no unit tests yet | Medium |
-| Release workflow: build the installer in GitHub Actions on a version tag | Releases should not depend on one computer | Medium |
+| Build the Windows installer in GitHub Actions too | macOS and Linux are built there since v2.0; Windows still depends on one computer (FFmpeg essentials and wgc-capture are bundled locally) | Medium |
 
 ## Trust and safety
 
@@ -29,7 +29,10 @@ What comes next, roughly in order. Items marked **good first issue** are self-co
 | Show Hangul and other typed text as entered, not as Latin key letters | Requested for Korean tutorials |
 | Pointer hiding for window recordings and for more than one monitor | Today it works for whole-screen recordings and has been checked with one monitor |
 | Optional bundled speech model for fully offline subtitles | Today the model is downloaded on first use |
-| macOS build | The key hook and Electron work there; capture and pointer hiding need another route |
+| Real-world checks on macOS and Linux | Built and smoke-tested since v2.0 but never recorded on a real Mac or Linux desktop |
+| Computer sound on macOS and Linux | Electron records it on Windows only; macOS needs ScreenCaptureKit audio, Linux PipeWire |
+| Pointer kinds on macOS and Linux | Recorded on Windows only (GetCursorInfo); elsewhere the arrow is drawn |
+| Apple notarization and Windows code signing | Removes the first-start warnings; needs paid certificates |
 
 ## Needs testing on other computers
 

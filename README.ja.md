@@ -6,7 +6,8 @@
 
 <p align="center">
   押したショートカットを動画に表示し、クリックした場所を自動でズームし、本物のマウスポインターの代わりに滑らかなポインターを描き、<br>
-  声をこのパソコンの中で字幕に変える、Windows 用の画面録画・編集ソフトです。
+  声をこのパソコンの中で字幕に変える、Windows・macOS・Linux 用の画面録画・編集ソフトです。<br>
+  無料のオープンソースで、12 言語に対応しています。
 </p>
 
 <p align="center">
@@ -16,7 +17,7 @@
   <a href="SECURITY.md">セキュリティとプライバシー</a>
 </p>
 
-<p align="center"><img src="https://img.shields.io/badge/status-beta-orange" alt="ベータ"> <img src="https://img.shields.io/badge/platform-Windows%2010%20%7C%2011-blue" alt="Windows 10, 11"> <img src="https://img.shields.io/github/license/dominkang90/keycast-studio" alt="MIT ライセンス"> <a href="https://github.com/dominkang90/keycast-studio/actions/workflows/ci.yml"><img src="https://github.com/dominkang90/keycast-studio/actions/workflows/ci.yml/badge.svg" alt="CI"></a></p>
+<p align="center"><img src="https://img.shields.io/badge/status-beta-orange" alt="ベータ"> <img src="https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-blue" alt="Windows, macOS, Linux"> <a href="https://github.com/dominkang90/keycast-studio/releases/latest"><img src="https://img.shields.io/github/v/release/dominkang90/keycast-studio?label=release" alt="release"></a> <img src="https://img.shields.io/github/license/dominkang90/keycast-studio" alt="MIT ライセンス"> <a href="https://github.com/dominkang90/keycast-studio/actions/workflows/ci.yml"><img src="https://github.com/dominkang90/keycast-studio/actions/workflows/ci.yml/badge.svg" alt="CI"></a></p>
 
 ![キー表示、クリックのズーム、字幕が入った録画](docs/demo.gif)
 
@@ -49,7 +50,8 @@
 **録画**
 - 画面全体またはウィンドウ 1 つを、マイク・パソコンの音・Web カメラと一緒に録画
 - どのアプリで押したキー・クリック・ドラッグ・ホイールも時刻付きで記録
-- 本物のマウスポインターを録画から外し、編集時に大きく滑らかなポインターを描き直す（インストーラーに FFmpeg 同梱）
+- 本物のマウスポインターを録画から外し、編集時に大きく滑らかなポインターを描き直す（Windows は同梱、macOS・Linux は FFmpeg が必要）
+- 録画中のポインターの種類（矢印・指・文字入力・サイズ変更など）を記録し、同じ形で描き直す（Windows）
 - 録画中に画面上のキー表示をオン・オフ（録画バーのキーボードボタン、または `Alt` + `Shift` + `K`）
 - 停止・一時停止・キー表示のショートカットを変更可能
 
@@ -61,6 +63,7 @@
 - 背景（色・グラデーション・背景画像・自分の画像）、余白、角丸、影、クロップ、アスペクト比（16:9、9:16、1:1、4:3）
 - ポインター：7 種類の形、クリック効果 4 種類（波紋・二重波紋・光・はじけ）とサイズ・長さ、なめらかさ、残像、止まったら隠す
 - Web カメラの吹き出し、BGM・効果音
+- ほかのアプリの動画を開いて編集。Recordly の録画はポインター・クリック・自動ズームごと読み込みます
 
 **字幕**
 - 声をこのパソコンの中で文字に起こし（Whisper）、文単位の字幕を作成。韓国語・英語・日本語・中国語・スペイン語・ドイツ語・フランス語に対応
@@ -69,9 +72,14 @@
 
 **書き出し**
 - MP4・WebM（30/60fps、720p〜4K）と GIF。カット、速度変更、追加した音が反映されます
+- 1920×1200 以下の録画は動画の長さより速く書き出し（11 秒の動画を約 6 秒で）
 
 **拡張機能**
 - 背景・キーテーマ・ポインターパック・クリック効果・字幕スタイルを追加するデータのパック。コードは実行しません。作り方は [docs/EXTENSIONS.md](docs/EXTENSIONS.md)
+
+**画面**
+- 12 言語：한국어, English, 日本語, 简体中文, 繁體中文, Español, Français, Deutsch, Italiano, Nederlands, Português (Brasil), Русский。最初はシステムの言語に合わせます
+- キー名を Windows 式（Ctrl・Alt・Win）または Mac 式（⌃ Control・⌥ Option・⌘ Cmd）で表示
 
 **録画せずにキーだけ表示**
 - 発表やビデオ会議、他の録画ソフトを使うときに、ショートカットとクリックだけを画面に表示
@@ -82,7 +90,7 @@
 
 ## インストール
 
-<p align="center"><img src="docs/readme/size.ja.svg" width="100%" alt="v1.2 で軽くなったダウンロード"></p>
+<p align="center"><img src="docs/readme/size.ja.svg" width="100%" alt="Windows 版のサイズ：v1.1 と現在"></p>
 
 **必要なもの:** Windows 10・11（64 ビット）、macOS 11 以降（Apple シリコン・Intel）、または X11 の 64 ビット Linux。macOS・Linux 版は 2.0 で追加され、まだ自動チェックのみです。macOS では初回に右クリック →「開く」で起動し、アクセシビリティと画面収録を許可してください（ポインターなし録画には `brew install ffmpeg`）。Linux では `.AppImage` か `.deb` を使い、X11 セッションでキーとクリックを記録できます（`sudo apt install ffmpeg`）。パソコンの音の録音は Windows のみです。
 
@@ -99,38 +107,46 @@
 
 ## 使い方
 
-1. **어디를 녹화할까요?**（録画する場所）で画面全体かウィンドウを選び、右側の録画オプションを設定して **녹화 시작**（録画開始）を押します。
-2. いつも通り作業します。画面上部の録画バーかショートカットで停止すると、エディターが開きます。
-3. 右側のタブで仕上げて **내보내기**（書き出し）で保存します。
+1. **どこを録画しますか？**で画面全体かウィンドウを選び、右側の録画オプションを決めて **録画開始** を押します。言語は右上のメニューで変えられます。
+2. いつもどおり作業します。画面上部の録画バーかショートカットで止めると編集画面が開きます。
+3. 右側のタブ（画面・カット・ズーム・注釈・キー・ポインター・Web カメラ・サウンド・字幕）で仕上げ、**書き出し** で保存します。
 
 | ショートカット | 動作 |
 |---|---|
-| `Alt` + `Shift` + `S` | 録画を停止してエディターへ（どのアプリからでも、変更可） |
+| `Alt` + `Shift` + `S` | 録画を止めて編集へ（どのアプリからでも、変更可） |
 | `Alt` + `Shift` + `P` | 録画の一時停止 / 再開（変更可） |
 | `Alt` + `Shift` + `K` | 画面上のキー表示のオン / オフ（変更可） |
-| `Space` | エディターで再生 / 停止 |
-| `←` `→` | 1 フレーム移動、`Shift` と一緒に 5 秒 |
+| `Space` | 編集画面で再生 / 停止 |
+| `←` `→` | 1 フレーム移動、`Shift` で 5 秒 |
 | `K` | 動画のキー表示のオン / オフ |
-| `S` | ここからカット区間を作る |
-| `Delete` | タイムラインで選んだ区間を削除 |
-| `Ctrl` + `Z` / `Ctrl` + `Y` | 元に戻す / やり直す |
+| `S` | ここからカット範囲を作る |
+| `Delete` | タイムラインで選んだ範囲を削除 |
+| `Ctrl` + `Z` / `Ctrl` + `Y` | 元に戻す / やり直し |
+
+Mac では `Alt` は `Option` キー、元に戻す・やり直しは `Cmd` + `Z` / `Y` です。
 
 ## テスト環境
 
-ベータ版です。これまでに確認したのは 1 台のパソコン（Windows 11、Intel Arc グラフィックス、2880×1800 の画面、モニター 1 台）だけです。
+ベータ版です。
 
-未確認: Windows 10、NVIDIA・AMD のグラフィックス、複数モニター、実際のマイク・Web カメラとポインター非表示録画の組み合わせ。試していただけたら、[テスト結果の報告](https://github.com/dominkang90/keycast-studio/issues/new?template=test_report.yml)（2 分ほど）がとても助かります。
+- **Windows**：1 台（Windows 11、Intel Arc グラフィックス、2880×1800 画面、モニター 1 台）で、インストーラー・ポータブル exe・24 項目の自己チェックまで手で確認しました。
+- **macOS・Linux**：リリースごとに GitHub の Mac・Linux マシンでビルドし、アプリを起動してウィンドウが開き、ホーム画面が描かれ、キー記録モジュールが読み込まれるかを自動で確認します。実機の Mac・Linux で録画した人はまだいません。
+
+未確認：Windows 10、NVIDIA・AMD グラフィックス、複数モニター、実際のマイク・Web カメラとポインターなし録画の組み合わせ、実機の Mac・Linux。試したら [テスト結果](https://github.com/dominkang90/keycast-studio/issues/new?template=test_report.yml) を送っていただけると大きな助けになります（2 分ほどです）。
 
 ## 既知の制限
 
-- Windows 専用です。
-- ハングルなどを入力しても、キー表示はキーボードの英字で表示されます。キー表示はショートカットを見せるためのものです。
-- 本物のポインターを隠せるのは画面全体の録画だけです。
-- 音声認識に使えるグラフィックスがない場合は CPU を使うため、動画の長さより時間がかかることがあります。
+- パソコンの音の録音は Windows のみです。
+- macOS：まだ Apple の公証前のため初回は右クリック →「開く」で起動し、アクセシビリティと画面収録の許可が必要です。ポインターを隠すには FFmpeg（`brew install ffmpeg`）が必要です。
+- Linux：キー・クリックの記録とポインターを隠す機能は X11 セッションのみ。Wayland では画面だけが録画されます。
+- ポインターの種類（指・文字入力など）の記録は Windows のみ。ほかでは矢印で描きます。
+- 本物のポインターを隠せるのは全画面録画のときだけです。
+- 韓国語・英語以外の翻訳は機械翻訳の助けを借りており、ネイティブの確認が必要です。
+- 音声認識に使えるグラフィックカードがない場合は CPU を使い、動画の長さより時間がかかることがあります。
 
 ## ソースからビルド
 
-Windows と Node.js 20 以上が必要です。
+Node.js 20 以上が必要です（Windows・macOS・Linux）。
 
 ```bash
 git clone https://github.com/dominkang90/keycast-studio.git
@@ -148,7 +164,7 @@ npm install
 npm start
 ```
 
-`npm test` で単体テスト、`npm run build` で `release\KeyCast Studio-win32-x64`、`npm run dist` でインストーラーとポータブル exe を作ります（同梱する FFmpeg 8 以上が PATH に必要）。[CONTRIBUTING.md](CONTRIBUTING.md) と [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) をご覧ください。
+`npm test` で単体テスト。`npm run dist` で Windows のインストーラーとポータブル exe（`FFMPEG_PATH` か PATH の FFmpeg 8 以上を同梱し、wgc-capture をダウンロード）、`npm run dist:mac` で macOS の dmg・zip、`npm run dist:linux` で AppImage・deb を作ります。バージョンタグを push すると GitHub Actions が Mac・Linux 版を作ります。[CONTRIBUTING.md](CONTRIBUTING.md) と [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) をご覧ください。
 
 ## クレジットとオープンソース
 

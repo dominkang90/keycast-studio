@@ -1,5 +1,5 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="250" viewBox="0 0 1280 250" role="img" aria-label="Smaller download in v1.2">
-<title>Smaller download in v1.2</title>
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="250" viewBox="0 0 1280 250" role="img" aria-label="Windows download, v1.1 and today">
+<title>Windows download, v1.1 and today</title>
 <style>
 text{font-family:'Segoe UI Variable Display','Segoe UI',-apple-system,BlinkMacSystemFont,'Helvetica Neue',Arial,'Malgun Gothic','Apple SD Gothic Neo','Noto Sans CJK KR','Hiragino Sans','Microsoft YaHei',sans-serif}
 .mono{font-family:'Cascadia Mono',Consolas,'SF Mono',Menlo,monospace}
@@ -15,17 +15,17 @@ text{font-family:'Segoe UI Variable Display','Segoe UI',-apple-system,BlinkMacSy
 </style>
 
 <rect width="1280" height="250" rx="22" fill="#19191b" stroke="rgba(255,255,255,0.08)"/>
-<text x="40" y="48" font-size="22" font-weight="700" fill="#ededed">Smaller download in v1.2</text>
+<text x="40" y="48" font-size="22" font-weight="700" fill="#ededed">Windows download, v1.1 and today</text>
 <g font-size="13" fill="#85858b"><rect x="1020" y="34" width="12" height="12" rx="3" fill="rgba(255,255,255,0.22)"/><text x="1038" y="45">v1.1</text>
-<rect x="1100" y="34" width="12" height="12" rx="3" fill="#5b9dff"/><text x="1118" y="45">v1.2</text></g>
+<rect x="1100" y="34" width="12" height="12" rx="3" fill="#5b9dff"/><text x="1118" y="45">v2.0</text></g>
 <text x="40" y="110" font-size="17" fill="#a1a1a6">Installer</text>
 <rect class="bar d0" x="220" y="84" width="233.28571428571428" height="22" rx="6" fill="rgba(255,255,255,0.16)"/>
 <text class="lab l0" x="465.2857142857143" y="101" font-size="15" fill="#85858b">142 MB</text>
-<rect class="bar d1" x="220" y="112" width="175.78571428571428" height="22" rx="6" fill="#5b9dff"/>
-<text class="lab l1" x="407.7857142857143" y="129" font-size="15" font-weight="700" fill="#ededed">107 MB  <tspan fill="#4cc38a">−25%</tspan></text>
+<rect class="bar d1" x="220" y="112" width="177.42857142857144" height="22" rx="6" fill="#5b9dff"/>
+<text class="lab l1" x="409.42857142857144" y="129" font-size="15" font-weight="700" fill="#ededed">108 MB  <tspan fill="#4cc38a">−24%</tspan></text>
 <text x="40" y="190" font-size="17" fill="#a1a1a6">Installed</text>
 <rect class="bar d2" x="220" y="164" width="869.0714285714286" height="22" rx="6" fill="rgba(255,255,255,0.16)"/>
 <text class="lab l2" x="1101.0714285714284" y="181" font-size="15" fill="#85858b">529 MB</text>
-<rect class="bar d3" x="220" y="192" width="581.5714285714286" height="22" rx="6" fill="#5b9dff"/>
-<text class="lab l3" x="813.5714285714286" y="209" font-size="15" font-weight="700" fill="#ededed">354 MB  <tspan fill="#4cc38a">−33%</tspan></text>
+<rect class="bar d3" x="220" y="192" width="596.3571428571429" height="22" rx="6" fill="#5b9dff"/>
+<text class="lab l3" x="828.3571428571429" y="209" font-size="15" font-weight="700" fill="#ededed">363 MB  <tspan fill="#4cc38a">−31%</tspan></text>
 </svg>

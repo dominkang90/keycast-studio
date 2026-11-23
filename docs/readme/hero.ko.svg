@@ -64,15 +64,15 @@ text{font-family:'Segoe UI Variable Display','Segoe UI',-apple-system,BlinkMacSy
 <g class="in in2"><text x="72" y="263.7368421052631" font-size="39.47368421052631" font-weight="750" fill="url(#tg)" letter-spacing="-0.5">화면 녹화 프로그램</text></g>
 <g class="in in3"><text x="72" y="326" font-size="20" fill="#a1a1a6">키 말풍선 · 클릭하면 확대 · 목소리로 자막</text></g>
 <g class="in in4">
-<rect x="72" y="372" width="163" height="36" rx="18" fill="rgba(255,255,255,0.06)" stroke="rgba(255,255,255,0.14)"/>
+<rect x="72" y="372" width="231.79999999999998" height="36" rx="18" fill="rgba(255,255,255,0.06)" stroke="rgba(255,255,255,0.14)"/>
 <circle cx="89" cy="390" r="4" fill="#4cc38a"/>
-<text x="100" y="396" font-size="15" fill="#ededed">Windows 10 / 11</text>
-<rect x="245" y="372" width="184" height="36" rx="18" fill="rgba(255,255,255,0.06)" stroke="rgba(255,255,255,0.14)"/>
-<circle cx="262" cy="390" r="4" fill="#5b9dff"/>
-<text x="273" y="396" font-size="15" fill="#ededed">무료 · 오픈 소스</text>
-<rect x="439" y="372" width="169" height="36" rx="18" fill="rgba(255,255,255,0.06)" stroke="rgba(255,255,255,0.14)"/>
-<circle cx="456" cy="390" r="4" fill="#ffd33d"/>
-<text x="467" y="396" font-size="15" fill="#ededed">인터넷 없이 동작</text>
+<text x="100" y="396" font-size="15" fill="#ededed">Windows · macOS · Linux</text>
+<rect x="313.79999999999995" y="372" width="184" height="36" rx="18" fill="rgba(255,255,255,0.06)" stroke="rgba(255,255,255,0.14)"/>
+<circle cx="330.79999999999995" cy="390" r="4" fill="#5b9dff"/>
+<text x="341.79999999999995" y="396" font-size="15" fill="#ededed">무료 · 오픈 소스</text>
+<rect x="507.79999999999995" y="372" width="169" height="36" rx="18" fill="rgba(255,255,255,0.06)" stroke="rgba(255,255,255,0.14)"/>
+<circle cx="524.8" cy="390" r="4" fill="#ffd33d"/>
+<text x="535.8" y="396" font-size="15" fill="#ededed">인터넷 없이 동작</text>
 </g>
 
 <g class="win">

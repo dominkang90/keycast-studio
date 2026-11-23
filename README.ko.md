@@ -6,7 +6,8 @@
 
 <p align="center">
   누른 단축키를 영상에 보여 주고, 클릭한 곳을 자동으로 확대하고, 실제 마우스 커서 대신 부드러운 커서를 그려 넣고,<br>
-  목소리를 이 컴퓨터 안에서 자막으로 바꿔 주는 Windows용 화면 녹화·편집 프로그램입니다.
+  목소리를 이 컴퓨터 안에서 자막으로 바꿔 주는 Windows·macOS·Linux용 화면 녹화·편집 프로그램입니다.<br>
+  무료 오픈 소스이고 12개 언어를 지원합니다.
 </p>
 
 <p align="center">
@@ -17,7 +18,7 @@
   <a href="사용설명서.html">사용설명서</a>
 </p>
 
-<p align="center"><img src="https://img.shields.io/badge/status-beta-orange" alt="베타"> <img src="https://img.shields.io/badge/platform-Windows%2010%20%7C%2011-blue" alt="Windows 10, 11"> <img src="https://img.shields.io/github/license/dominkang90/keycast-studio" alt="MIT 라이선스"> <a href="https://github.com/dominkang90/keycast-studio/actions/workflows/ci.yml"><img src="https://github.com/dominkang90/keycast-studio/actions/workflows/ci.yml/badge.svg" alt="CI"></a></p>
+<p align="center"><img src="https://img.shields.io/badge/status-beta-orange" alt="베타"> <img src="https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-blue" alt="Windows, macOS, Linux"> <a href="https://github.com/dominkang90/keycast-studio/releases/latest"><img src="https://img.shields.io/github/v/release/dominkang90/keycast-studio?label=release" alt="release"></a> <img src="https://img.shields.io/github/license/dominkang90/keycast-studio" alt="MIT 라이선스"> <a href="https://github.com/dominkang90/keycast-studio/actions/workflows/ci.yml"><img src="https://github.com/dominkang90/keycast-studio/actions/workflows/ci.yml/badge.svg" alt="CI"></a></p>
 
 ![키 표시, 클릭 확대, 자막이 들어간 결과 영상](docs/demo.gif)
 
@@ -50,7 +51,8 @@
 **녹화**
 - 전체 화면 또는 창 하나를 녹화하고, 마이크·컴퓨터 소리·웹캠을 함께 담습니다.
 - 어떤 프로그램에서든 키·클릭·드래그·휠을 시각과 함께 기록합니다.
-- 실제 마우스 커서를 빼고 녹화한 뒤, 편집할 때 크고 부드러운 커서를 다시 그려 넣습니다(설치 파일에 FFmpeg 포함).
+- 실제 마우스 커서를 빼고 녹화한 뒤, 편집할 때 크고 부드러운 커서를 다시 그려 넣습니다(Windows는 설치 파일에 포함, macOS·Linux는 FFmpeg 필요).
+- 녹화 중 보이던 커서 종류(화살표·손가락·글자 입력·크기 조절 등)를 기록해 같은 모양으로 다시 그립니다(Windows).
 - 녹화 중 화면 키 표시를 켜고 끕니다(녹화 막대의 키보드 버튼 또는 `Alt` + `Shift` + `K`).
 - 멈추기·일시정지·키 표시 단축키를 바꿀 수 있습니다.
 
@@ -62,6 +64,7 @@
 - 배경(색·그라데이션·배경 그림·내 그림), 여백, 둥근 모서리, 그림자, 크롭, 화면 비율(16:9, 9:16, 1:1, 4:3)
 - 커서: 녹화 때 Windows가 보여 준 커서 종류(화살표·손가락·글자 입력·크기 조절 등)를 따라가는 커서 묶음 6종, 스프링 움직임(프리셋 또는 세기·감쇠·무게 직접), 클릭 효과 4종(물결·겹물결·빛 번짐·터짐)과 크기·길이·진하기, 잔상, 멈춰 있으면 숨기기
 - 웹캠 말풍선, 배경 음악·효과음
+- 다른 프로그램으로 만든 영상 열기. Recordly 녹화는 커서·클릭·자동 확대까지 함께 가져옵니다.
 
 **자막**
 - 목소리를 이 컴퓨터 안에서 받아 적어(Whisper) 문장 단위 자막을 만듭니다. 한국어·영어·일본어·중국어·스페인어·독일어·프랑스어.
@@ -70,9 +73,14 @@
 
 **내보내기**
 - MP4·WebM(30/60fps, 720p~4K)과 GIF. 잘라낸 구간, 속도 변경, 추가한 소리가 반영됩니다.
+- 1920×1200 이하 녹화는 영상 길이보다 빨리 내보냅니다(11초 영상을 약 6초에).
 
 **확장 기능**
 - 배경·키 테마·커서 묶음·클릭 효과·자막 스타일을 더하는 데이터 묶음. 코드는 실행하지 않습니다. 만드는 법은 [docs/EXTENSIONS.md](docs/EXTENSIONS.md)
+
+**화면**
+- 12개 언어: 한국어, English, 日本語, 简体中文, 繁體中文, Español, Français, Deutsch, Italiano, Nederlands, Português (Brasil), Русский. 처음에는 시스템 언어를 따릅니다.
+- 키 이름을 Windows식(Ctrl·Alt·Win) 또는 Mac식(⌃ Control·⌥ Option·⌘ Cmd)으로 표시
 
 **녹화 없이 키만 보여주기**
 - 발표·화상 회의·다른 녹화 프로그램을 쓸 때 단축키와 클릭만 화면 위에 띄웁니다.
@@ -83,7 +91,7 @@
 
 ## 설치
 
-<p align="center"><img src="docs/readme/size.ko.svg" width="100%" alt="v1.2에서 더 가벼워진 설치 파일"></p>
+<p align="center"><img src="docs/readme/size.ko.svg" width="100%" alt="Windows 설치 파일, v1.1과 지금"></p>
 
 **필요한 것:** Windows 10·11 (64비트), macOS 11 이상(Apple 실리콘·Intel), 또는 X11을 쓰는 64비트 Linux. 맥·리눅스판은 2.0에서 처음 나왔고 아직 자동 검사만 거쳤습니다. 써 보시면 [테스트 결과](https://github.com/dominkang90/keycast-studio/issues/new?template=test_report.yml)를 꼭 알려 주세요.
 
@@ -104,9 +112,9 @@
 
 ## 사용법
 
-1. **어디를 녹화할까요?**에서 전체 화면이나 창을 고르고 오른쪽 녹화 옵션을 정한 뒤 **녹화 시작**을 누릅니다.
+1. **어디를 녹화할까요?**에서 전체 화면이나 창을 고르고 오른쪽 녹화 옵션을 정한 뒤 **녹화 시작**을 누릅니다. 언어는 오른쪽 위 메뉴에서 바꿉니다.
 2. 평소처럼 작업합니다. 화면 위쪽 녹화 막대나 단축키로 멈추면 편집 화면이 열립니다.
-3. 오른쪽 탭에서 다듬고 **내보내기**로 저장합니다.
+3. 오른쪽 탭(화면·자르기·줌·주석·키·커서·웹캠·소리·자막)에서 다듬고 **내보내기**로 저장합니다.
 
 | 단축키 | 하는 일 |
 |---|---|
@@ -120,22 +128,31 @@
 | `Delete` | 타임라인에서 고른 구간 지우기 |
 | `Ctrl` + `Z` / `Ctrl` + `Y` | 되돌리기 / 다시 하기 |
 
+Mac에서는 `Alt`가 `Option` 키이고, 되돌리기·다시 하기는 `Cmd` + `Z` / `Y`입니다.
+
 ## 시험한 환경
 
-베타 버전입니다. 지금까지 Windows 11, Intel Arc 그래픽, 2880×1800 화면, 모니터 한 대인 컴퓨터 한 대에서 확인했습니다.
+베타 버전입니다.
 
-아직 확인하지 못한 것: Windows 10, NVIDIA·AMD 그래픽, 모니터 여러 대, 실제 마이크·웹캠과 커서 숨김 녹화를 함께 쓰는 경우. 써 보셨다면 [테스트 결과 보내기](https://github.com/dominkang90/keycast-studio/issues/new?template=test_report.yml)가 2분이면 되고 큰 도움이 됩니다.
+- **Windows**: 컴퓨터 한 대(Windows 11, Intel Arc 그래픽, 2880×1800 화면, 모니터 한 대)에서 설치 파일·휴대용 exe·앱 자체 점검 24개 항목까지 직접 확인했습니다.
+- **macOS·Linux**: 릴리즈마다 GitHub의 맥·리눅스 컴퓨터에서 만들고, 앱을 켜서 창이 열리고 첫 화면이 그려지고 키 기록 모듈이 올라오는지 자동으로 확인합니다. 실제 맥·리눅스 컴퓨터에서 녹화해 본 사람은 아직 없습니다.
+
+아직 확인하지 못한 것: Windows 10, NVIDIA·AMD 그래픽, 모니터 여러 대, 실제 마이크·웹캠과 커서 숨김 녹화를 함께 쓰는 경우, 실제 맥·리눅스 컴퓨터. 써 보셨다면 [테스트 결과 보내기](https://github.com/dominkang90/keycast-studio/issues/new?template=test_report.yml)가 2분이면 되고 큰 도움이 됩니다.
 
 ## 알려진 제한
 
-- Windows 전용입니다.
-- 한글로 타이핑해도 키 표시는 자판의 영문 글자(예: `ㅎ` 대신 `G`)로 나옵니다. 키 표시는 단축키를 보여 주는 용도입니다.
+- 컴퓨터 소리 녹음은 Windows에서만 됩니다.
+- macOS: 아직 Apple 공증 전이라 처음에는 오른쪽 클릭 → 열기로 실행하고, 손쉬운 사용·화면 기록 권한이 필요합니다. 커서 숨김에는 FFmpeg(`brew install ffmpeg`)가 필요합니다.
+- Linux: 키·클릭 기록과 커서 숨김은 X11 세션에서만 됩니다. Wayland에서는 화면만 녹화됩니다.
+- 커서 종류(손가락·글자 입력 등) 기록은 Windows에서만 됩니다. 다른 운영체제에서는 화살표로 그립니다.
 - 실제 커서 숨기기는 전체 화면 녹화에서만 됩니다.
+- 한글로 타이핑해도 키 표시는 자판의 영문 글자(예: `ㅎ` 대신 `G`)로 나옵니다. 키 표시는 단축키를 보여 주는 용도입니다.
+- 한국어·영어를 뺀 번역은 기계 번역의 도움을 받았고 원어민 검토가 필요합니다.
 - 음성 인식에 쓸 수 있는 그래픽카드가 없으면 CPU를 써서 영상 길이보다 오래 걸릴 수 있습니다.
 
 ## 직접 빌드하기
 
-Windows와 Node.js 20 이상이 필요합니다.
+Node.js 20 이상이 필요합니다(Windows·macOS·Linux).
 
 ```bash
 git clone https://github.com/dominkang90/keycast-studio.git
@@ -153,7 +170,7 @@ npm install
 npm start
 ```
 
-`npm test`는 단위 테스트, `npm run build`는 `release\KeyCast Studio-win32-x64` 폴더, `npm run dist`는 설치 파일과 휴대용 exe를 만듭니다(함께 넣을 FFmpeg 8 이상이 PATH에 있어야 함). [CONTRIBUTING.ko.md](CONTRIBUTING.ko.md)와 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)를 보세요.
+`npm test`는 단위 테스트입니다. `npm run dist`는 Windows 설치 파일과 휴대용 exe(`FFMPEG_PATH`나 PATH의 FFmpeg 8 이상을 넣고 wgc-capture를 내려받음), `npm run dist:mac`은 macOS dmg·zip, `npm run dist:linux`는 AppImage·deb를 만듭니다. 버전 태그를 올리면 GitHub Actions가 맥·리눅스 파일을 만듭니다. [CONTRIBUTING.ko.md](CONTRIBUTING.ko.md)와 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)를 보세요.
 
 ## 참고한 프로젝트와 오픈소스
 

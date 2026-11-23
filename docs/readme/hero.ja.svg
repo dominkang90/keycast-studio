@@ -64,15 +64,15 @@ text{font-family:'Segoe UI Variable Display','Segoe UI',-apple-system,BlinkMacSy
 <g class="in in2"><text x="72" y="271.96" font-size="46" font-weight="750" fill="url(#tg)" letter-spacing="-0.5">そのまま映る画面録画</text></g>
 <g class="in in3"><text x="72" y="326" font-size="20" fill="#a1a1a6">キー表示 · クリックでズーム · 声から字幕</text></g>
 <g class="in in4">
-<rect x="72" y="372" width="163" height="36" rx="18" fill="rgba(255,255,255,0.06)" stroke="rgba(255,255,255,0.14)"/>
+<rect x="72" y="372" width="231.79999999999998" height="36" rx="18" fill="rgba(255,255,255,0.06)" stroke="rgba(255,255,255,0.14)"/>
 <circle cx="89" cy="390" r="4" fill="#4cc38a"/>
-<text x="100" y="396" font-size="15" fill="#ededed">Windows 10 / 11</text>
-<rect x="245" y="372" width="214" height="36" rx="18" fill="rgba(255,255,255,0.06)" stroke="rgba(255,255,255,0.14)"/>
-<circle cx="262" cy="390" r="4" fill="#5b9dff"/>
-<text x="273" y="396" font-size="15" fill="#ededed">無料 · オープンソース</text>
-<rect x="469" y="372" width="154" height="36" rx="18" fill="rgba(255,255,255,0.06)" stroke="rgba(255,255,255,0.14)"/>
-<circle cx="486" cy="390" r="4" fill="#ffd33d"/>
-<text x="497" y="396" font-size="15" fill="#ededed">オフラインで動作</text>
+<text x="100" y="396" font-size="15" fill="#ededed">Windows · macOS · Linux</text>
+<rect x="313.79999999999995" y="372" width="214" height="36" rx="18" fill="rgba(255,255,255,0.06)" stroke="rgba(255,255,255,0.14)"/>
+<circle cx="330.79999999999995" cy="390" r="4" fill="#5b9dff"/>
+<text x="341.79999999999995" y="396" font-size="15" fill="#ededed">無料 · オープンソース</text>
+<rect x="537.8" y="372" width="154" height="36" rx="18" fill="rgba(255,255,255,0.06)" stroke="rgba(255,255,255,0.14)"/>
+<circle cx="554.8" cy="390" r="4" fill="#ffd33d"/>
+<text x="565.8" y="396" font-size="15" fill="#ededed">オフラインで動作</text>
 </g>
 
 <g class="win">
