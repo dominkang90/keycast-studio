@@ -70,9 +70,9 @@ text{font-family:'Segoe UI Variable Display','Segoe UI',-apple-system,BlinkMacSy
 <rect x="313.79999999999995" y="372" width="184" height="36" rx="18" fill="rgba(255,255,255,0.06)" stroke="rgba(255,255,255,0.14)"/>
 <circle cx="330.79999999999995" cy="390" r="4" fill="#5b9dff"/>
 <text x="341.79999999999995" y="396" font-size="15" fill="#ededed">무료 · 오픈 소스</text>
-<rect x="507.79999999999995" y="372" width="169" height="36" rx="18" fill="rgba(255,255,255,0.06)" stroke="rgba(255,255,255,0.14)"/>
-<circle cx="524.8" cy="390" r="4" fill="#ffd33d"/>
-<text x="535.8" y="396" font-size="15" fill="#ededed">인터넷 없이 동작</text>
+<rect x="72" y="418" width="169" height="36" rx="18" fill="rgba(255,255,255,0.06)" stroke="rgba(255,255,255,0.14)"/>
+<circle cx="89" cy="436" r="4" fill="#ffd33d"/>
+<text x="100" y="442" font-size="15" fill="#ededed">인터넷 없이 동작</text>
 </g>
 
 <g class="win">

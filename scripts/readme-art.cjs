@@ -217,7 +217,15 @@ ${t.words.map((_, i) => `.w${i}{animation-name:word${i}}@keyframes word${i}{0%,$
   const tagSize = fit();
   const chipsX = [72];
   const chipW = t.chips.map((c) => c.length * (/[가-힣ぁ-ん一-龥]/.test(c) ? 15 : 8.6) + 34);
-  for (let i = 1; i < chipW.length; i++) chipsX.push(chipsX[i - 1] + chipW[i - 1] + 10);
+  // Chips wrap to a second row before they would run under the window on the right.
+  const chipsY = [372];
+  for (let i = 1; i < chipW.length; i++) {
+    let x = chipsX[i - 1] + chipW[i - 1] + 10;
+    let y = chipsY[i - 1];
+    if (x + chipW[i] > 610) { x = 72; y += 46; }
+    chipsX.push(x);
+    chipsY.push(y);
+  }
 
   const body = `
 <rect width="${W}" height="${H}" rx="24" fill="${C.bg}"/>
@@ -242,9 +250,9 @@ ${blobs(W, H, [[0.12, 0.2, 0.38, '#6d5efc'], [0.85, 0.1, 0.34, '#c254d8'], [0.75
 <g class="in in2"><text x="72" y="${214 + tagSize * 1.26}" font-size="${tagSize}" font-weight="750" fill="url(#tg)" letter-spacing="-0.5">${esc(t.tag[1])}</text></g>
 <g class="in in3"><text x="72" y="326" font-size="20" fill="${C.text2}">${esc(t.sub)}</text></g>
 <g class="in in4">
-${t.chips.map((c, i) => `<rect x="${chipsX[i]}" y="372" width="${chipW[i]}" height="36" rx="18" fill="rgba(255,255,255,0.06)" stroke="rgba(255,255,255,0.14)"/>
-<circle cx="${chipsX[i] + 17}" cy="390" r="4" fill="${[C.ok, C.accent, C.click][i]}"/>
-<text x="${chipsX[i] + 28}" y="396" font-size="15" fill="${C.text}">${esc(c)}</text>`).join('\n')}
+${t.chips.map((c, i) => `<rect x="${chipsX[i]}" y="${chipsY[i]}" width="${chipW[i]}" height="36" rx="18" fill="rgba(255,255,255,0.06)" stroke="rgba(255,255,255,0.14)"/>
+<circle cx="${chipsX[i] + 17}" cy="${chipsY[i] + 18}" r="4" fill="${[C.ok, C.accent, C.click][i]}"/>
+<text x="${chipsX[i] + 28}" y="${chipsY[i] + 24}" font-size="15" fill="${C.text}">${esc(c)}</text>`).join('\n')}
 </g>
 
 <g class="win">
