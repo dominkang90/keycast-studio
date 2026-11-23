@@ -23,7 +23,7 @@
 
 ![키 표시, 클릭 확대, 자막이 들어간 결과 영상](docs/demo.gif)
 
-> KeyCast Studio로 녹화하고 그대로 내보낸 결과입니다. 시연용 자막은 직접 입력했습니다.
+> KeyCast Studio로 녹화하고 그대로 내보낸 결과입니다. 시연용 자막은 직접 입력했습니다. 화면은 한국어와 영어를 지원합니다(오른쪽 위 언어 메뉴).
 
 ## 키보드 기록에 대해
 
@@ -49,10 +49,12 @@
 - 앞뒤 자르기, 중간 잘라내기, 구간별 속도(0.25×~4×), 되돌리기·다시 하기
 - 글자·화살표·네모·그림 주석, 개인 정보를 흐리게 가리기
 - 배경(색·그라데이션·배경 그림·내 그림), 여백, 둥근 모서리, 그림자, 크롭, 화면 비율(16:9, 9:16, 1:1, 4:3)
+- 커서: 모양 7종, 클릭 효과 4종(물결·겹물결·빛 번짐·터짐)과 크기·길이, 부드럽게, 잔상, 멈춰 있으면 숨기기
 - 웹캠 말풍선, 배경 음악·효과음
 
 **자막**
 - 목소리를 이 컴퓨터 안에서 받아 적어(Whisper) 문장 단위 자막을 만듭니다. 한국어·영어·일본어·중국어·스페인어·독일어·프랑스어.
+- 노래방·강조 팝처럼 말하는 낱말을 강조하는 스타일을 포함해 7종, 글자·강조 색, 나타나는 방식, 위·가운데·아래
 - 고치고, 영상에 넣거나 SRT 파일로 저장합니다.
 
 **내보내기**
@@ -74,8 +76,7 @@
 | 파일 | 용도 |
 |---|---|
 | **KeyCast-Studio-Setup-x.y.z.exe** | 추천. FFmpeg까지 모두 설치하고 시작 메뉴·바탕화면 바로가기와 제거 프로그램을 만듭니다 |
-| KeyCast-Studio-x.y.z-win-x64.zip | 설치 없이 쓰는 버전. 압축을 풀고 `KeyCast Studio.exe`를 실행합니다. FFmpeg 포함 |
-| KeyCast-Studio-web.zip | Chrome·Edge에서 설치 없이 맛보기. 그 탭 안에서 누른 키만 기록합니다 |
+| KeyCast-Studio-Portable-x.y.z.exe | 파일 하나, 설치 없이 바로 실행. FFmpeg 포함. 실행할 때마다 먼저 풀어서 몇 초 늦게 열립니다 |
 
 > 처음 실행할 때 **Windows의 PC 보호** 창이 뜨면 **추가 정보 → 실행**을 누르세요. 아직 코드 서명 인증서가 없어서 나오는 안내입니다. 릴리즈 페이지의 SHA-256 값과 VirusTotal 결과로 파일을 확인할 수 있습니다.
 
@@ -132,7 +133,7 @@ npm install
 npm start
 ```
 
-`npm test`는 단위 테스트, `npm run build`는 `release\KeyCast Studio-win32-x64` 폴더, `npm run dist`는 설치 파일과 휴대용 zip을 만듭니다(함께 넣을 FFmpeg 8 이상이 PATH에 있어야 함). [CONTRIBUTING.ko.md](CONTRIBUTING.ko.md)와 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)를 보세요.
+`npm test`는 단위 테스트, `npm run build`는 `release\KeyCast Studio-win32-x64` 폴더, `npm run dist`는 설치 파일과 휴대용 exe를 만듭니다(함께 넣을 FFmpeg 8 이상이 PATH에 있어야 함). [CONTRIBUTING.ko.md](CONTRIBUTING.ko.md)와 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)를 보세요.
 
 ## 참고한 프로젝트와 오픈소스
 
@@ -145,7 +146,7 @@ npm start
 | [Transformers.js](https://github.com/huggingface/transformers.js) / ONNX Runtime Web | 음성 인식(Whisper) | Apache-2.0 / MIT |
 | [mp4-muxer](https://github.com/Vanilagy/mp4-muxer), [webm-muxer](https://github.com/Vanilagy/webm-muxer) | 영상 파일 만들기 | MIT |
 | [gifenc](https://github.com/mattdesl/gifenc) | GIF 만들기 | MIT |
-| [FFmpeg](https://ffmpeg.org/) | 커서 없는 화면 캡처. 설치 파일과 zip에 고치지 않은 상태로 들어 있고 별도 프로그램으로 실행됩니다 | GPL-3.0 ([소스](https://ffmpeg.org/download.html)) |
+| [FFmpeg](https://ffmpeg.org/) | 커서 없는 화면 캡처. 설치 파일과 휴대용 exe에 고치지 않은 상태로 들어 있고 별도 프로그램으로 실행됩니다 | GPL-3.0 ([소스](https://ffmpeg.org/download.html)) |
 
 ## 라이선스
 

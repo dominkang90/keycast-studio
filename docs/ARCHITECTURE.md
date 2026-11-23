@@ -52,6 +52,7 @@ src/
     key-panel.js  key display settings, shared by the editor and the key style dialog
     dialogs.js    key style and shortcut dialogs, focus handling for every dialog
     selftest.js   the scripted self-test (KEYCAST_SELFTEST)
+  i18n/           interface translations (en.js); the Korean text in the code is the key
   lib/            logic without the DOM; most of it is unit-tested in tests/run.mjs
     recorder.js   records screen, microphone, computer sound and webcam; builds project.json
     keys.js       turns key events into bubbles; the typing filter
@@ -104,6 +105,8 @@ Old projects are upgraded when opened (`migrate()` in `editor.js`), so new field
 | Add a timeline row | `TRACKS`, `ROWS` and `render()` in `src/lib/timeline.js`, plus `addItem()` in `editor.js` |
 | Add an IPC call | handler in `electron/main.cjs`, bridge in `electron/preload.cjs`, wrapper in `src/lib/platform.js` |
 | Change export | `exportExact()` / `exportGif()` in `src/lib/exporter.js` |
+| Add or change interface text | wrap it in `T()` from `src/lib/i18n.js` and add the English to `src/i18n/en.js` |
+| Add a subtitle style or click effect | `SUBTITLE_STYLES` + `drawSubtitle()`, or `CLICK_EFFECTS` + `drawClicks()` in `src/lib/compositor.js` |
 
 ## Rules worth keeping
 

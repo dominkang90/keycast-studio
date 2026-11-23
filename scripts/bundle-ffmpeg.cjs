@@ -25,7 +25,7 @@ if (!ffmpeg || !fs.existsSync(ffmpeg)) {
 }
 const help = execFileSync(ffmpeg, ['-hide_banner', '-h', 'filter=gfxcapture'], { encoding: 'utf8' });
 if (!help.includes('capture_cursor')) {
-  console.error(`${ffmpeg} has no gfxcapture filter. Use ffmpeg 8 or newer (for example the Gyan.FFmpeg full build).`);
+  console.error(`${ffmpeg} has no gfxcapture filter. Use ffmpeg 8 or newer (for example the Gyan.FFmpeg essentials build).`);
   process.exit(1);
 }
 const version = execFileSync(ffmpeg, ['-hide_banner', '-version'], { encoding: 'utf8' });

@@ -1,6 +1,8 @@
 // Turns raw key/mouse events into the key bubbles shown on the video.
 // Times are in seconds on the project timeline.
 
+import { T } from './i18n.js';
+
 const MOD_ORDER = ['Ctrl', 'Alt', 'Shift', 'Win'];
 const MODIFIERS = new Set(MOD_ORDER);
 
@@ -82,8 +84,8 @@ export function isModifier(name) {
   return MODIFIERS.has(name);
 }
 
-const MOUSE_NAMES = { 1: '왼쪽 클릭', 2: '오른쪽 클릭', 3: '휠 클릭' };
-export const DRAG_LABEL = '드래그';
+const MOUSE_NAMES = { 1: T('왼쪽 클릭'), 2: T('오른쪽 클릭'), 3: T('휠 클릭') };
+export const DRAG_LABEL = T('드래그');
 
 /**
  * @param {Array} events project events (t in seconds)
@@ -179,7 +181,7 @@ export function buildKeyGroups(events, opts = KEY_DEFAULTS) {
     } else if (ev.type === 'md' && opts.showMouse) {
       const mods = MOD_ORDER.filter((m) => held.has(m));
       for (const m of mods) held.get(m).used = true;
-      const item = addItem('mouse', ev.t, [...mods, MOUSE_NAMES[ev.button] || '클릭'], mods[0] || 'Click');
+      const item = addItem('mouse', ev.t, [...mods, MOUSE_NAMES[ev.button] || T('클릭')], mods[0] || 'Click');
       press = { x: ev.x, y: ev.y, item, mods, drag: false };
     } else if (ev.type === 'mm' && press && !press.drag && press.x !== null && press.x !== undefined) {
       // Holding the button and moving far enough turns the click into a drag.
@@ -198,7 +200,7 @@ export function buildKeyGroups(events, opts = KEY_DEFAULTS) {
     } else if (ev.type === 'wh' && opts.showMouse) {
       const mods = MOD_ORDER.filter((m) => held.has(m));
       for (const m of mods) held.get(m).used = true;
-      addItem('mouse', ev.t, [...mods, (ev.rotation || 0) > 0 ? '휠 ↓' : '휠 ↑'], mods[0] || 'Wheel');
+      addItem('mouse', ev.t, [...mods, (ev.rotation || 0) > 0 ? T('휠 ↓') : T('휠 ↑')], mods[0] || 'Wheel');
     }
   }
   return groups;

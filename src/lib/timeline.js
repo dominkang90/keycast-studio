@@ -2,12 +2,13 @@
 // added sound, key marks and subtitle blocks.
 
 import { newId } from './zoom.js';
+import { T } from './i18n.js';
 
 const GUTTER = 64;
 const RULER = 24;
 const TRACK = 28;
 const TRACKS = ['clip', 'speed', 'zoom', 'notes', 'audio', 'keys', 'subs'];
-const LABELS = { clip: '영상', speed: '속도', zoom: '줌', notes: '주석', audio: '소리', keys: '키', subs: '자막' };
+const LABELS = { clip: T('영상'), speed: T('속도'), zoom: T('줌'), notes: T('주석'), audio: T('소리'), keys: T('키'), subs: T('자막') };
 // Which list of the project each row shows, and what its blocks are called when selected.
 const ROWS = {
   clip: { list: 'cuts', kind: 'cut' },
@@ -23,7 +24,7 @@ const COLORS = { speed: '#e3b341', zoom: '#9d8cff', note: '#e58fb1', audio: '#5a
 const INK = { text: '#ededed', text2: '#a1a1a6', text3: '#85858b', row: '#19191b', rec: '#ff453a', cut: '#e5484d' };
 const UI_FONT = '11.5px "Segoe UI Variable Text", "Segoe UI", "Malgun Gothic", sans-serif';
 const MONO_FONT = '11px "Cascadia Mono", Consolas, "Malgun Gothic", monospace';
-const NOTE_NAMES = { text: '글자', arrow: '화살표', box: '네모', image: '그림', blur: '가리기' };
+const NOTE_NAMES = { text: T('글자'), arrow: T('화살표'), box: T('네모'), image: T('그림'), blur: T('가리기') };
 
 export function listOfKind(project, kind) {
   const row = Object.values(ROWS).find((r) => r.kind === kind);
@@ -154,7 +155,7 @@ export class Timeline {
       this.h.onSelect?.(this.selected);
       this.h.onChange?.();
     } else if (h.row === 'subs') {
-      const s = { id: newId('s'), start: t, end: Math.min(this.duration, t + 2.5), text: '새 자막' };
+      const s = { id: newId('s'), start: t, end: Math.min(this.duration, t + 2.5), text: T('새 자막') };
       this.project.subtitles.push(s);
       this.project.subtitles.sort((a, b) => a.start - b.start);
       this.selected = { kind: 'sub', id: s.id };
@@ -265,7 +266,9 @@ export class Timeline {
       roundRect(ctx, xe - 4, y + 4, 4, TRACK - 8, 2);
       ctx.fill();
       ctx.fillStyle = INK.text2;
-      ctx.fillText(p.source?.name ? truncate(p.source.name, 40) : '화면', xs + 12, y + TRACK / 2);
+      // Screen names come from Windows in its own language; show the app's word for a screen instead.
+      const label = p.source?.kind === 'screen' ? T('전체 화면') : p.source?.name ? truncate(p.source.name, 40) : T('화면');
+      ctx.fillText(label, xs + 12, y + TRACK / 2);
       for (const cut of p.cuts || []) {
         const sel = this.selected?.kind === 'cut' && this.selected.id === cut.id;
         const cx = this.x(cut.start);

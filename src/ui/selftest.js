@@ -13,6 +13,7 @@ import { importVideo } from './home.js';
 import { openKeyStyle, openShortcuts } from './dialogs.js';
 import { countdown, startRecording, stopRecording } from './recording.js';
 import { derive, stopEditor } from './editor.js';
+import { T } from '../lib/i18n.js';
 // ------------------------------------------------------------------ self-test (desktop, scripted)
 export const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 export async function waitFor(fn, ms) {
@@ -85,7 +86,7 @@ export async function selfTest() {
     ];
     p.events = [...p.events, ...synth].sort((a, b) => a.t - b.t);
     p.zooms = autoZoomRegions(p.events, p.durationMs / 1000, p.settings.zoom.scale);
-    p.subtitles = [{ id: 's1', start: 0.5, end: 2.9, text: '안녕하세요, 키캐스트 스튜디오 자막 테스트입니다.' }];
+    p.subtitles = [{ id: 's1', start: 0.5, end: 2.9, text: T('안녕하세요, 키캐스트 스튜디오 자막 테스트입니다.') }];
     p.settings.keys.mode = 'all'; // typing is part of what this check draws
     ed.derived = derive(p);
     ok('key bubbles', ed.derived.groups.length >= 2, ed.derived.groups.map((g) => g.items.map((i) => i.keys.join('+')).join(' ')).join(' | '));
@@ -170,10 +171,10 @@ export async function selfTest() {
       window.addEventListener('error', onErr);
       window.addEventListener('unhandledrejection', onErr);
       p.audios = [];
-      const picks = { '자르기': [{ kind: 'cut', id: 'c1' }, { kind: 'speed', id: 'v1' }], '주석': ['n1', 'n2', 'n3', 'n4'].map((id) => ({ kind: 'note', id })), '줌': [{ kind: 'zoom', id: p.zooms[0]?.id }] };
+      const picks = { [T('자르기')]: [{ kind: 'cut', id: 'c1' }, { kind: 'speed', id: 'v1' }], [T('주석')]: ['n1', 'n2', 'n3', 'n4'].map((id) => ({ kind: 'note', id })), [T('줌')]: [{ kind: 'zoom', id: p.zooms[0]?.id }] };
       const drawn = [];
       for (const btn of [...document.querySelectorAll('.side-tabs button')]) {
-        const name = btn.textContent.replace(/[^가-힣]/g, '');
+        const name = btn.textContent.replace(/[^\p{L} ]/gu, '').trim();
         for (const sel of [null, ...(picks[name] || [])]) {
           ed.selected = sel;
           btn.click();
@@ -192,7 +193,7 @@ export async function selfTest() {
       document.querySelectorAll('.modal-bg .btn.primary').forEach((b) => b.click());
       ok('settings windows open', modals === 2 && !errors.length, errors.join(' | '));
       // the export window draws real controls for every file type
-      [...document.querySelectorAll('.topbar button')].find((b) => b.textContent.includes('내보내기')).click();
+      [...document.querySelectorAll('.topbar button')].find((b) => b.textContent.includes(T('내보내기'))).click();
       await sleep(300);
       const shown = [];
       for (const id of ['mp4', 'webm', 'gif']) {

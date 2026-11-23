@@ -3,10 +3,10 @@
 import { platform, isDesktop } from '../lib/platform.js';
 import { buildKeyGroups, KEY_DEFAULTS } from '../lib/keys.js';
 import { clicksOf, CursorTrack, autoZoomRegions, newId } from '../lib/zoom.js';
-import { renderFrame, projectOutputSize, BACKGROUNDS, WALLPAPERS, CURSOR_STYLES, NOTE_TYPES, defaultSettings, newNote, noteRect } from '../lib/compositor.js';
+import { renderFrame, projectOutputSize, BACKGROUNDS, WALLPAPERS, CURSOR_STYLES, CLICK_EFFECTS, NOTE_TYPES, defaultSettings, newNote, noteRect } from '../lib/compositor.js';
 import { Timeline, fmt, listOfKind } from '../lib/timeline.js';
 import { transcribe, MODELS, LANGUAGES } from '../lib/transcribe.js';
-import { toSRT } from '../lib/subtitles.js';
+import { toSRT, SUBTITLE_STYLES } from '../lib/subtitles.js';
 import { exportVideo, exportFormats } from '../lib/exporter.js';
 import { setLabel } from '../lib/icons.js';
 import { segments, outDuration, srcToOut, segIndexAt, mapCues, syncAudios } from '../lib/timemap.js';
@@ -15,6 +15,7 @@ import { store, state } from './state.js';
 import { keyPanel } from './key-panel.js';
 import { showHome } from './home.js';
 import { openShortcuts } from './dialogs.js';
+import { T } from '../lib/i18n.js';
 // ------------------------------------------------------------------ editor
 export function derive(project) {
   return {
@@ -63,7 +64,7 @@ export async function openEditor(id, preloaded) {
   try {
     project = migrate(preloaded || await platform.loadProject(id));
   } catch (err) {
-    toast(`녹화를 열지 못했습니다: ${err.message}`, true);
+    toast(T('녹화를 열지 못했습니다: {0}', err.message), true);
     showHome();
     return;
   }
@@ -104,22 +105,22 @@ export async function openEditor(id, preloaded) {
   // Show the size of the recorded picture itself (a window is smaller than its screen).
   const sizeLabel = h('span', { class: 'small muted' });
   const drawSizeLabel = () => {
-    sizeLabel.textContent = `${screen.videoWidth || project.source.width}×${screen.videoHeight || project.source.height} · ${{ window: '창', file: '불러온 영상' }[project.source.kind] || '전체 화면'}`;
+    sizeLabel.textContent = `${screen.videoWidth || project.source.width}×${screen.videoHeight || project.source.height} · ${{ window: T('창'), file: T('불러온 영상') }[project.source.kind] || T('전체 화면')}`;
   };
   drawSizeLabel();
   screen.addEventListener('loadedmetadata', drawSizeLabel);
 
-  const playBtn = h('button', { class: 'play', title: '재생/정지 (Space)', onclick: () => togglePlay() }, '▶');
+  const playBtn = h('button', { class: 'play', title: T('재생/정지 (Space)'), onclick: () => togglePlay() }, '▶');
   const timeLabel = h('span', { class: 'time' }, '0:00.0 / 0:00.0');
   const timelineCanvas = h('canvas');
   const nameInput = h('input', { type: 'text', value: project.name, style: { width: '260px' }, onchange: (e) => { project.name = e.target.value || project.name; markDirty(); } });
-  const saveTag = h('span', { class: 'small muted' }, '저장됨');
+  const saveTag = h('span', { class: 'small muted' }, T('저장됨'));
   const sideBody = h('div', { class: 'side-body' });
   const sideTabs = h('div', { class: 'side-tabs' });
 
   const tabs = [
-    ['frame', '🖼', '화면'], ['clip', '✂', '자르기'], ['zoom', '🔍', '줌'], ['notes', '✏', '주석'], ['keys', '⌨', '키'],
-    ['cursor', '🖱', '커서'], ['webcam', '🙂', '웹캠'], ['audio', '🔊', '소리'], ['subs', '💬', '자막'],
+    ['frame', '🖼', T('화면')], ['clip', '✂', T('자르기')], ['zoom', '🔍', T('줌')], ['notes', '✏', T('주석')], ['keys', '⌨', T('키')],
+    ['cursor', '🖱', T('커서')], ['webcam', '🙂', T('웹캠')], ['audio', '🔊', T('소리')], ['subs', '💬', T('자막')],
   ];
   const drawTabs = () => sideTabs.replaceChildren(...tabs.map(([k, ic, n]) =>
     h('button', { class: ed.tab === k ? 'on' : '', onclick: () => { ed.tab = k; drawTabs(); drawPanel(); } }, h('span', { class: 'ic' }, ic), n)));
@@ -162,7 +163,7 @@ export async function openEditor(id, preloaded) {
   }
   function timeTravel(from, to) {
     pushHistory();
-    if (!from.length) { toast(from === ed.history ? '더 되돌릴 것이 없습니다.' : '다시 할 것이 없습니다.'); return; }
+    if (!from.length) { toast(from === ed.history ? T('더 되돌릴 것이 없습니다.') : T('다시 할 것이 없습니다.')); return; }
     to.push(ed.last);
     ed.last = from.pop();
     Object.assign(project, JSON.parse(ed.last));
@@ -187,16 +188,16 @@ export async function openEditor(id, preloaded) {
     if (look.frame.background === 'image' && !String(look.frame.image || '').startsWith('/')) { delete look.frame.background; delete look.frame.image; }
     store.set('look', look);
     ed.dirty = true;
-    saveTag.textContent = '저장 중…';
+    saveTag.textContent = T('저장 중…');
     clearTimeout(ed.saveTimer);
     ed.saveTimer = setTimeout(async () => {
       try {
         await platform.saveProject(project);
         ed.dirty = false;
-        saveTag.textContent = '저장됨';
+        saveTag.textContent = T('저장됨');
       } catch (err) {
-        saveTag.textContent = '저장 실패';
-        toast(`저장하지 못했습니다: ${err.message}`, true);
+        saveTag.textContent = T('저장 실패');
+        toast(T('저장하지 못했습니다: {0}', err.message), true);
       }
     }, 600);
   }
@@ -211,7 +212,7 @@ export async function openEditor(id, preloaded) {
   function togglePlay(force) {
     const play = force ?? screen.paused;
     if (play) {
-      if (!ed.segs.length) { toast('재생할 구간이 없습니다. 잘라낸 부분을 확인하세요.', true); return; }
+      if (!ed.segs.length) { toast(T('재생할 구간이 없습니다. 잘라낸 부분을 확인하세요.'), true); return; }
       if (segIndexAt(ed.segs, screen.currentTime + 0.05) < 0 || screen.currentTime < ed.segs[0].s0) seek(ed.segs[0].s0);
       screen.play().catch(() => {});
       webcam?.play().catch(() => {});
@@ -221,10 +222,10 @@ export async function openEditor(id, preloaded) {
     }
   }
   // One switch for the key bubbles in the video, always in reach next to the time.
-  const keysToggle = h('button', { class: 'btn small toggle', title: '영상에 키 표시 켜기 / 끄기 (K)', onclick: () => setKeysShown(!project.settings.keys.enabled) });
+  const keysToggle = h('button', { class: 'btn small toggle', title: T('영상에 키 표시 켜기 / 끄기 (K)'), onclick: () => setKeysShown(!project.settings.keys.enabled) });
   function drawKeysToggle() {
     const on = !!project.settings.keys.enabled;
-    setLabel(keysToggle, on ? '⌨ 키 표시 켬' : '⌨ 키 표시 끔');
+    setLabel(keysToggle, on ? T('⌨ 키 표시 켬') : T('⌨ 키 표시 끔'));
     keysToggle.setAttribute('aria-pressed', String(on));
     keysToggle.classList.toggle('on', on);
   }
@@ -236,7 +237,7 @@ export async function openEditor(id, preloaded) {
   drawKeysToggle();
   screen.addEventListener('play', () => { setLabel(playBtn, '❚❚'); });
   screen.addEventListener('pause', () => { setLabel(playBtn, '▶'); });
-  screen.addEventListener('error', () => toast('영상 파일을 열지 못했습니다. 녹화가 비어 있을 수 있습니다.', true));
+  screen.addEventListener('error', () => toast(T('영상 파일을 열지 못했습니다. 녹화가 비어 있을 수 있습니다.'), true));
 
   const timeline = new Timeline(timelineCanvas, {
     onSeek: (t) => seek(t),
@@ -266,7 +267,7 @@ export async function openEditor(id, preloaded) {
       if (!picked) return;
       const el = new Audio(url(picked.name));
       const len = await new Promise((r) => { el.onloadedmetadata = () => r(el.duration); el.onerror = () => r(0); });
-      if (!(len > 0) || !Number.isFinite(len)) { toast('이 소리 파일은 열 수 없습니다.', true); return; }
+      if (!(len > 0) || !Number.isFinite(len)) { toast(T('이 소리 파일은 열 수 없습니다.'), true); return; }
       item = { id: newId('a'), start: t, end: Math.min(duration(), t + len), file: picked.name, name: picked.label, volume: 1, offset: 0 };
     }
     if (!item || item.end - item.start < 0.05) return;
@@ -392,40 +393,40 @@ export async function openEditor(id, preloaded) {
         };
         const cropField = (label, key) => rangeField(label, Math.round(edges[key] * 100), 0, 45, 1, (v) => { edges[key] = v / 100; setCrop(); }, (v) => `${v}%`);
         return [
-          h('h3', {}, '화면 꾸미기'),
-          segField('영상 비율', f.aspect, [{ id: '16:9', name: '16:9' }, { id: '9:16', name: '9:16' }, { id: '1:1', name: '1:1' }, { id: '4:3', name: '4:3' }, { id: 'source', name: '원본' }],
+          h('h3', {}, T('화면 꾸미기')),
+          segField(T('영상 비율'), f.aspect, [{ id: '16:9', name: '16:9' }, { id: '9:16', name: '9:16' }, { id: '1:1', name: '1:1' }, { id: '4:3', name: '4:3' }, { id: 'source', name: T('원본') }],
             (v) => { f.aspect = v; sizePreview(); markDirty(); }),
-          h('div', { class: 'field' }, h('label', {}, '배경 색'),
+          h('div', { class: 'field' }, h('label', {}, T('배경 색')),
             h('div', { class: 'swatches' },
               BACKGROUNDS.map((b) => h('div', { class: `swatch${f.background === b.id ? ' on' : ''}`, title: b.name, style: { background: `linear-gradient(135deg, ${b.stops.join(', ')})` }, onclick: () => setBg(b.id) }, h('small', {}, b.name))),
-              h('div', { class: `swatch${f.background === 'none' ? ' on' : ''}`, style: { background: '#000', border: '1px dashed #484f58' }, onclick: () => setBg('none') }, h('small', {}, '없음')),
+              h('div', { class: `swatch${f.background === 'none' ? ' on' : ''}`, style: { background: '#000', border: '1px dashed #484f58' }, onclick: () => setBg('none') }, h('small', {}, T('없음'))),
               h('label', { class: `swatch${f.background?.startsWith('#') ? ' on' : ''}`, style: { background: f.background?.startsWith('#') ? f.background : 'conic-gradient(red, yellow, lime, cyan, blue, magenta, red)' } },
                 h('input', { type: 'color', style: { opacity: 0, width: '100%', height: '100%' }, value: f.background?.startsWith('#') ? f.background : '#334155', oninput: (e) => { f.background = e.target.value; markDirty(); }, onchange: () => drawPanel() }),
-                h('small', {}, '단색')))),
-          h('div', { class: 'field' }, h('label', {}, '배경 그림'),
+                h('small', {}, T('단색'))))),
+          h('div', { class: 'field' }, h('label', {}, T('배경 그림')),
             h('div', { class: 'swatches' },
               WALLPAPERS.map((w) => h('div', { class: `swatch${f.background === w.id ? ' on' : ''}`, title: w.name, style: { background: wpCss(w) }, onclick: () => setBg(w.id) }, h('small', {}, w.name))),
               (ed.wallpapers || []).map((p) => h('div', { class: `swatch${f.background === 'image' && f.image === p ? ' on' : ''}`, title: p.split('/').pop(), style: { background: `center / cover url("${platform.mediaUrl(null, p)}")` }, onclick: () => setBg('image', p) })),
-              h('div', { class: `swatch${ownImage ? ' on' : ''}`, title: '내 컴퓨터의 그림을 배경으로', style: { background: ownImage ? `center / cover url("${url(f.image)}")` : '#21262d', border: '1px dashed rgba(255,255,255,0.28)', display: 'grid', placeItems: 'center', fontSize: '16px', paddingBottom: '14px', color: 'rgba(244,244,245,0.7)' }, onclick: async () => {
+              h('div', { class: `swatch${ownImage ? ' on' : ''}`, title: T('내 컴퓨터의 그림을 배경으로'), style: { background: ownImage ? `center / cover url("${url(f.image)}")` : '#21262d', border: '1px dashed rgba(255,255,255,0.28)', display: 'grid', placeItems: 'center', fontSize: '16px', paddingBottom: '14px', color: 'rgba(244,244,245,0.7)' }, onclick: async () => {
                 const picked = await platform.importAsset(project.id, 'image', 'bg');
                 if (picked) setBg('image', picked.name);
-              } }, ownImage ? null : '＋', h('small', {}, '내 그림'))),
+              } }, ownImage ? null : '＋', h('small', {}, T('내 그림')))),
             isDesktop ? h('div', { class: 'row', style: { marginTop: '4px' } },
-              h('button', { class: 'btn small', onclick: () => platform.openWallpapers() }, '📁 배경 그림 폴더'),
-              h('button', { class: 'btn small ghost', title: '폴더에 넣은 그림 다시 읽기', onclick: loadWallpapers }, '↻')) : null,
-            isDesktop ? h('div', { class: 'small muted' }, '이 폴더에 그림을 넣으면 여기에 나타납니다.') : null),
-          isPicture ? rangeField('배경 흐림', f.blur || 0, 0, 40, 1, (v) => { f.blur = v; markDirty(); }, (v) => (v ? `${v}px` : '없음')) : null,
-          f.background === 'none' ? h('div', { class: 'hint' }, '배경 없음: 녹화 화면을 꽉 채웁니다.') : [
-            rangeField('여백', f.padding, 0, 20, 0.5, (v) => { f.padding = v; markDirty(); }, (v) => `${v}%`),
-            rangeField('모서리 둥글기', f.radius, 0, 40, 1, (v) => { f.radius = v; markDirty(); }, (v) => `${v}px`),
-            inlineSwitch('그림자', f.shadow, (v) => { f.shadow = v; markDirty(); drawPanel(); }),
-            f.shadow ? rangeField('그림자 세기', f.shadowSize ?? 1, 0.2, 2, 0.1, (v) => { f.shadowSize = v; markDirty(); }, (v) => `${Math.round(v * 100)}%`) : null,
+              h('button', { class: 'btn small', onclick: () => platform.openWallpapers() }, T('📁 배경 그림 폴더')),
+              h('button', { class: 'btn small ghost', title: T('폴더에 넣은 그림 다시 읽기'), onclick: loadWallpapers }, '↻')) : null,
+            isDesktop ? h('div', { class: 'small muted' }, T('이 폴더에 그림을 넣으면 여기에 나타납니다.')) : null),
+          isPicture ? rangeField(T('배경 흐림'), f.blur || 0, 0, 40, 1, (v) => { f.blur = v; markDirty(); }, (v) => (v ? `${v}px` : T('없음'))) : null,
+          f.background === 'none' ? h('div', { class: 'hint' }, T('배경 없음: 녹화 화면을 꽉 채웁니다.')) : [
+            rangeField(T('여백'), f.padding, 0, 20, 0.5, (v) => { f.padding = v; markDirty(); }, (v) => `${v}%`),
+            rangeField(T('모서리 둥글기'), f.radius, 0, 40, 1, (v) => { f.radius = v; markDirty(); }, (v) => `${v}px`),
+            inlineSwitch(T('그림자'), f.shadow, (v) => { f.shadow = v; markDirty(); drawPanel(); }),
+            f.shadow ? rangeField(T('그림자 세기'), f.shadowSize ?? 1, 0.2, 2, 0.1, (v) => { f.shadowSize = v; markDirty(); }, (v) => `${Math.round(v * 100)}%`) : null,
           ],
           h('div', { class: 'section' },
-            h('h3', {}, '화면 잘라내기 (크롭)'),
-            h('div', { class: 'small muted', style: { marginBottom: '10px' } }, '녹화된 화면의 가장자리를 잘라 필요한 부분만 남깁니다.'),
-            cropField('왼쪽', 'l'), cropField('오른쪽', 'r'), cropField('위', 't'), cropField('아래', 'b'),
-            h('button', { class: 'btn small', onclick: () => { f.crop = { x: 0, y: 0, w: 1, h: 1 }; sizePreview(); markDirty(); drawPanel(); } }, '잘라내기 취소')),
+            h('h3', {}, T('화면 잘라내기 (크롭)')),
+            h('div', { class: 'small muted', style: { marginBottom: '10px' } }, T('녹화된 화면의 가장자리를 잘라 필요한 부분만 남깁니다.')),
+            cropField(T('왼쪽'), 'l'), cropField(T('오른쪽'), 'r'), cropField(T('위'), 't'), cropField(T('아래'), 'b'),
+            h('button', { class: 'btn small', onclick: () => { f.crop = { x: 0, y: 0, w: 1, h: 1 }; sizePreview(); markDirty(); drawPanel(); } }, T('잘라내기 취소'))),
         ];
       },
       clip: () => {
@@ -436,64 +437,64 @@ export async function openEditor(id, preloaded) {
           if (key === 'start') item.start = Math.min(now(), item.end - 0.2); else item.end = Math.max(now(), item.start + 0.2);
           markDirty();
           drawPanel();
-        } }, key === 'start' ? '시작을 여기로' : '끝을 여기로');
+        } }, key === 'start' ? T('시작을 여기로') : T('끝을 여기로'));
         return [
-          h('h3', {}, '앞뒤 자르기'),
-          h('div', { class: 'small muted', style: { marginBottom: '10px' } }, `${fmt(project.trim.start, true)} ~ ${fmt(project.trim.end, true)} · 타임라인 파란 막대의 양 끝을 끌어도 됩니다.`),
+          h('h3', {}, T('앞뒤 자르기')),
+          h('div', { class: 'small muted', style: { marginBottom: '10px' } }, T('{0} ~ {1} · 타임라인 파란 막대의 양 끝을 끌어도 됩니다.', fmt(project.trim.start, true), fmt(project.trim.end, true))),
           h('div', { class: 'row' },
-            h('button', { class: 'btn small grow', onclick: () => { project.trim.start = Math.min(now(), project.trim.end - 0.5); markDirty(); drawPanel(); } }, '여기서 시작'),
-            h('button', { class: 'btn small grow', onclick: () => { project.trim.end = Math.max(now(), project.trim.start + 0.5); markDirty(); drawPanel(); } }, '여기서 끝'),
-            h('button', { class: 'btn small', onclick: () => { project.trim = { start: 0, end: duration() }; markDirty(); drawPanel(); } }, '초기화')),
+            h('button', { class: 'btn small grow', onclick: () => { project.trim.start = Math.min(now(), project.trim.end - 0.5); markDirty(); drawPanel(); } }, T('여기서 시작')),
+            h('button', { class: 'btn small grow', onclick: () => { project.trim.end = Math.max(now(), project.trim.start + 0.5); markDirty(); drawPanel(); } }, T('여기서 끝')),
+            h('button', { class: 'btn small', onclick: () => { project.trim = { start: 0, end: duration() }; markDirty(); drawPanel(); } }, T('초기화'))),
           h('div', { class: 'section' },
-            h('h3', {}, '중간 잘라내기'),
-            h('div', { class: 'small muted', style: { marginBottom: '10px' } }, `잘라낸 구간 ${project.cuts.length}개 · 완성 영상 길이 ${fmt(outDuration(ed.segs), true)}`),
-            h('button', { class: 'btn wide', onclick: () => addItem('cut', now()) }, '✂ 여기서부터 잘라내기 (S)'),
-            h('div', { class: 'small muted', style: { marginTop: '8px' } }, '영상 줄에 생긴 빨간 구간의 양 끝을 끌어 범위를 맞추세요. 빨간 구간은 재생과 내보내기에서 건너뜁니다.'),
+            h('h3', {}, T('중간 잘라내기')),
+            h('div', { class: 'small muted', style: { marginBottom: '10px' } }, T('잘라낸 구간 {0}개 · 완성 영상 길이 {1}', project.cuts.length, fmt(outDuration(ed.segs), true))),
+            h('button', { class: 'btn wide', onclick: () => addItem('cut', now()) }, T('✂ 여기서부터 잘라내기 (S)')),
+            h('div', { class: 'small muted', style: { marginTop: '8px' } }, T('영상 줄에 생긴 빨간 구간의 양 끝을 끌어 범위를 맞추세요. 빨간 구간은 재생과 내보내기에서 건너뜁니다.')),
             cut ? h('div', { style: { marginTop: '12px' } },
-              h('div', { class: 'field-label', style: { marginBottom: '6px' } }, `선택한 구간 ${fmt(cut.start, true)} ~ ${fmt(cut.end, true)}`),
-              h('div', { class: 'row' }, edge(cut, 'start'), edge(cut, 'end'), h('button', { class: 'btn small danger', onclick: removeSelected }, '되살리기'))) : null),
+              h('div', { class: 'field-label', style: { marginBottom: '6px' } }, T('선택한 구간 {0} ~ {1}', fmt(cut.start, true), fmt(cut.end, true))),
+              h('div', { class: 'row' }, edge(cut, 'start'), edge(cut, 'end'), h('button', { class: 'btn small danger', onclick: removeSelected }, T('되살리기')))) : null),
           h('div', { class: 'section' },
-            h('h3', {}, '속도 바꾸기'),
-            h('button', { class: 'btn wide', onclick: () => addItem('speed', now()) }, '⏩ 여기에 속도 구간 넣기'),
-            h('div', { class: 'small muted', style: { marginTop: '8px' } }, `속도 구간 ${project.speeds.length}개 · 속도 줄을 더블클릭해도 됩니다. 소리도 같은 속도로 재생됩니다.`),
+            h('h3', {}, T('속도 바꾸기')),
+            h('button', { class: 'btn wide', onclick: () => addItem('speed', now()) }, T('⏩ 여기에 속도 구간 넣기')),
+            h('div', { class: 'small muted', style: { marginTop: '8px' } }, T('속도 구간 {0}개 · 속도 줄을 더블클릭해도 됩니다. 소리도 같은 속도로 재생됩니다.', project.speeds.length)),
             sp ? h('div', { style: { marginTop: '12px' } },
-              segField(`선택한 구간 ${fmt(sp.start, true)} ~ ${fmt(sp.end, true)}`, String(sp.speed),
+              segField(T('선택한 구간 {0} ~ {1}', fmt(sp.start, true), fmt(sp.end, true)), String(sp.speed),
                 [0.25, 0.5, 0.75, 1.25, 1.5, 2, 3, 4].map((v) => ({ id: String(v), name: `${v}×` })), (v) => { sp.speed = Number(v); markDirty(); }),
-              h('div', { class: 'row' }, edge(sp, 'start'), edge(sp, 'end'), h('button', { class: 'btn small danger', onclick: removeSelected }, '삭제'))) : null),
+              h('div', { class: 'row' }, edge(sp, 'start'), edge(sp, 'end'), h('button', { class: 'btn small danger', onclick: removeSelected }, T('삭제')))) : null),
         ];
       },
       zoom: () => {
         const sel = ed.selected?.kind === 'zoom' ? project.zooms.find((z) => z.id === ed.selected.id) : null;
         const noCursor = !ed.derived.cursor.available;
         return [
-          h('h3', {}, '클릭 자동 확대'),
+          h('h3', {}, T('클릭 자동 확대')),
           noCursor ? h('div', { class: 'hint warn' }, project.source.kind === 'window'
-            ? '창을 녹화하면 클릭 위치를 알 수 없어 자동 확대가 만들어지지 않습니다. 타임라인 줌 줄을 더블클릭해 직접 넣을 수 있어요.'
-            : '이 녹화에는 마우스 위치 기록이 없습니다. 줌 줄을 더블클릭해 직접 넣을 수 있어요.') : null,
-          inlineSwitch('줌 효과 사용', s.zoom.enabled, (v) => { s.zoom.enabled = v; markDirty(); }),
-          inlineSwitch('확대 중 커서 따라가기', s.zoom.follow, (v) => { s.zoom.follow = v; markDirty(); }),
-          rangeField('확대 배율 (새로 만들 때)', s.zoom.scale, 1.2, 3, 0.1, (v) => { s.zoom.scale = v; markDirty(); }, (v) => `${v.toFixed(1)}×`),
-          rangeField('확대 속도', s.zoom.ramp, 0.2, 1.2, 0.05, (v) => { s.zoom.ramp = v; markDirty(); }, (v) => `${v.toFixed(2)}초`),
+            ? T('창을 녹화하면 클릭 위치를 알 수 없어 자동 확대가 만들어지지 않습니다. 타임라인 줌 줄을 더블클릭해 직접 넣을 수 있어요.')
+            : T('이 녹화에는 마우스 위치 기록이 없습니다. 줌 줄을 더블클릭해 직접 넣을 수 있어요.')) : null,
+          inlineSwitch(T('줌 효과 사용'), s.zoom.enabled, (v) => { s.zoom.enabled = v; markDirty(); }),
+          inlineSwitch(T('확대 중 커서 따라가기'), s.zoom.follow, (v) => { s.zoom.follow = v; markDirty(); }),
+          rangeField(T('확대 배율 (새로 만들 때)'), s.zoom.scale, 1.2, 3, 0.1, (v) => { s.zoom.scale = v; markDirty(); }, (v) => `${v.toFixed(1)}×`),
+          rangeField(T('확대 속도'), s.zoom.ramp, 0.2, 1.2, 0.05, (v) => { s.zoom.ramp = v; markDirty(); }, (v) => T('{0}초', v.toFixed(2))),
           h('button', { class: 'btn wide', disabled: noCursor, onclick: () => {
             project.zooms = [...project.zooms.filter((z) => !z.auto), ...autoZoomRegions(project.events, project.durationMs / 1000, s.zoom.scale)].sort((a, b) => a.start - b.start);
             ed.selected = null;
             markDirty();
             drawPanel();
-            toast(`클릭 기준 줌 ${project.zooms.length}개`);
-          } }, '↻ 클릭 기준으로 다시 만들기'),
-          h('div', { class: 'small muted', style: { marginTop: '8px' } }, `줌 구간 ${project.zooms.length}개 · 줌 줄을 더블클릭하면 추가, 끌어서 옮기기·늘리기, 선택 후 Delete로 삭제`),
+            toast(T('클릭 기준 줌 {0}개', project.zooms.length));
+          } }, T('↻ 클릭 기준으로 다시 만들기')),
+          h('div', { class: 'small muted', style: { marginTop: '8px' } }, T('줌 구간 {0}개 · 줌 줄을 더블클릭하면 추가, 끌어서 옮기기·늘리기, 선택 후 Delete로 삭제', project.zooms.length)),
           sel ? h('div', { class: 'section' },
-            h('h3', {}, `선택한 줌 (${fmt(sel.start, true)} ~ ${fmt(sel.end, true)})`),
-            rangeField('배율', sel.scale, 1.1, 4, 0.1, (v) => { sel.scale = v; sel.auto = false; markDirty(); }, (v) => `${v.toFixed(1)}×`),
-            rangeField('가로 위치', sel.x, 0, 1, 0.01, (v) => { sel.x = v; sel.auto = false; markDirty(); }, (v) => `${Math.round(v * 100)}%`),
-            rangeField('세로 위치', sel.y, 0, 1, 0.01, (v) => { sel.y = v; sel.auto = false; markDirty(); }, (v) => `${Math.round(v * 100)}%`),
+            h('h3', {}, T('선택한 줌 ({0} ~ {1})', fmt(sel.start, true), fmt(sel.end, true))),
+            rangeField(T('배율'), sel.scale, 1.1, 4, 0.1, (v) => { sel.scale = v; sel.auto = false; markDirty(); }, (v) => `${v.toFixed(1)}×`),
+            rangeField(T('가로 위치'), sel.x, 0, 1, 0.01, (v) => { sel.x = v; sel.auto = false; markDirty(); }, (v) => `${Math.round(v * 100)}%`),
+            rangeField(T('세로 위치'), sel.y, 0, 1, 0.01, (v) => { sel.y = v; sel.auto = false; markDirty(); }, (v) => `${Math.round(v * 100)}%`),
             h('button', { class: 'btn wide danger', onclick: () => {
               project.zooms = project.zooms.filter((z) => z.id !== sel.id);
               ed.selected = null;
               timeline.select(null);
               markDirty();
               drawPanel();
-            } }, '이 줌 삭제')) : null,
+            } }, T('이 줌 삭제'))) : null,
         ];
       },
       notes: () => {
@@ -504,85 +505,90 @@ export async function openEditor(id, preloaded) {
         const typeName = (id) => NOTE_TYPES.find((n) => n.id === id)?.name || id;
         const byType = a ? {
           text: () => [
-            h('div', { class: 'field' }, h('label', {}, '내용'), h('textarea', { value: a.text, rows: 2, oninput: (e) => { a.text = e.target.value; markDirty(); } })),
-            rangeField('글자 크기', a.size, 20, 200, 2, set('size'), (v) => `${v}px`),
-            colorField('글자 색', a.color, set('color')),
-            inlineSwitch('굵게', a.bold !== false, set('bold')),
-            inlineSwitch('뒤에 바탕', a.bgOn !== false, set('bgOn', true)),
-            a.bgOn !== false ? colorField('바탕 색', a.bg, set('bg')) : null,
+            h('div', { class: 'field' }, h('label', {}, T('내용')), h('textarea', { value: a.text, rows: 2, oninput: (e) => { a.text = e.target.value; markDirty(); } })),
+            rangeField(T('글자 크기'), a.size, 20, 200, 2, set('size'), (v) => `${v}px`),
+            colorField(T('글자 색'), a.color, set('color')),
+            inlineSwitch(T('굵게'), a.bold !== false, set('bold')),
+            inlineSwitch(T('뒤에 바탕'), a.bgOn !== false, set('bgOn', true)),
+            a.bgOn !== false ? colorField(T('바탕 색'), a.bg, set('bg')) : null,
           ],
           arrow: () => [
-            rangeField('길이', a.w, 0.04, 0.7, 0.01, set('w'), pct),
-            rangeField('방향', a.angle, 0, 345, 15, set('angle'), (v) => `${v}°`),
-            rangeField('두께', a.stroke, 3, 40, 1, set('stroke'), (v) => `${v}px`),
-            colorField('색', a.color, set('color')),
+            rangeField(T('길이'), a.w, 0.04, 0.7, 0.01, set('w'), pct),
+            rangeField(T('방향'), a.angle, 0, 345, 15, set('angle'), (v) => `${v}°`),
+            rangeField(T('두께'), a.stroke, 3, 40, 1, set('stroke'), (v) => `${v}px`),
+            colorField(T('색'), a.color, set('color')),
           ],
           box: () => [
-            rangeField('가로 크기', a.w, 0.03, 1, 0.01, set('w'), pct),
-            rangeField('세로 크기', a.h, 0.03, 1, 0.01, set('h'), pct),
-            rangeField('선 두께', a.stroke, 2, 30, 1, set('stroke'), (v) => `${v}px`),
-            colorField('색', a.color, set('color')),
+            rangeField(T('가로 크기'), a.w, 0.03, 1, 0.01, set('w'), pct),
+            rangeField(T('세로 크기'), a.h, 0.03, 1, 0.01, set('h'), pct),
+            rangeField(T('선 두께'), a.stroke, 2, 30, 1, set('stroke'), (v) => `${v}px`),
+            colorField(T('색'), a.color, set('color')),
           ],
           image: () => [
-            rangeField('크기', a.w, 0.03, 1, 0.01, set('w'), pct),
+            rangeField(T('크기'), a.w, 0.03, 1, 0.01, set('w'), pct),
             h('button', { class: 'btn small', onclick: async () => {
               const picked = await platform.importAsset(project.id, 'image', 'note');
               if (picked) { a.file = picked.name; markDirty(); }
-            } }, '그림 바꾸기'),
+            } }, T('그림 바꾸기')),
           ],
           blur: () => [
-            h('div', { class: 'hint' }, '비밀번호나 개인 정보처럼 보이면 안 되는 곳을 흐리게 가립니다. 화면이 확대되거나 움직이면 가린 위치는 따라가지 않습니다.'),
-            rangeField('가로 크기', a.w, 0.03, 1, 0.01, set('w'), pct),
-            rangeField('세로 크기', a.h, 0.03, 1, 0.01, set('h'), pct),
-            rangeField('흐림 세기', a.strength, 4, 50, 1, set('strength'), (v) => `${v}px`),
+            h('div', { class: 'hint' }, T('비밀번호나 개인 정보처럼 보이면 안 되는 곳을 흐리게 가립니다. 화면이 확대되거나 움직이면 가린 위치는 따라가지 않습니다.')),
+            rangeField(T('가로 크기'), a.w, 0.03, 1, 0.01, set('w'), pct),
+            rangeField(T('세로 크기'), a.h, 0.03, 1, 0.01, set('h'), pct),
+            rangeField(T('흐림 세기'), a.strength, 4, 50, 1, set('strength'), (v) => `${v}px`),
           ],
         }[a.type]() : null;
         return [
-          h('h3', {}, '주석'),
-          h('div', { class: 'small muted', style: { marginBottom: '10px' } }, '지금 보고 있는 시각에 넣습니다. 미리보기에서 끌어 옮기고, 타임라인 주석 줄에서 나오는 시간을 맞추세요.'),
+          h('h3', {}, T('주석')),
+          h('div', { class: 'small muted', style: { marginBottom: '10px' } }, T('지금 보고 있는 시각에 넣습니다. 미리보기에서 끌어 옮기고, 타임라인 주석 줄에서 나오는 시간을 맞추세요.')),
           h('div', { class: 'row', style: { flexWrap: 'wrap' } }, NOTE_TYPES.map((n) => h('button', { class: 'btn small', onclick: () => addItem('note', now(), { type: n.id }) }, `+ ${n.name}`))),
           a ? h('div', { class: 'section' },
-            h('h3', {}, `선택한 주석 · ${typeName(a.type)} (${fmt(a.start, true)} ~ ${fmt(a.end, true)})`),
+            h('h3', {}, T('선택한 주석 · {0} ({1} ~ {2})', typeName(a.type), fmt(a.start, true), fmt(a.end, true))),
             byType,
-            rangeField('가로 위치', a.x, 0, 1, 0.005, set('x'), pct),
-            rangeField('세로 위치', a.y, 0, 1, 0.005, set('y'), pct),
-            h('button', { class: 'btn wide danger', onclick: removeSelected }, '이 주석 삭제'))
-            : h('div', { class: 'small muted', style: { marginTop: '12px' } }, `주석 ${project.annotations.length}개 · 타임라인이나 미리보기에서 누르면 여기서 고칠 수 있습니다.`),
+            rangeField(T('가로 위치'), a.x, 0, 1, 0.005, set('x'), pct),
+            rangeField(T('세로 위치'), a.y, 0, 1, 0.005, set('y'), pct),
+            h('button', { class: 'btn wide danger', onclick: removeSelected }, T('이 주석 삭제')))
+            : h('div', { class: 'small muted', style: { marginTop: '12px' } }, T('주석 {0}개 · 타임라인이나 미리보기에서 누르면 여기서 고칠 수 있습니다.', project.annotations.length)),
         ];
       },
       keys: () => {
         const keyCount = project.events.filter((e) => e.type === 'kd' && !e.repeat).length;
         return [
-          h('h3', {}, '키 표시'),
-          !project.inputHooked && !keyCount ? h('div', { class: 'hint warn' }, '이 녹화에는 키 기록이 없습니다.') : h('div', { class: 'hint' }, `기록된 키 ${keyCount}개 · 말풍선 ${ed.derived.groups.length}개`),
-          project.typingRecorded === false && s.keys.mode !== 'shortcuts' ? h('div', { class: 'hint' }, '이 녹화는 타이핑한 글자를 기록하지 않아 단축키만 보입니다. 처음 화면의 녹화 옵션에서 바꿀 수 있습니다.') : null,
-          inlineSwitch('영상에 키 보여주기', s.keys.enabled, (v) => setKeysShown(v)),
+          h('h3', {}, T('키 표시')),
+          !project.inputHooked && !keyCount ? h('div', { class: 'hint warn' }, T('이 녹화에는 키 기록이 없습니다.')) : h('div', { class: 'hint' }, T('기록된 키 {0}개 · 말풍선 {1}개', keyCount, ed.derived.groups.length)),
+          project.typingRecorded === false && s.keys.mode !== 'shortcuts' ? h('div', { class: 'hint' }, T('이 녹화는 타이핑한 글자를 기록하지 않아 단축키만 보입니다. 처음 화면의 녹화 옵션에서 바꿀 수 있습니다.')) : null,
+          inlineSwitch(T('영상에 키 보여주기'), s.keys.enabled, (v) => setKeysShown(v)),
           keyPanel(s.keys, (rebuild) => markDirty({ rederive: !!rebuild }), drawPanel),
         ];
       },
       cursor: () => {
         const c = s.cursor;
         return [
-          h('h3', {}, '커서와 클릭'),
-          !ed.derived.cursor.available ? h('div', { class: 'hint warn' }, '이 녹화에는 마우스 위치 기록이 없어 커서와 클릭 효과를 그릴 수 없습니다 (전체 화면 녹화에서 사용 가능).') : null,
-          inlineSwitch('클릭할 때 효과', c.clicks, (v) => { c.clicks = v; markDirty(); }),
-          segField('효과 모양', c.effect || 'ripple', [{ id: 'ripple', name: '물결' }, { id: 'spotlight', name: '점' }], (v) => { c.effect = v; markDirty(); }),
-          inlineSwitch('커서 주변 강조', c.highlight, (v) => { c.highlight = v; markDirty(); }),
-          inlineSwitch('휠을 굴릴 때 표시', c.scrolls !== false, (v) => { c.scrolls = v; markDirty(); }),
-          colorField('효과 색', c.color, (v) => { c.color = v; markDirty(); }),
+          h('h3', {}, T('커서와 클릭')),
+          !ed.derived.cursor.available ? h('div', { class: 'hint warn' }, T('이 녹화에는 마우스 위치 기록이 없어 커서와 클릭 효과를 그릴 수 없습니다 (전체 화면 녹화에서 사용 가능).')) : null,
+          inlineSwitch(T('클릭할 때 효과'), c.clicks, (v) => { c.clicks = v; markDirty(); drawPanel(); }),
+          c.clicks ? [
+            segField(T('효과 모양'), c.effect || 'ripple', CLICK_EFFECTS.filter((x) => x.id !== 'none'), (v) => { c.effect = v; markDirty(); }, 4),
+            rangeField(T('효과 크기'), c.clickSize ?? 1, 0.5, 2.5, 0.05, (v) => { c.clickSize = v; markDirty(); }, (v) => `${Math.round(v * 100)}%`),
+            rangeField(T('효과 길이'), c.clickDur ?? 0.65, 0.3, 1.5, 0.05, (v) => { c.clickDur = v; markDirty(); }, (v) => T('{0}초', v.toFixed(2))),
+          ] : null,
+          inlineSwitch(T('커서 주변 강조'), c.highlight, (v) => { c.highlight = v; markDirty(); }),
+          inlineSwitch(T('휠을 굴릴 때 표시'), c.scrolls !== false, (v) => { c.scrolls = v; markDirty(); }),
+          colorField(T('효과 색'), c.color, (v) => { c.color = v; markDirty(); }),
           h('div', { class: 'section' },
-            h('h3', {}, '커서 다시 그리기'),
-            project.cursorHidden ? h('div', { class: 'hint' }, '이 녹화는 실제 커서 없이 찍었습니다. 여기서 끄면 영상에 커서가 보이지 않습니다.') : null,
-            inlineSwitch(project.cursorHidden ? '커서 그리기' : '커서를 크게 다시 그리기', c.show, (v) => { c.show = v; markDirty(); drawPanel(); }),
+            h('h3', {}, T('커서 다시 그리기')),
+            project.cursorHidden ? h('div', { class: 'hint' }, T('이 녹화는 실제 커서 없이 찍었습니다. 여기서 끄면 영상에 커서가 보이지 않습니다.')) : null,
+            inlineSwitch(project.cursorHidden ? T('커서 그리기') : T('커서를 크게 다시 그리기'), c.show, (v) => { c.show = v; markDirty(); drawPanel(); }),
             c.show ? [
-              project.cursorHidden ? null : h('div', { class: 'hint' }, '녹화된 실제 커서 위에 겹쳐 그립니다. 실제 커서는 지워지지 않아서 "부드럽게"를 높이면 두 커서가 잠깐 떨어져 보일 수 있습니다.'),
-              segField('모양', c.style || 'arrow', CURSOR_STYLES.map((x) => ({ id: x.id, name: x.name })), (v) => { c.style = v; markDirty(); }),
-              rangeField('크기', c.size, 0.8, 4, 0.1, (v) => { c.size = v; markDirty(); }, (v) => `${v.toFixed(1)}×`),
-              rangeField('부드럽게', c.smoothing, 0, 1, 0.05, (v) => { c.smoothing = v; markDirty(); }, (v) => `${Math.round(v * 100)}%`),
-              rangeField('빠르게 움직일 때 잔상', c.motionBlur, 0, 1, 0.05, (v) => { c.motionBlur = v; markDirty(); }, (v) => `${Math.round(v * 100)}%`),
-              rangeField('클릭할 때 눌리는 정도', c.bounce, 0, 1, 0.05, (v) => { c.bounce = v; markDirty(); }, (v) => `${Math.round(v * 100)}%`),
-              rangeField('움직이는 쪽으로 기울기', c.sway, 0, 1, 0.05, (v) => { c.sway = v; markDirty(); }, (v) => `${Math.round(v * 100)}%`),
-              inlineSwitch('끝날 때 처음 위치로 돌아가기', c.loop, (v) => { c.loop = v; markDirty(); }, '반복 재생하는 영상·GIF가 매끄럽게 이어집니다'),
+              project.cursorHidden ? null : h('div', { class: 'hint' }, T('녹화된 실제 커서 위에 겹쳐 그립니다. 실제 커서는 지워지지 않아서 "부드럽게"를 높이면 두 커서가 잠깐 떨어져 보일 수 있습니다.')),
+              segField(T('모양'), c.style || 'arrow', CURSOR_STYLES, (v) => { c.style = v; markDirty(); }, 4),
+              rangeField(T('크기'), c.size, 0.8, 4, 0.1, (v) => { c.size = v; markDirty(); }, (v) => `${v.toFixed(1)}×`),
+              rangeField(T('부드럽게'), c.smoothing, 0, 1, 0.05, (v) => { c.smoothing = v; markDirty(); }, (v) => `${Math.round(v * 100)}%`),
+              rangeField(T('빠르게 움직일 때 잔상'), c.motionBlur, 0, 1, 0.05, (v) => { c.motionBlur = v; markDirty(); }, (v) => `${Math.round(v * 100)}%`),
+              rangeField(T('클릭할 때 눌리는 정도'), c.bounce, 0, 1, 0.05, (v) => { c.bounce = v; markDirty(); }, (v) => `${Math.round(v * 100)}%`),
+              rangeField(T('움직이는 쪽으로 기울기'), c.sway, 0, 1, 0.05, (v) => { c.sway = v; markDirty(); }, (v) => `${Math.round(v * 100)}%`),
+              rangeField(T('멈춰 있으면 숨기기'), c.idleHide || 0, 0, 5, 0.5, (v) => { c.idleHide = v; markDirty(); }, (v) => (v ? T('{0}초 뒤', v) : T('안 숨김'))),
+              inlineSwitch(T('끝날 때 처음 위치로 돌아가기'), c.loop, (v) => { c.loop = v; markDirty(); }, T('반복 재생하는 영상·GIF가 매끄럽게 이어집니다')),
             ] : null),
         ];
       },
@@ -595,28 +601,28 @@ export async function openEditor(id, preloaded) {
           openEditor(project.id, project);
         };
         return [
-          h('h3', {}, '웹캠 말풍선'),
-          !webcam ? h('div', { class: 'hint' }, '이 녹화에는 웹캠 영상이 없습니다. 녹화 옵션에서 웹캠을 고르거나, 따로 찍은 영상을 넣을 수 있습니다.') : null,
+          h('h3', {}, T('웹캠 말풍선')),
+          !webcam ? h('div', { class: 'hint' }, T('이 녹화에는 웹캠 영상이 없습니다. 녹화 옵션에서 웹캠을 고르거나, 따로 찍은 영상을 넣을 수 있습니다.')) : null,
           h('div', { class: 'row', style: { marginBottom: '14px' } },
             h('button', { class: 'btn small grow', onclick: async () => {
               const picked = await platform.importAsset(project.id, 'video', 'webcam');
               if (picked) swap(picked.name);
-            } }, webcam ? '📂 다른 영상으로 바꾸기' : '📂 웹캠 영상 넣기'),
-            webcam ? h('button', { class: 'btn small danger', onclick: () => { if (confirm('웹캠 영상을 이 녹화에서 뺄까요?')) swap(null); } }, '빼기') : null),
+            } }, webcam ? T('📂 다른 영상으로 바꾸기') : T('📂 웹캠 영상 넣기')),
+            webcam ? h('button', { class: 'btn small danger', onclick: () => { if (confirm(T('웹캠 영상을 이 녹화에서 뺄까요?'))) swap(null); } }, T('빼기')) : null),
           webcam ? [
-            inlineSwitch('웹캠 보이기', w.enabled, (v) => { w.enabled = v; markDirty(); }),
-            inlineSwitch('좌우 뒤집기 (거울처럼)', w.mirror !== false, (v) => { w.mirror = v; markDirty(); }),
-            positionField('위치', w.position, ['top-left', 'top-right', 'bottom-left', 'bottom-right'], (v) => { w.position = v; markDirty(); drawPanel(); }),
-            inlineSwitch('위치 직접 정하기', w.position === 'custom', (v) => { w.position = v ? 'custom' : 'bottom-left'; markDirty(); drawPanel(); }),
+            inlineSwitch(T('웹캠 보이기'), w.enabled, (v) => { w.enabled = v; markDirty(); }),
+            inlineSwitch(T('좌우 뒤집기 (거울처럼)'), w.mirror !== false, (v) => { w.mirror = v; markDirty(); }),
+            positionField(T('위치'), w.position, ['top-left', 'top-right', 'bottom-left', 'bottom-right'], (v) => { w.position = v; markDirty(); drawPanel(); }),
+            inlineSwitch(T('위치 직접 정하기'), w.position === 'custom', (v) => { w.position = v ? 'custom' : 'bottom-left'; markDirty(); drawPanel(); }),
             w.position === 'custom' ? [
-              rangeField('가로 위치', w.x ?? 0.9, 0, 1, 0.01, (v) => { w.x = v; markDirty(); }, (v) => `${Math.round(v * 100)}%`),
-              rangeField('세로 위치', w.y ?? 0.9, 0, 1, 0.01, (v) => { w.y = v; markDirty(); }, (v) => `${Math.round(v * 100)}%`),
+              rangeField(T('가로 위치'), w.x ?? 0.9, 0, 1, 0.01, (v) => { w.x = v; markDirty(); }, (v) => `${Math.round(v * 100)}%`),
+              rangeField(T('세로 위치'), w.y ?? 0.9, 0, 1, 0.01, (v) => { w.y = v; markDirty(); }, (v) => `${Math.round(v * 100)}%`),
             ] : null,
-            rangeField('크기', w.size, 8, 50, 1, (v) => { w.size = v; markDirty(); }, (v) => `${v}%`),
-            rangeField('가장자리 여백', w.margin ?? 28, 0, 140, 2, (v) => { w.margin = v; markDirty(); }, (v) => `${v}px`),
-            rangeField('둥글기', w.roundness ?? 100, 0, 100, 5, (v) => { w.roundness = v; markDirty(); }, (v) => (v === 100 ? '원' : `${v}%`)),
-            rangeField('그림자', w.shadow ?? 0.45, 0, 1, 0.05, (v) => { w.shadow = v; markDirty(); }, (v) => (v ? `${Math.round(v * 100)}%` : '없음')),
-            inlineSwitch('화면이 확대되면 작아지기', !!w.reactToZoom, (v) => { w.reactToZoom = v; markDirty(); }),
+            rangeField(T('크기'), w.size, 8, 50, 1, (v) => { w.size = v; markDirty(); }, (v) => `${v}%`),
+            rangeField(T('가장자리 여백'), w.margin ?? 28, 0, 140, 2, (v) => { w.margin = v; markDirty(); }, (v) => `${v}px`),
+            rangeField(T('둥글기'), w.roundness ?? 100, 0, 100, 5, (v) => { w.roundness = v; markDirty(); }, (v) => (v === 100 ? T('원') : `${v}%`)),
+            rangeField(T('그림자'), w.shadow ?? 0.45, 0, 1, 0.05, (v) => { w.shadow = v; markDirty(); }, (v) => (v ? `${Math.round(v * 100)}%` : T('없음'))),
+            inlineSwitch(T('화면이 확대되면 작아지기'), !!w.reactToZoom, (v) => { w.reactToZoom = v; markDirty(); }),
           ] : null,
         ];
       },
@@ -624,17 +630,17 @@ export async function openEditor(id, preloaded) {
         const a = selectedOf('audio');
         const au = s.audio;
         return [
-          h('h3', {}, '소리'),
-          rangeField('녹화된 소리 크기', Math.round((au.volume ?? 1) * 100), 0, 100, 5, (v) => { au.volume = v / 100; markDirty(); }, (v) => (v ? `${v}%` : '끔')),
+          h('h3', {}, T('소리')),
+          rangeField(T('녹화된 소리 크기'), Math.round((au.volume ?? 1) * 100), 0, 100, 5, (v) => { au.volume = v / 100; markDirty(); }, (v) => (v ? `${v}%` : T('끔'))),
           h('div', { class: 'section' },
-            h('h3', {}, '소리 파일 추가 (배경 음악·효과음)'),
-            h('button', { class: 'btn wide', onclick: () => addItem('audio', screen.currentTime || 0) }, '♪ 여기에 소리 파일 넣기'),
-            h('div', { class: 'small muted', style: { marginTop: '8px' } }, `추가한 소리 ${project.audios.length}개 · 타임라인 소리 줄에서 끌어 옮기고, 끝을 끌어 길이를 줄입니다.`),
+            h('h3', {}, T('소리 파일 추가 (배경 음악·효과음)')),
+            h('button', { class: 'btn wide', onclick: () => addItem('audio', screen.currentTime || 0) }, T('♪ 여기에 소리 파일 넣기')),
+            h('div', { class: 'small muted', style: { marginTop: '8px' } }, T('추가한 소리 {0}개 · 타임라인 소리 줄에서 끌어 옮기고, 끝을 끌어 길이를 줄입니다.', project.audios.length)),
             a ? h('div', { style: { marginTop: '14px' } },
-              h('div', { class: 'field-label', style: { marginBottom: '8px', wordBreak: 'break-all' } }, `선택: ${a.name} (${fmt(a.start, true)} ~ ${fmt(a.end, true)})`),
-              rangeField('크기', Math.round((a.volume ?? 1) * 100), 0, 100, 5, (v) => { a.volume = v / 100; markDirty(); }, (v) => `${v}%`),
-              rangeField('파일의 몇 초부터 틀까요', a.offset || 0, 0, 120, 0.5, (v) => { a.offset = v; markDirty(); }, (v) => `${v}초`),
-              h('button', { class: 'btn wide danger', onclick: removeSelected }, '이 소리 삭제')) : null),
+              h('div', { class: 'field-label', style: { marginBottom: '8px', wordBreak: 'break-all' } }, T('선택: {0} ({1} ~ {2})', a.name, fmt(a.start, true), fmt(a.end, true))),
+              rangeField(T('크기'), Math.round((a.volume ?? 1) * 100), 0, 100, 5, (v) => { a.volume = v / 100; markDirty(); }, (v) => `${v}%`),
+              rangeField(T('파일의 몇 초부터 틀까요'), a.offset || 0, 0, 120, 0.5, (v) => { a.offset = v; markDirty(); }, (v) => T('{0}초', v)),
+              h('button', { class: 'btn wide danger', onclick: removeSelected }, T('이 소리 삭제'))) : null),
         ];
       },
       subs: () => drawSubtitlePanel(),
@@ -650,10 +656,10 @@ export async function openEditor(id, preloaded) {
     const progressBar = h('div', { class: 'progress hidden' }, h('div'));
     const progressText = h('div', { class: 'small muted', style: { marginTop: '6px' } });
     const runBtn = h('button', { class: 'btn primary wide', disabled: !hasAudio || ed.transcribing, onclick: async () => {
-      if (project.subtitles.length && !confirm('지금 있는 자막을 새로 만든 자막으로 바꿀까요?')) return;
+      if (project.subtitles.length && !confirm(T('지금 있는 자막을 새로 만든 자막으로 바꿀까요?'))) return;
       ed.transcribing = true;
       runBtn.disabled = true;
-      runBtn.textContent = '자막 만드는 중…';
+      runBtn.textContent = T('자막 만드는 중…');
       progressBar.classList.remove('hidden');
       progressBar.classList.add('indeterminate');
       const started = performance.now();
@@ -668,15 +674,15 @@ export async function openEditor(id, preloaded) {
             if (p.stage === 'downloading' && p.total) {
               progressBar.classList.remove('indeterminate');
               progressBar.firstChild.style.width = `${Math.round((p.loaded / p.total) * 100)}%`;
-              progressText.textContent = `음성 인식 모델 내려받는 중 (처음 한 번만) · ${formatBytes(p.loaded)} / ${formatBytes(p.total)}`;
+              progressText.textContent = T('음성 인식 모델 내려받는 중 (처음 한 번만) · {0} / {1}', formatBytes(p.loaded), formatBytes(p.total));
             } else {
               progressBar.classList.add('indeterminate');
               const labels = {
-                decoding: '녹음된 소리를 읽는 중…',
-                loading: `모델 준비 중 (${p.device === 'webgpu' ? '그래픽카드' : 'CPU'})…`,
-                transcribing: `말을 글로 옮기는 중 (${p.device === 'webgpu' ? '그래픽카드' : 'CPU'}) · 영상 길이에 따라 시간이 걸립니다`,
-                retry: '그래픽카드로 실패해 CPU로 다시 시도합니다…',
-                shaping: '문장 단위로 자막 정리 중…',
+                decoding: T('녹음된 소리를 읽는 중…'),
+                loading: T('모델 준비 중 ({0})…', p.device === 'webgpu' ? T('그래픽카드') : 'CPU'),
+                transcribing: T('말을 글로 옮기는 중 ({0}) · 영상 길이에 따라 시간이 걸립니다', p.device === 'webgpu' ? T('그래픽카드') : 'CPU'),
+                retry: T('그래픽카드로 실패해 CPU로 다시 시도합니다…'),
+                shaping: T('문장 단위로 자막 정리 중…'),
               };
               progressText.textContent = labels[p.stage] || '';
             }
@@ -687,15 +693,15 @@ export async function openEditor(id, preloaded) {
         if (late) for (const c of subs) { c.start += late; c.end += late; }
         project.subtitles = subs;
         markDirty();
-        toast(`자막 ${subs.length}개를 만들었습니다 (${Math.round((performance.now() - started) / 1000)}초)`);
+        toast(T('자막 {0}개를 만들었습니다 ({1}초)', subs.length, Math.round((performance.now() - started) / 1000)));
       } catch (err) {
         console.error(err);
-        toast(`자막을 만들지 못했습니다: ${err.message}`, true);
+        toast(T('자막을 만들지 못했습니다: {0}', err.message), true);
       } finally {
         ed.transcribing = false;
         if (state.editor === ed) drawPanel();
       }
-    } }, ed.transcribing ? '자막 만드는 중…' : project.subtitles.length ? '↻ 음성으로 자막 다시 만들기' : '🎙 음성으로 자막 만들기');
+    } }, ed.transcribing ? T('자막 만드는 중…') : project.subtitles.length ? T('↻ 음성으로 자막 다시 만들기') : T('🎙 음성으로 자막 만들기'));
 
     const sel = ed.selected?.kind === 'sub' ? ed.selected.id : null;
     const cues = h('div', { class: 'cues' }, project.subtitles.map((c) => {
@@ -713,84 +719,89 @@ export async function openEditor(id, preloaded) {
         drawPanel();
       } },
       h('div', { class: 'times' }, timeInput('start'), '→', timeInput('end'), h('span', { class: 'grow' }),
-        h('button', { class: 'btn small ghost', title: '여기로 이동', onclick: () => seek(c.start + 0.01) }, '▶'),
-        h('button', { class: 'btn small ghost danger', title: '삭제', onclick: () => { project.subtitles = project.subtitles.filter((x) => x.id !== c.id); markDirty(); drawPanel(); } }, '✕')),
-      h('textarea', { value: c.text, rows: 2, oninput: (e) => { c.text = e.target.value; markDirty(); } }));
+        h('button', { class: 'btn small ghost', title: T('여기로 이동'), onclick: () => seek(c.start + 0.01) }, '▶'),
+        h('button', { class: 'btn small ghost danger', title: T('삭제'), onclick: () => { project.subtitles = project.subtitles.filter((x) => x.id !== c.id); markDirty(); drawPanel(); } }, '✕')),
+      h('textarea', { value: c.text, rows: 2, oninput: (e) => { c.text = e.target.value; delete c.words; markDirty(); } }));
     }));
 
     return [
-      h('h3', {}, '음성 자막'),
-      !project.files.voice ? h('div', { class: 'hint' }, '마이크를 따로 녹음하지 않아 영상의 소리 전체로 자막을 만듭니다.') : null,
-      selectField('정확도', prefs.model, MODELS, (v) => { prefs.model = v; store.set('asr', prefs); }),
-      selectField('말한 언어', prefs.language, LANGUAGES, (v) => { prefs.language = v; store.set('asr', prefs); }),
-      inlineSwitch('그래픽카드로 빠르게', prefs.gpu, (v) => { prefs.gpu = v; store.set('asr', prefs); }, '안 되면 자동으로 CPU를 씁니다'),
+      h('h3', {}, T('음성 자막')),
+      !project.files.voice ? h('div', { class: 'hint' }, T('마이크를 따로 녹음하지 않아 영상의 소리 전체로 자막을 만듭니다.')) : null,
+      selectField(T('정확도'), prefs.model, MODELS, (v) => { prefs.model = v; store.set('asr', prefs); }),
+      selectField(T('말한 언어'), prefs.language, LANGUAGES, (v) => { prefs.language = v; store.set('asr', prefs); }),
+      inlineSwitch(T('그래픽카드로 빠르게'), prefs.gpu, (v) => { prefs.gpu = v; store.set('asr', prefs); }, T('안 되면 자동으로 CPU를 씁니다')),
       runBtn,
       progressBar,
       progressText,
-      h('div', { class: 'small muted', style: { marginTop: '8px' } }, '음성은 이 컴퓨터 안에서만 처리됩니다. 모델은 처음에 한 번 내려받습니다.'),
+      h('div', { class: 'small muted', style: { marginTop: '8px' } }, T('음성은 이 컴퓨터 안에서만 처리됩니다. 모델은 처음에 한 번 내려받습니다.')),
       h('div', { class: 'section' },
-        h('h3', {}, '자막 모양'),
-        inlineSwitch('영상에 자막 넣기', s.subtitles.enabled, (v) => { s.subtitles.enabled = v; markDirty(); }),
-        segField('스타일', s.subtitles.style, [{ id: 'box', name: '상자' }, { id: 'outline', name: '테두리' }, { id: 'yellow', name: '노란 글씨' }], (v) => { s.subtitles.style = v; markDirty(); }),
-        segField('위치', s.subtitles.position, [{ id: 'bottom', name: '아래' }, { id: 'top', name: '위' }], (v) => { s.subtitles.position = v; markDirty(); }),
-        rangeField('글자 크기', s.subtitles.size, 0.6, 1.8, 0.05, (v) => { s.subtitles.size = v; markDirty(); }, (v) => `${Math.round(v * 100)}%`)),
+        h('h3', {}, T('자막 모양')),
+        inlineSwitch(T('영상에 자막 넣기'), s.subtitles.enabled, (v) => { s.subtitles.enabled = v; markDirty(); }),
+        segField(T('스타일'), s.subtitles.style, SUBTITLE_STYLES, (v) => { s.subtitles.style = v; markDirty(); drawPanel(); }, 4),
+        ['karaoke', 'pop'].includes(s.subtitles.style) ? h('div', { class: 'hint' }, T('말하는 낱말을 강조합니다. 낱말 시간은 문장 길이로 나눠 어림합니다.')) : null,
+        segField(T('위치'), s.subtitles.position, [{ id: 'bottom', name: T('아래') }, { id: 'middle', name: T('가운데') }, { id: 'top', name: T('위') }], (v) => { s.subtitles.position = v; markDirty(); }),
+        segField(T('나타나기'), s.subtitles.anim || 'fade', [{ id: 'none', name: T('없음') }, { id: 'fade', name: T('서서히') }, { id: 'rise', name: T('올라오기') }, { id: 'pop', name: T('튀어나오기') }], (v) => { s.subtitles.anim = v; markDirty(); }),
+        rangeField(T('글자 크기'), s.subtitles.size, 0.6, 1.8, 0.05, (v) => { s.subtitles.size = v; markDirty(); }, (v) => `${Math.round(v * 100)}%`),
+        ['box', 'outline', 'karaoke', 'pop', 'minimal'].includes(s.subtitles.style) ? colorField(T('글자 색'), s.subtitles.textColor || '#ffffff', (v) => { s.subtitles.textColor = v; markDirty(); }) : null,
+        ['karaoke', 'pop'].includes(s.subtitles.style) ? colorField(T('강조 색'), s.subtitles.highlight || '#ffd33d', (v) => { s.subtitles.highlight = v; markDirty(); }) : null,
+        ['box', 'paper'].includes(s.subtitles.style) ? rangeField(T('바탕 진하기'), s.subtitles.bgOpacity ?? 0.68, 0, 1, 0.05, (v) => { s.subtitles.bgOpacity = v; markDirty(); }, (v) => `${Math.round(v * 100)}%`) : null),
       h('div', { class: 'section' },
         h('div', { class: 'row', style: { marginBottom: '10px' } },
-          h('h3', { class: 'grow', style: { margin: 0 } }, `자막 ${project.subtitles.length}개`),
+          h('h3', { class: 'grow', style: { margin: 0 } }, T('자막 {0}개', project.subtitles.length)),
           h('button', { class: 'btn small', onclick: () => {
             const t = screen.currentTime;
-            const c = { id: newId('s'), start: t, end: Math.min(project.durationMs / 1000, t + 2.5), text: '새 자막' };
+            const c = { id: newId('s'), start: t, end: Math.min(project.durationMs / 1000, t + 2.5), text: T('새 자막') };
             project.subtitles.push(c);
             project.subtitles.sort((a, b) => a.start - b.start);
             ed.selected = { kind: 'sub', id: c.id };
             markDirty();
             drawPanel();
-          } }, '+ 여기에 추가'),
-          h('button', { class: 'btn small', disabled: !project.subtitles.length, onclick: saveSrt }, 'SRT 저장')),
-        project.subtitles.length ? cues : h('div', { class: 'small muted' }, '아직 자막이 없습니다.')),
+          } }, T('+ 여기에 추가')),
+          h('button', { class: 'btn small', disabled: !project.subtitles.length, onclick: saveSrt }, T('SRT 저장'))),
+        project.subtitles.length ? cues : h('div', { class: 'small muted' }, T('아직 자막이 없습니다.'))),
     ];
   }
 
   async function saveSrt() {
     const text = toSRT(mapCues(project.subtitles, ed.segs));
     const file = await platform.saveText(`${safeFileName(project.name)}.srt`, text, 'srt');
-    if (file) toast('SRT 자막 파일을 저장했습니다.');
+    if (file) toast(T('SRT 자막 파일을 저장했습니다.'));
   }
 
   // ---------------- export
   function openExport() {
     togglePlay(false);
     const formats = exportFormats();
-    if (!formats.length) { toast('이 컴퓨터에서는 영상을 저장할 수 없습니다.', true); return; }
+    if (!formats.length) { toast(T('이 컴퓨터에서는 영상을 저장할 수 없습니다.'), true); return; }
     const prefs = { gifFps: 15, gifSide: 800, gifLoop: true, ...store.get('export', { format: formats[0].id, longSide: 1920, fps: 60, burn: true, srt: true }) };
     if (!formats.find((f) => f.id === prefs.format)) prefs.format = formats[0].id;
     const len = outDuration(ed.segs);
-    if (!(len > 0)) { toast('내보낼 구간이 없습니다. 잘라낸 부분을 확인하세요.', true); return; }
+    if (!(len > 0)) { toast(T('내보낼 구간이 없습니다. 잘라낸 부분을 확인하세요.'), true); return; }
     const body = h('div');
-    const bg = h('div', { class: 'modal-bg' }, h('div', { class: 'modal' }, h('h2', {}, '영상 내보내기'), body));
+    const bg = h('div', { class: 'modal-bg' }, h('div', { class: 'modal' }, h('h2', {}, T('영상 내보내기')), body));
     document.body.append(bg);
     const close = () => bg.remove();
 
     // replaceChildren would turn a nested list into text, so the list is flattened first
     const drawForm = () => body.replaceChildren(...[
-      selectField('파일 형식', prefs.format, formats, (v) => { prefs.format = v; drawForm(); }),
+      selectField(T('파일 형식'), prefs.format, formats, (v) => { prefs.format = v; drawForm(); }),
       prefs.format === 'gif' ? [
-        segField('크기 (긴 쪽)', String(prefs.gifSide), [{ id: '480', name: '480' }, { id: '640', name: '640' }, { id: '800', name: '800' }, { id: '1080', name: '1080' }], (v) => { prefs.gifSide = Number(v); }),
-        segField('초당 프레임', String(prefs.gifFps), [{ id: '10', name: '10' }, { id: '15', name: '15' }, { id: '20', name: '20' }, { id: '25', name: '25' }], (v) => { prefs.gifFps = Number(v); }),
-        inlineSwitch('계속 반복 재생', prefs.gifLoop, (v) => { prefs.gifLoop = v; }),
-        inlineSwitch('자막을 그림에 넣기', prefs.burn, (v) => { prefs.burn = v; }),
-        h('div', { class: 'hint' }, `길이 ${fmt(len)} · GIF는 소리가 없고 용량이 큽니다. 30초 이하의 짧은 구간에 알맞습니다.`),
+        segField(T('크기 (긴 쪽)'), String(prefs.gifSide), [{ id: '480', name: '480' }, { id: '640', name: '640' }, { id: '800', name: '800' }, { id: '1080', name: '1080' }], (v) => { prefs.gifSide = Number(v); }),
+        segField(T('초당 프레임'), String(prefs.gifFps), [{ id: '10', name: '10' }, { id: '15', name: '15' }, { id: '20', name: '20' }, { id: '25', name: '25' }], (v) => { prefs.gifFps = Number(v); }),
+        inlineSwitch(T('계속 반복 재생'), prefs.gifLoop, (v) => { prefs.gifLoop = v; }),
+        inlineSwitch(T('자막을 그림에 넣기'), prefs.burn, (v) => { prefs.burn = v; }),
+        h('div', { class: 'hint' }, T('길이 {0} · GIF는 소리가 없고 용량이 큽니다. 30초 이하의 짧은 구간에 알맞습니다.', fmt(len))),
       ] : [
 
-      selectField('화질', String(prefs.longSide), [{ id: '1280', name: '720p (가벼움)' }, { id: '1920', name: '1080p (추천)' }, { id: '2560', name: '1440p' }, { id: '3840', name: '4K' }], (v) => { prefs.longSide = Number(v); }),
-      segField('초당 프레임', String(prefs.fps), [{ id: '30', name: '30fps' }, { id: '60', name: '60fps' }], (v) => { prefs.fps = Number(v); }),
-      inlineSwitch('자막을 영상에 넣기', prefs.burn, (v) => { prefs.burn = v; }),
-      project.subtitles.length ? inlineSwitch('SRT 자막 파일도 저장', prefs.srt, (v) => { prefs.srt = v; }) : null,
-      h('div', { class: 'hint' }, `길이 ${fmt(len)} · 내보내기는 영상 길이만큼, 컴퓨터가 바쁘면 조금 더 걸립니다. 그동안 이 창을 열어 두세요.`),
+      selectField(T('화질'), String(prefs.longSide), [{ id: '1280', name: T('720p (가벼움)') }, { id: '1920', name: T('1080p (추천)') }, { id: '2560', name: '1440p' }, { id: '3840', name: '4K' }], (v) => { prefs.longSide = Number(v); }),
+      segField(T('초당 프레임'), String(prefs.fps), [{ id: '30', name: '30fps' }, { id: '60', name: '60fps' }], (v) => { prefs.fps = Number(v); }),
+      inlineSwitch(T('자막을 영상에 넣기'), prefs.burn, (v) => { prefs.burn = v; }),
+      project.subtitles.length ? inlineSwitch(T('SRT 자막 파일도 저장'), prefs.srt, (v) => { prefs.srt = v; }) : null,
+      h('div', { class: 'hint' }, T('길이 {0} · 내보내기는 영상 길이만큼, 컴퓨터가 바쁘면 조금 더 걸립니다. 그동안 이 창을 열어 두세요.', fmt(len))),
       ],
       h('div', { class: 'actions' },
-        h('button', { class: 'btn', onclick: close }, '취소'),
-        h('button', { class: 'btn primary', onclick: run }, '저장할 곳 고르기')),
+        h('button', { class: 'btn', onclick: close }, T('취소')),
+        h('button', { class: 'btn primary', onclick: run }, T('저장할 곳 고르기'))),
     ].flat(Infinity).filter(Boolean));
 
     async function run() {
@@ -802,9 +813,9 @@ export async function openEditor(id, preloaded) {
       const writer = await platform.exportWriter(name, format.ext, format.mime);
       if (!writer) return;
       const bar = h('div', { class: 'progress' }, h('div'));
-      const label = h('div', { class: 'small muted', style: { marginTop: '8px' } }, '준비 중…');
+      const label = h('div', { class: 'small muted', style: { marginTop: '8px' } }, T('준비 중…'));
       ed.abort = new AbortController();
-      body.replaceChildren(bar, label, h('div', { class: 'actions' }, h('button', { class: 'btn', onclick: () => ed.abort?.abort() }, '중지')));
+      body.replaceChildren(bar, label, h('div', { class: 'actions' }, h('button', { class: 'btn', onclick: () => ed.abort?.abort() }, T('중지'))));
       try {
         const file = await exportVideo({
           project, derived: ed.derived, screenUrl, webcamUrl, format, url,
@@ -813,30 +824,30 @@ export async function openEditor(id, preloaded) {
           onProgress: (k) => { bar.firstChild.style.width = `${Math.round(k * 100)}%`; label.textContent = `${Math.round(k * 100)}% · ${fmt(k * len)} / ${fmt(len)}`; },
         });
         ed.abort = null;
-        if (!file) { close(); toast('내보내기를 중지했습니다.'); return; }
+        if (!file) { close(); toast(T('내보내기를 중지했습니다.')); return; }
         let srtNote = '';
         if (gif) {
           // a GIF carries no separate subtitle file
         } else if (prefs.srt && project.subtitles.length && isDesktop && writer.path) {
           const srtPath = writer.path.replace(/\.[^.\\/]+$/, '.srt');
           await window.keycast.writeText(srtPath, srtText);
-          srtNote = ' + SRT 자막';
+          srtNote = T(' + SRT 자막');
         } else if (prefs.srt && project.subtitles.length && !isDesktop) {
           await saveSrt();
         }
         body.replaceChildren(
           h('div', { class: 'done' },
             h('span', {}, '✅'),
-            h('b', {}, `영상을 저장했습니다${srtNote}`),
+            h('b', {}, T('영상을 저장했습니다{0}', srtNote)),
             h('span', { class: 'small muted', style: { wordBreak: 'break-all' } }, writer.path || '')),
           h('div', { class: 'actions' },
-            isDesktop ? h('button', { class: 'btn', onclick: () => platform.reveal(writer.path) }, '폴더에서 보기') : null,
-            h('button', { class: 'btn primary', onclick: close }, '닫기')));
+            isDesktop ? h('button', { class: 'btn', onclick: () => platform.reveal(writer.path) }, T('폴더에서 보기')) : null,
+            h('button', { class: 'btn primary', onclick: close }, T('닫기'))));
       } catch (err) {
         console.error(err);
         ed.abort = null;
         close();
-        toast(`내보내지 못했습니다: ${err.message || err}`, true);
+        toast(T('내보내지 못했습니다: {0}', err.message || err), true);
       }
     }
     drawForm();
@@ -845,13 +856,13 @@ export async function openEditor(id, preloaded) {
   // ---------------- layout
   mount(
     topbar(
-      h('button', { class: 'btn small ghost', onclick: async () => { if (ed.dirty) await platform.saveProject(project); showHome(); } }, '← 처음으로'),
+      h('button', { class: 'btn small ghost', onclick: async () => { if (ed.dirty) await platform.saveProject(project); showHome(); } }, T('← 처음으로')),
       nameInput,
       saveTag,
-      h('button', { class: 'btn small ghost', title: '되돌리기 (Ctrl+Z)', onclick: () => timeTravel(ed.history, ed.future) }, '↶'),
-      h('button', { class: 'btn small ghost', title: '다시 하기 (Ctrl+Y)', onclick: () => timeTravel(ed.future, ed.history) }, '↷'),
-      h('button', { class: 'btn small ghost', title: '단축키', onclick: openShortcuts }, '⌨'),
-      h('button', { class: 'btn primary', onclick: openExport }, '⤓ 내보내기')),
+      h('button', { class: 'btn small ghost', title: T('되돌리기 (Ctrl+Z)'), onclick: () => timeTravel(ed.history, ed.future) }, '↶'),
+      h('button', { class: 'btn small ghost', title: T('다시 하기 (Ctrl+Y)'), onclick: () => timeTravel(ed.future, ed.history) }, '↷'),
+      h('button', { class: 'btn small ghost', title: T('단축키'), onclick: openShortcuts }, '⌨'),
+      h('button', { class: 'btn primary', onclick: openExport }, T('⤓ 내보내기'))),
     h('div', { class: 'editor' },
       h('div', { class: 'stage' },
         h('div', { class: 'preview-wrap' }, preview),
@@ -862,7 +873,7 @@ export async function openEditor(id, preloaded) {
           keysToggle,
           sizeLabel),
         h('div', { class: 'timeline-wrap' }, timelineCanvas,
-          h('div', { class: 'timeline-help' }, '클릭해서 이동 · 줄을 더블클릭하면 그 줄에 추가 · 블록을 끌어 옮기고 끝을 끌어 늘리기 · 선택 후 Delete로 삭제 · Space 재생 · Ctrl+Z 되돌리기'))),
+          h('div', { class: 'timeline-help' }, T('클릭해서 이동 · 줄을 더블클릭하면 그 줄에 추가 · 블록을 끌어 옮기고 끝을 끌어 늘리기 · 선택 후 Delete로 삭제 · Space 재생 · Ctrl+Z 되돌리기')))),
       h('aside', { class: 'side' }, sideTabs, sideBody)));
 
   drawTabs();

@@ -43,5 +43,5 @@ export function savedLook() {
 export function saveOptions() { store.set('options', state.options); }
 export function liveOverlaySettings() {
   const look = savedLook();
-  return { ...look.keys, mouse: { clicks: look.cursor.clicks, effect: look.cursor.effect, scrolls: look.cursor.scrolls !== false, highlight: look.cursor.highlight, color: look.cursor.color } };
+  return { ...look.keys, mouse: { clicks: look.cursor.clicks, effect: look.cursor.effect, scrolls: look.cursor.scrolls !== false, highlight: look.cursor.highlight, color: look.cursor.color, clickSize: look.cursor.clickSize, clickDur: look.cursor.clickDur } };
 }

@@ -22,7 +22,7 @@
 
 ![A recording with key bubbles, a zoom on the click and a subtitle](docs/demo.gif)
 
-> Recorded and exported with KeyCast Studio. The subtitles in this demo were typed in. The app's interface is in Korean for now ([help translate it](CONTRIBUTING.md#translating-the-app)).
+> Recorded and exported with KeyCast Studio. The subtitles in this demo were typed in. The interface is in English and Korean ([add your language](CONTRIBUTING.md#translating-the-app)).
 
 ## About keyboard recording
 
@@ -48,10 +48,12 @@ KeyCast Studio has to see the keys you press to show them in the video, so pleas
 - Trim the ends, cut out parts in the middle, change speed by range (0.25× to 4×), undo and redo
 - Text, arrow, box and picture notes, and blur to hide private details
 - Backgrounds (colours, gradients, pictures or your own image), padding, rounded corners, shadow, crop, aspect ratio (16:9, 9:16, 1:1, 4:3)
+- Pointer: 7 pointer shapes, 4 click effects (ripple, echo, glow, burst) with size and length, smoothing, motion trail and hiding when still
 - Webcam bubble, background music and sound effects
 
 **Subtitles**
 - Transcribe your voice on your own computer (Whisper) into sentence-sized subtitles; Korean, English, Japanese, Chinese, Spanish, German and French
+- 7 styles including karaoke and pop that highlight the spoken word, text and highlight colours, entrance animations, top, middle or bottom
 - Edit them, burn them into the video or save an SRT file
 
 **Export**
@@ -73,8 +75,7 @@ From the [latest release](https://github.com/dominkang90/keycast-studio/releases
 | File | For |
 |---|---|
 | **KeyCast-Studio-Setup-x.y.z.exe** | Recommended. Installs everything, FFmpeg included, with Start menu and desktop shortcuts and an uninstaller |
-| KeyCast-Studio-x.y.z-win-x64.zip | Portable: extract it and run `KeyCast Studio.exe`. Also includes FFmpeg |
-| KeyCast-Studio-web.zip | Try it in Chrome or Edge without installing. Records only keys pressed inside that tab |
+| KeyCast-Studio-Portable-x.y.z.exe | One file, nothing to install: just run it. FFmpeg included. Starts a few seconds slower because it unpacks itself first |
 
 > Windows may show **Windows protected your PC** the first time. Choose **More info → Run anyway**. The app is not code-signed yet, which is why the warning appears. Compare the file with the SHA-256 and VirusTotal links on the release page if you want to be sure.
 
@@ -131,7 +132,7 @@ npm install
 npm start
 ```
 
-`npm test` runs the unit tests, `npm run build` makes `release\KeyCast Studio-win32-x64`, and `npm run dist` makes the installer and portable zip (it needs FFmpeg 8+ on PATH to bundle). See [CONTRIBUTING.md](CONTRIBUTING.md) and [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+`npm test` runs the unit tests, `npm run build` makes `release\KeyCast Studio-win32-x64`, and `npm run dist` makes the installer and the portable exe (it needs FFmpeg 8+ on PATH to bundle). See [CONTRIBUTING.md](CONTRIBUTING.md) and [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 ## Credits
 
@@ -144,7 +145,7 @@ The feature set was inspired by [Recordly](https://github.com/webadderallorg/Rec
 | [Transformers.js](https://github.com/huggingface/transformers.js) / ONNX Runtime Web | Speech recognition (Whisper) | Apache-2.0 / MIT |
 | [mp4-muxer](https://github.com/Vanilagy/mp4-muxer), [webm-muxer](https://github.com/Vanilagy/webm-muxer) | Writing video files | MIT |
 | [gifenc](https://github.com/mattdesl/gifenc) | GIF export | MIT |
-| [FFmpeg](https://ffmpeg.org/) | Recording without the pointer. Shipped unmodified in the installer and zip, started as a separate program | GPL-3.0 ([source](https://ffmpeg.org/download.html)) |
+| [FFmpeg](https://ffmpeg.org/) | Recording without the pointer. Shipped unmodified in the installer and the portable exe, started as a separate program | GPL-3.0 ([source](https://ffmpeg.org/download.html)) |
 
 ## License
 

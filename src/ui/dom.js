@@ -2,6 +2,7 @@
 
 import { isDesktop } from '../lib/platform.js';
 import { withIcon } from '../lib/icons.js';
+import { T, lang, LANGS, setLang } from '../lib/i18n.js';
 // ------------------------------------------------------------------ tiny DOM helper
 export function h(tag, attrs = {}, ...children) {
   const el = document.createElement(tag);
@@ -55,11 +56,25 @@ export function topbar(...right) {
     h('div', { class: 'brand' }, h('div', { class: 'brand-mark' }), h('span', {}, 'KeyCast', h('i', {}, ' Studio'))),
     h('div', { class: 'grow' }),
     ...right,
-    h('button', { class: 'btn small ghost', title: '사용설명서 열기', onclick: openManual }, '❓ 사용법'));
+    h('button', { class: 'btn small ghost', title: T('사용설명서 열기'), onclick: openManual }, T('❓ 사용법')));
 }
 
+/** Interface language picker; the page reloads in the new language (edits are saved first). */
+export function langMenu() {
+  return h('select', { class: 'lang-menu', 'aria-label': 'Language / 언어', title: 'Language / 언어', onchange: (e) => { setLang(e.target.value); location.reload(); } },
+    LANGS.map((l) => h('option', { value: l.id, selected: l.id === lang }, l.name)));
+}
+
+const HELP_EN = 'https://github.com/dominkang90/keycast-studio#readme';
+
 export function openManual() {
-  // The desktop app ships the manual with its pages; the browser version sits next to it on disk.
+  // The Korean manual ships with the app (and sits next to the browser version); other languages
+  // use the README on GitHub, opened in the normal web browser.
+  if (lang !== 'ko') {
+    if (isDesktop && window.keycast?.openHelp) window.keycast.openHelp();
+    else window.open(HELP_EN, '_blank', 'noopener');
+    return;
+  }
   const url = isDesktop ? './manual.html' : '../사용설명서.html';
   window.open(url, '_blank', 'width=980,height=900');
 }
@@ -89,8 +104,9 @@ export function selectField(label, value, options, onChange) {
       options.map((o) => h('option', { value: o.id, selected: o.id === value }, o.name))));
 }
 
-export function segField(label, value, options, onChange) {
-  const wrap = h('div', { class: 'seg' });
+export function segField(label, value, options, onChange, cols) {
+  // With cols the buttons wrap into rows of that many, for longer lists.
+  const wrap = h('div', { class: 'seg', style: cols ? { gridAutoFlow: 'row', gridTemplateColumns: `repeat(${cols}, 1fr)` } : {} });
   const draw = (cur) => {
     wrap.replaceChildren(...options.map((o) => h('button', { class: o.id === cur ? 'on' : '', onclick: () => { onChange(o.id); draw(o.id); } }, o.name)));
   };

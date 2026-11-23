@@ -7,6 +7,7 @@ import { h, toast, mount, topbar } from './dom.js';
 import { state, shortcuts, savedLook, liveOverlaySettings } from './state.js';
 import { showHome } from './home.js';
 import { openEditor } from './editor.js';
+import { T } from '../lib/i18n.js';
 // ------------------------------------------------------------------ recording
 export async function countdown() {
   const el = h('div', { class: 'countdown' });
@@ -20,7 +21,7 @@ export async function countdown() {
 
 export async function startRecording() {
   const source = state.sources.find((s) => s.id === state.sourceId);
-  if (!source) { toast('녹화할 화면을 먼저 고르세요.', true); return; }
+  if (!source) { toast(T('녹화할 화면을 먼저 고르세요.'), true); return; }
   const o = state.options;
   if (o.countdown && isDesktop) await countdown();
   const rec = new Recorder({
@@ -45,7 +46,7 @@ export async function startRecording() {
     console.error(err);
     state.recorder = null;
     try { await platform.endRecording(); } catch { /* nothing to undo */ }
-    toast(`녹화를 시작하지 못했습니다: ${err.message || err}`, true);
+    toast(T('녹화를 시작하지 못했습니다: {0}', err.message || err), true);
     showHome();
   }
 }
@@ -54,14 +55,14 @@ export let recBarTime = null;
 export let recBarPause = null;
 export function showRecBar() {
   recBarTime = h('b', { style: { fontSize: '28px', fontVariantNumeric: 'tabular-nums' } }, '0:00');
-  recBarPause = h('button', { class: 'btn', onclick: () => state.recorder?.togglePause() }, '일시정지');
+  recBarPause = h('button', { class: 'btn', onclick: () => state.recorder?.togglePause() }, T('일시정지'));
   mount(topbar(), h('div', { class: 'recbar' },
     h('div', { class: 'recdot' }), recBarTime, recBarPause,
-    h('button', { class: 'btn rec', style: { height: '36px', fontSize: '14px' }, onclick: stopRecording }, '■ 멈추고 편집')));
+    h('button', { class: 'btn rec', style: { height: '36px', fontSize: '14px' }, onclick: stopRecording }, T('■ 멈추고 편집'))));
 }
 export function updateRecBar(s) {
   if (recBarTime) recBarTime.textContent = fmt(s.elapsedMs / 1000);
-  if (recBarPause) recBarPause.textContent = s.paused ? '다시 시작' : '일시정지';
+  if (recBarPause) recBarPause.textContent = s.paused ? T('다시 시작') : T('일시정지');
 }
 
 export async function stopRecording() {
@@ -72,7 +73,7 @@ export async function stopRecording() {
     finishRecording(project);
   } catch (err) {
     console.error(err);
-    toast(`녹화를 저장하지 못했습니다: ${err.message}`, true);
+    toast(T('녹화를 저장하지 못했습니다: {0}', err.message), true);
     state.recorder = null;
     // The recording bar, the live keys and the key listener must not stay behind.
     try { await platform.captureAbort(); await platform.endRecording(); } catch { /* nothing left to close */ }
@@ -86,7 +87,7 @@ export function finishRecording(project) {
   recBarTime = null;
   recBarPause = null;
   const keys = project.events.filter((e) => e.type === 'kd' && !e.repeat).length;
-  toast(`녹화 완료 · ${fmt(project.durationMs / 1000)} · 키 ${keys}개 기록`);
+  toast(T('녹화 완료 · {0} · 키 {1}개 기록', fmt(project.durationMs / 1000), keys));
   openEditor(project.id, project);
 }
 

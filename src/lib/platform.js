@@ -2,6 +2,8 @@
 // In a browser the recorder still works, but keys are only seen while this tab has focus
 // and recordings live in memory until exported.
 
+import { T } from './i18n.js';
+
 const api = typeof window !== 'undefined' ? window.keycast : undefined;
 
 export const isDesktop = !!api;
@@ -74,7 +76,7 @@ export const platform = {
 
   async listSources() {
     if (isDesktop) return api.listSources();
-    return [{ id: 'browser', name: '녹화할 화면은 시작할 때 고릅니다', kind: 'screen', thumbnail: null }];
+    return [{ id: 'browser', name: T('녹화할 화면은 시작할 때 고릅니다'), kind: 'screen', thumbnail: null }];
   },
 
   async getDisplayStream(source, { systemAudio }) {

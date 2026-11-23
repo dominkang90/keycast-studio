@@ -5,15 +5,16 @@ import { Muxer as WebmMuxer, StreamTarget as WebmTarget } from 'webm-muxer';
 import { GIFEncoder, quantize, applyPalette } from 'gifenc';
 import { renderFrame, projectOutputSize, preloadImages } from './compositor.js';
 import { segments, outDuration, outToSrc, syncAudios } from './timemap.js';
+import { T } from './i18n.js';
 
 export function exportFormats() {
   const can = (m) => window.MediaRecorder && MediaRecorder.isTypeSupported(m);
   const formats = [];
   const mp4 = ['video/mp4;codecs=avc1.640033,mp4a.40.2', 'video/mp4;codecs=avc1.4d0033,mp4a.40.2', 'video/mp4;codecs=avc1,mp4a.40.2', 'video/mp4'].find(can);
-  if (mp4) formats.push({ id: 'mp4', name: 'MP4 (어디서나 재생)', mime: mp4, ext: 'mp4' });
+  if (mp4) formats.push({ id: 'mp4', name: T('MP4 (어디서나 재생)'), mime: mp4, ext: 'mp4' });
   const webm = ['video/webm;codecs=vp9,opus', 'video/webm;codecs=vp8,opus', 'video/webm'].find(can);
-  if (webm) formats.push({ id: 'webm', name: 'WebM (작은 용량)', mime: webm, ext: 'webm' });
-  formats.push({ id: 'gif', name: 'GIF (움직이는 그림, 소리 없음)', mime: 'image/gif', ext: 'gif' });
+  if (webm) formats.push({ id: 'webm', name: T('WebM (작은 용량)'), mime: webm, ext: 'webm' });
+  formats.push({ id: 'gif', name: T('GIF (움직이는 그림, 소리 없음)'), mime: 'image/gif', ext: 'gif' });
   return formats;
 }
 
@@ -25,7 +26,7 @@ function loadVideo(url, withAudio) {
     v.muted = !withAudio;
     v.src = url;
     v.onloadedmetadata = () => resolve(v);
-    v.onerror = () => reject(new Error('영상 파일을 열지 못했습니다.'));
+    v.onerror = () => reject(new Error(T('영상 파일을 열지 못했습니다.')));
   });
 }
 
@@ -46,7 +47,7 @@ function seek(video, t) {
  */
 export async function exportVideo(o) {
   const { project } = o;
-  if (!segments(project).length) throw new Error('내보낼 구간이 없습니다. 잘라낸 부분을 확인하세요.');
+  if (!segments(project).length) throw new Error(T('내보낼 구간이 없습니다. 잘라낸 부분을 확인하세요.'));
   await preloadImages(project, o.url);
   const gif = o.format.ext === 'gif';
   const screen = await loadVideo(o.screenUrl, !gif);
@@ -130,7 +131,7 @@ async function exportExact(o, { screen, webcam, W, H, audioCtx, plan }) {
   let failure = null;
   let written = 0;
   const onData = (data, position) => {
-    if (position !== written) { failure = failure || new Error('영상 파일을 순서대로 쓰지 못했습니다.'); return; }
+    if (position !== written) { failure = failure || new Error(T('영상 파일을 순서대로 쓰지 못했습니다.')); return; }
     written += data.byteLength;
     const copy = data.slice();
     pending = pending.then(() => o.writer.write(copy));
@@ -451,7 +452,7 @@ async function exportRealtime(o) {
   let cancelled = false;
   try {
     await new Promise((resolve, reject) => {
-      recorder.onerror = (e) => reject(e.error || new Error('녹화 중 오류'));
+      recorder.onerror = (e) => reject(e.error || new Error(T('녹화 중 오류')));
       recorder.start(1000);
       let finished = false;
       const finish = () => {

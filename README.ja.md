@@ -22,7 +22,7 @@
 
 ![キー表示、クリックのズーム、字幕が入った録画](docs/demo.gif)
 
-> KeyCast Studio で録画し、そのまま書き出したものです。デモの字幕は手で入力しました。アプリの画面は今のところ韓国語のみです（[翻訳に協力する](CONTRIBUTING.md#translating-the-app)）。
+> KeyCast Studio で録画し、そのまま書き出したものです。デモの字幕は手で入力しました。アプリの画面は英語と韓国語に対応しています（[日本語訳に協力する](CONTRIBUTING.md#translating-the-app)）。
 
 ## キーボードの記録について
 
@@ -73,8 +73,7 @@
 | ファイル | 用途 |
 |---|---|
 | **KeyCast-Studio-Setup-x.y.z.exe** | おすすめ。FFmpeg を含めてすべてインストールし、スタートメニュー・デスクトップのショートカットとアンインストーラーを作成します |
-| KeyCast-Studio-x.y.z-win-x64.zip | ポータブル版。展開して `KeyCast Studio.exe` を実行します。FFmpeg 同梱 |
-| KeyCast-Studio-web.zip | Chrome・Edge でインストールせずにお試し。そのタブ内で押したキーだけを記録します |
+| KeyCast-Studio-Portable-x.y.z.exe | 1 ファイルでインストール不要、そのまま実行できます。FFmpeg 同梱。起動のたびに展開するため数秒遅く開きます |
 
 > 初回起動時に **Windows によって PC が保護されました** と表示されたら、**詳細情報 → 実行** を選んでください。まだコード署名がないため表示されます。リリースページの SHA-256 と VirusTotal の結果でファイルを確認できます。
 
@@ -131,7 +130,7 @@ npm install
 npm start
 ```
 
-`npm test` で単体テスト、`npm run build` で `release\KeyCast Studio-win32-x64`、`npm run dist` でインストーラーとポータブル zip を作ります（同梱する FFmpeg 8 以上が PATH に必要）。[CONTRIBUTING.md](CONTRIBUTING.md) と [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) をご覧ください。
+`npm test` で単体テスト、`npm run build` で `release\KeyCast Studio-win32-x64`、`npm run dist` でインストーラーとポータブル exe を作ります（同梱する FFmpeg 8 以上が PATH に必要）。[CONTRIBUTING.md](CONTRIBUTING.md) と [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) をご覧ください。
 
 ## クレジットとオープンソース
 
@@ -144,7 +143,7 @@ npm start
 | [Transformers.js](https://github.com/huggingface/transformers.js) / ONNX Runtime Web | 音声認識（Whisper） | Apache-2.0 / MIT |
 | [mp4-muxer](https://github.com/Vanilagy/mp4-muxer), [webm-muxer](https://github.com/Vanilagy/webm-muxer) | 動画ファイルの作成 | MIT |
 | [gifenc](https://github.com/mattdesl/gifenc) | GIF の作成 | MIT |
-| [FFmpeg](https://ffmpeg.org/) | ポインターなしの画面キャプチャ。インストーラーと zip に無改変で同梱し、別プログラムとして起動します | GPL-3.0（[ソース](https://ffmpeg.org/download.html)） |
+| [FFmpeg](https://ffmpeg.org/) | ポインターなしの画面キャプチャ。インストーラーとポータブル exe に無改変で同梱し、別プログラムとして起動します | GPL-3.0（[ソース](https://ffmpeg.org/download.html)） |
 
 ## ライセンス
 

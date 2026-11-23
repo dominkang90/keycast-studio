@@ -1,7 +1,7 @@
 {
   "name": "keycast-studio",
   "productName": "KeyCast Studio",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Screen recorder that shows every key you press, polishes clicks with auto-zoom and turns your voice into subtitles.",
   "license": "MIT",
   "author": "dominkang90",
@@ -22,7 +22,7 @@
   "scripts": {
     "build:ui": "vite build",
     "build:web": "vite build --config vite.web.config.js",
-    "package": "electron-packager . \"KeyCast Studio\" --platform=win32 --arch=x64 --out=release --overwrite --prune=true --ignore=^/src --ignore=^/release --ignore=^/tests --ignore=^/web/ --ignore=^/vite\\..*config\\.js$ --ignore=\\.cmd$ --ignore=\\.lnk$ --ignore=^/docs --ignore=\\.md$ --ignore=^/scripts --ignore=^/\\.github --ignore=electron-builder\\.yml --icon=build/icon.ico --app-copyright=\"Copyright (c) 2026 dominkang90\" --win32metadata.CompanyName=dominkang90 --win32metadata.FileDescription=\"KeyCast Studio\" --win32metadata.ProductName=\"KeyCast Studio\" && node tests/check-package.cjs",
+    "package": "electron-packager . \"KeyCast Studio\" --platform=win32 --arch=x64 --out=release --overwrite --prune=true --ignore=^/src --ignore=^/release --ignore=^/tests --ignore=^/web/ --ignore=^/vite\\..*config\\.js$ --ignore=\\.cmd$ --ignore=\\.lnk$ --ignore=^/docs --ignore=\\.md$ --ignore=^/scripts --ignore=^/\\.github --ignore=electron-builder\\.yml --ignore=^/dist/assets/.*\\.wasm$ --icon=build/icon.ico --app-copyright=\"Copyright (c) 2026 dominkang90\" --win32metadata.CompanyName=dominkang90 --win32metadata.FileDescription=\"KeyCast Studio\" --win32metadata.ProductName=\"KeyCast Studio\" && node scripts/prune-locales.cjs && node tests/check-package.cjs",
     "build": "npm run build:ui && npm run build:web && npm run package",
     "bundle:ffmpeg": "node scripts/bundle-ffmpeg.cjs",
     "dist": "npm run build && npm run bundle:ffmpeg && electron-builder --win --prepackaged \"release/KeyCast Studio-win32-x64\"",

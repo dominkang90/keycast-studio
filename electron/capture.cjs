@@ -52,7 +52,7 @@ function start({ file, index, fps }) {
   c.closed = new Promise((resolve) => proc.on('close', resolve));
   proc.stderr.on('data', (d) => { c.err = (c.err + d).slice(-2000); });
   return new Promise((resolve, reject) => {
-    const timer = setTimeout(() => { abort(); reject(new Error(`화면 캡처가 시작되지 않았습니다. ${c.err.trim()}`)); }, 10000);
+    const timer = setTimeout(() => { abort(); reject(new Error(`Screen capture did not start. ${c.err.trim()}`)); }, 10000);
     let text = '';
     proc.stdout.on('data', (d) => {
       text += d;
@@ -74,7 +74,7 @@ function start({ file, index, fps }) {
     proc.on('error', (err) => { clearTimeout(timer); cap = null; reject(err); });
     proc.on('close', (code) => {
       clearTimeout(timer);
-      if (cap === c && !c.stopping) { cap = null; reject(new Error(`화면 캡처가 멈췄습니다. ${c.err.trim() || `exit ${code}`}`)); }
+      if (cap === c && !c.stopping) { cap = null; reject(new Error(`Screen capture stopped. ${c.err.trim() || `exit ${code}`}`)); }
     });
   });
 }

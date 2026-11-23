@@ -31,6 +31,7 @@ contextBridge.exposeInMainWorld('keycast', {
   saveDialog: (opts) => ipcRenderer.invoke('dialog:save', opts),
   reveal: (file) => ipcRenderer.invoke('shell:reveal', file),
   openRecordingsFolder: () => ipcRenderer.invoke('shell:openFolder'),
+  openHelp: () => ipcRenderer.invoke('shell:openHelp'),
   captureStart: (opts) => ipcRenderer.invoke('capture:start', opts),
   captureStop: () => ipcRenderer.invoke('capture:stop'),
   captureAbort: () => ipcRenderer.invoke('capture:abort'),

@@ -4,27 +4,28 @@
 
 import { visibleGroups, KEY_DEFAULTS, isModifier } from './keys.js';
 import { cameraAt, viewRect } from './zoom.js';
-import { cueAt, wrapLines } from './subtitles.js';
+import { cueAt, cueWords, lineLimit, SUBTITLE_DEFAULTS } from './subtitles.js';
+import { T } from './i18n.js';
 
 export const FONT = '"Segoe UI", "Malgun Gothic", "Apple SD Gothic Neo", "Noto Sans KR", system-ui, sans-serif';
 
 export const BACKGROUNDS = [
-  { id: 'aurora', name: '오로라', stops: ['#6d5efc', '#c254d8', '#f7797d'] },
-  { id: 'ocean', name: '바다', stops: ['#0ea5e9', '#2563eb', '#1e1b4b'] },
-  { id: 'mint', name: '민트', stops: ['#34d399', '#0ea5a4', '#0f766e'] },
-  { id: 'sunset', name: '노을', stops: ['#fbbf24', '#f97316', '#db2777'] },
-  { id: 'graphite', name: '그래파이트', stops: ['#3f4652', '#1f242c', '#0b0e13'] },
-  { id: 'paper', name: '종이', stops: ['#f8fafc', '#e2e8f0', '#cbd5e1'] },
+  { id: 'aurora', name: T('오로라'), stops: ['#6d5efc', '#c254d8', '#f7797d'] },
+  { id: 'ocean', name: T('바다'), stops: ['#0ea5e9', '#2563eb', '#1e1b4b'] },
+  { id: 'mint', name: T('민트'), stops: ['#34d399', '#0ea5a4', '#0f766e'] },
+  { id: 'sunset', name: T('노을'), stops: ['#fbbf24', '#f97316', '#db2777'] },
+  { id: 'graphite', name: T('그래파이트'), stops: ['#3f4652', '#1f242c', '#0b0e13'] },
+  { id: 'paper', name: T('종이'), stops: ['#f8fafc', '#e2e8f0', '#cbd5e1'] },
 ];
 
 // Built-in wallpapers, painted from soft colour blobs: [x, y, radius, colour] in 0..1 of the frame.
 export const WALLPAPERS = [
-  { id: 'wp-dawn', name: '새벽', base: '#1b1035', blobs: [[0.15, 0.2, 0.7, '#ff7eb3'], [0.85, 0.15, 0.6, '#7366ff'], [0.6, 0.95, 0.7, '#ffb86b'], [0.1, 0.9, 0.5, '#3ec6ff']] },
-  { id: 'wp-lagoon', name: '석호', base: '#04263b', blobs: [[0.2, 0.1, 0.7, '#19d3c5'], [0.9, 0.4, 0.6, '#2b6bff'], [0.4, 1.0, 0.7, '#0b8f6a'], [0.75, 0.9, 0.4, '#b6f36a']] },
-  { id: 'wp-candy', name: '사탕', base: '#ffe8f1', blobs: [[0.1, 0.15, 0.6, '#ff9ecd'], [0.9, 0.2, 0.6, '#a0c4ff'], [0.5, 0.95, 0.7, '#fff3a0'], [0.95, 0.9, 0.45, '#c9a7ff']] },
-  { id: 'wp-ember', name: '불씨', base: '#1a0a05', blobs: [[0.2, 0.9, 0.7, '#ff4d1c'], [0.8, 0.8, 0.6, '#ffb000'], [0.5, 0.1, 0.7, '#5a1a8f'], [0.95, 0.15, 0.4, '#ff2e7e']] },
-  { id: 'wp-forest', name: '숲', base: '#07140c', blobs: [[0.15, 0.2, 0.7, '#1f7a4a'], [0.85, 0.3, 0.6, '#9bd35a'], [0.5, 1.0, 0.7, '#0e4d4a'], [0.9, 0.95, 0.4, '#e5d96b']] },
-  { id: 'wp-night', name: '밤하늘', base: '#03040d', blobs: [[0.2, 0.25, 0.6, '#1b2a80'], [0.8, 0.2, 0.5, '#4b1fa8'], [0.5, 0.95, 0.8, '#0a3a66'], [0.92, 0.85, 0.35, '#12a3b8']] },
+  { id: 'wp-dawn', name: T('새벽'), base: '#1b1035', blobs: [[0.15, 0.2, 0.7, '#ff7eb3'], [0.85, 0.15, 0.6, '#7366ff'], [0.6, 0.95, 0.7, '#ffb86b'], [0.1, 0.9, 0.5, '#3ec6ff']] },
+  { id: 'wp-lagoon', name: T('석호'), base: '#04263b', blobs: [[0.2, 0.1, 0.7, '#19d3c5'], [0.9, 0.4, 0.6, '#2b6bff'], [0.4, 1.0, 0.7, '#0b8f6a'], [0.75, 0.9, 0.4, '#b6f36a']] },
+  { id: 'wp-candy', name: T('사탕'), base: '#ffe8f1', blobs: [[0.1, 0.15, 0.6, '#ff9ecd'], [0.9, 0.2, 0.6, '#a0c4ff'], [0.5, 0.95, 0.7, '#fff3a0'], [0.95, 0.9, 0.45, '#c9a7ff']] },
+  { id: 'wp-ember', name: T('불씨'), base: '#1a0a05', blobs: [[0.2, 0.9, 0.7, '#ff4d1c'], [0.8, 0.8, 0.6, '#ffb000'], [0.5, 0.1, 0.7, '#5a1a8f'], [0.95, 0.15, 0.4, '#ff2e7e']] },
+  { id: 'wp-forest', name: T('숲'), base: '#07140c', blobs: [[0.15, 0.2, 0.7, '#1f7a4a'], [0.85, 0.3, 0.6, '#9bd35a'], [0.5, 1.0, 0.7, '#0e4d4a'], [0.9, 0.95, 0.4, '#e5d96b']] },
+  { id: 'wp-night', name: T('밤하늘'), base: '#03040d', blobs: [[0.2, 0.25, 0.6, '#1b2a80'], [0.8, 0.2, 0.5, '#4b1fa8'], [0.5, 0.95, 0.8, '#0a3a66'], [0.92, 0.85, 0.35, '#12a3b8']] },
 ];
 
 export const KEY_THEMES = {
@@ -41,12 +42,12 @@ export function defaultSettings() {
     frame: { aspect: '16:9', background: 'aurora', image: null, blur: 0, padding: 7, radius: 14, shadow: true, shadowSize: 1, crop: { ...FULL_CROP } },
     zoom: { enabled: true, scale: 1.8, follow: true, ramp: 0.55 },
     cursor: {
-      clicks: true, effect: 'ripple', highlight: false, color: '#ffd33d', scrolls: true,
-      show: false, style: 'arrow', size: 1.6, smoothing: 0.25, motionBlur: 0.3, bounce: 0.5, sway: 0.3, loop: false,
+      clicks: true, effect: 'ripple', clickSize: 1, clickDur: 0.65, highlight: false, color: '#ffd33d', scrolls: true,
+      show: false, style: 'arrow', size: 1.6, smoothing: 0.25, motionBlur: 0.3, bounce: 0.5, sway: 0.3, loop: false, idleHide: 0,
     },
     keys: { ...KEY_DEFAULTS, custom: { ...KEY_DEFAULTS.custom } },
     webcam: { enabled: true, position: 'bottom-left', x: 0.9, y: 0.9, size: 22, mirror: true, margin: 28, roundness: 100, shadow: 0.45, reactToZoom: false },
-    subtitles: { enabled: true, size: 1, position: 'bottom', style: 'box' },
+    subtitles: { ...SUBTITLE_DEFAULTS },
     audio: { volume: 1 },
   };
 }
@@ -237,34 +238,75 @@ function toCanvas(p, rect, view) {
 }
 
 // ------------------------------------------------------------------ pointer effects
+export const CLICK_EFFECTS = [
+  { id: 'ripple', name: T('물결') }, { id: 'echo', name: T('겹물결') }, { id: 'spotlight', name: T('빛 번짐') },
+  { id: 'burst', name: T('터짐') }, { id: 'none', name: T('없음') },
+];
+
 export function drawClicks(ctx, t, clicks, rect, view, cursorOpts, unit, scale) {
   const color = cursorOpts.color || '#ffd33d';
-  const spot = cursorOpts.effect === 'spotlight';
+  const effect = cursorOpts.effect || 'ripple';
+  if (effect === 'none') return;
+  const dur = Math.max(0.2, cursorOpts.clickDur ?? 0.65);
+  const size = (cursorOpts.clickSize ?? 1) * unit * Math.sqrt(scale);
   for (const c of clicks) {
     const age = t - c.t;
     if (age < 0) break;
-    if (age > 0.65) continue;
-    const k = age / 0.65;
+    if (age > dur) continue;
+    const k = age / dur;
     const p = toCanvas(c, rect, view);
+    // Right clicks get a dashed ring so they read differently from left clicks.
+    const right = c.button === 2;
     ctx.save();
-    if (spot) {
-      const radius = (30 - 8 * k) * unit * Math.sqrt(scale);
-      ctx.globalAlpha = (1 - k) * 0.55;
-      ctx.fillStyle = color;
+    if (effect === 'spotlight') {
+      const radius = (30 - 8 * k) * size;
+      const g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, radius);
+      g.addColorStop(0, rgba(color, (1 - k) * 0.6));
+      g.addColorStop(1, rgba(color, 0));
+      ctx.fillStyle = g;
       ctx.beginPath();
       ctx.arc(p.x, p.y, radius, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (effect === 'burst') {
+      const e = easeOut(k);
+      ctx.strokeStyle = color;
+      ctx.lineCap = 'round';
+      ctx.lineWidth = 3.2 * size * (1 - k * 0.6);
+      ctx.globalAlpha = 1 - k;
+      for (let i = 0; i < 8; i++) {
+        const ang = (i / 8) * Math.PI * 2 + 0.2;
+        const r0 = (8 + 18 * e) * size;
+        const r1 = (14 + 30 * e) * size;
+        ctx.beginPath();
+        ctx.moveTo(p.x + Math.cos(ang) * r0, p.y + Math.sin(ang) * r0);
+        ctx.lineTo(p.x + Math.cos(ang) * r1, p.y + Math.sin(ang) * r1);
+        ctx.stroke();
+      }
+      ctx.globalAlpha = (1 - k) * 0.5;
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, 6 * size * (1 - k), 0, Math.PI * 2);
       ctx.fill();
     } else {
-      const radius = (10 + 34 * k) * unit * Math.sqrt(scale);
-      ctx.globalAlpha = (1 - k) * 0.9;
-      ctx.lineWidth = 4 * unit;
-      ctx.strokeStyle = color;
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, radius, 0, Math.PI * 2);
-      ctx.stroke();
-      ctx.globalAlpha = (1 - k) * 0.35;
-      ctx.fillStyle = color;
-      ctx.fill();
+      const rings = effect === 'echo' ? 3 : 1;
+      if (right) ctx.setLineDash([6 * size, 5 * size]);
+      for (let i = 0; i < rings; i++) {
+        const ki = (age - i * dur * 0.18) / (dur * (1 - 0.18 * (rings - 1)));
+        if (ki < 0 || ki > 1) continue;
+        const e = easeOut(ki);
+        const radius = (10 + 34 * e) * size;
+        ctx.globalAlpha = (1 - ki) * (i === 0 ? 0.9 : 0.6);
+        ctx.lineWidth = (i === 0 ? 4 : 2.6) * size;
+        ctx.strokeStyle = color;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, radius, 0, Math.PI * 2);
+        ctx.stroke();
+        if (i === 0) {
+          ctx.globalAlpha = (1 - ki) * 0.3;
+          ctx.fillStyle = color;
+          ctx.fill();
+        }
+      }
     }
     ctx.restore();
   }
@@ -318,12 +360,18 @@ export function drawHighlight(ctx, p, unit, color) {
 
 // Arrow outline on a 24-unit grid, tip at (0, 0).
 const ARROW = [[0, 0], [0, 17.2], [4.4, 13.4], [7.3, 20], [10, 18.8], [7.1, 12.4], [12.6, 12.4]];
+// Pointing hand on the same grid, fingertip at (0, 0).
+const HAND = 'M0.6 -0.2 C1.9 -0.2 2.6 0.7 2.6 2 L2.6 7.4 C3.2 6.9 4.6 6.9 5.2 7.9 C5.9 7.3 7.4 7.4 7.9 8.6 ' +
+  'C8.7 8.1 10.4 8.4 10.4 10 L10.4 14.6 C10.4 18.2 8.4 20.4 5 20.4 L3.2 20.4 C0.8 20.4 -0.6 19.2 -2 17 ' +
+  'L-5 12.2 C-5.8 10.9 -4.3 9.6 -3 10.6 L-1.4 12 L-1.4 2 C-1.4 0.7 -0.7 -0.2 0.6 -0.2 Z';
 export const CURSOR_STYLES = [
-  { id: 'arrow', name: '검은 화살표' }, { id: 'white', name: '흰 화살표' },
-  { id: 'dot', name: '점' }, { id: 'ring', name: '고리' },
+  { id: 'arrow', name: T('검은 화살표') }, { id: 'white', name: T('흰 화살표') },
+  { id: 'accent', name: T('색 화살표') }, { id: 'outline', name: T('테두리 화살표') },
+  { id: 'hand', name: T('손가락') }, { id: 'dot', name: T('점') }, { id: 'ring', name: T('고리') },
 ];
 
-function cursorShape(ctx, style, s, color) {
+let handPath = null;
+export function cursorShape(ctx, style, s, color) {
   if (style === 'dot' || style === 'ring') {
     ctx.beginPath();
     ctx.arc(0, 0, 9 * s, 0, Math.PI * 2);
@@ -333,14 +381,28 @@ function cursorShape(ctx, style, s, color) {
     ctx.stroke();
     return;
   }
+  ctx.lineJoin = 'round';
+  if (style === 'hand' && typeof Path2D !== 'undefined') {
+    if (!handPath) handPath = new Path2D(HAND);
+    ctx.save();
+    ctx.scale(s, s);
+    ctx.lineWidth = 1.6;
+    ctx.strokeStyle = '#111111';
+    ctx.fillStyle = '#ffffff';
+    ctx.fill(handPath);
+    ctx.stroke(handPath);
+    ctx.restore();
+    return;
+  }
   ctx.beginPath();
   ARROW.forEach(([x, y], i) => (i ? ctx.lineTo(x * s, y * s) : ctx.moveTo(x * s, y * s)));
   ctx.closePath();
-  ctx.lineJoin = 'round';
-  ctx.lineWidth = 2.2 * s;
-  ctx.strokeStyle = style === 'white' ? '#111111' : '#ffffff';
+  const fills = { white: '#ffffff', accent: color, outline: 'rgba(255,255,255,0.08)' };
+  const lines = { white: '#111111', accent: '#ffffff', outline: color };
+  ctx.lineWidth = (style === 'outline' ? 2.6 : 2.2) * s;
+  ctx.strokeStyle = lines[style] || '#ffffff';
   ctx.stroke();
-  ctx.fillStyle = style === 'white' ? '#ffffff' : '#111111';
+  ctx.fillStyle = fills[style] || '#111111';
   ctx.fill();
 }
 
@@ -394,13 +456,20 @@ function drawCursor(ctx, t, derived, rect, view, o, unit, scale, range) {
       break;
     }
   }
+  // Hide the pointer after it has rested for a while, fading out and back in.
+  let fade = 1;
+  if (o.idleHide > 0 && cursor.idleFor) {
+    const idle = cursor.idleFor(t);
+    fade = 1 - clamp01((idle - o.idleHide) / 0.4);
+    if (fade <= 0) return;
+  }
   const tilt = Math.max(-0.45, Math.min(0.45, (vx / (1400 * unit)) * (o.sway || 0)));
   const speed = Math.hypot(vx, vy);
   const ghosts = o.motionBlur > 0 && speed > 500 * unit ? 4 : 0;
   for (let i = ghosts; i >= 0; i--) {
     const back = i * 0.011 * o.motionBlur;
     ctx.save();
-    ctx.globalAlpha = i === 0 ? 1 : 0.22 * (1 - i / (ghosts + 1));
+    ctx.globalAlpha = fade * (i === 0 ? 1 : 0.22 * (1 - i / (ghosts + 1)));
     ctx.translate(a.x - vx * back, a.y - vy * back);
     ctx.rotate(tilt);
     if (i === 0) { ctx.shadowColor = 'rgba(0,0,0,0.35)'; ctx.shadowBlur = 5 * size; ctx.shadowOffsetY = 1.5 * size; }
@@ -643,13 +712,13 @@ export function drawKeys(ctx, W, H, t, groups, opts, unit, bottomOffset = 0) {
 
 // ------------------------------------------------------------------ notes (annotations)
 export const NOTE_TYPES = [
-  { id: 'text', name: '글자' }, { id: 'arrow', name: '화살표' }, { id: 'box', name: '네모' },
-  { id: 'image', name: '그림' }, { id: 'blur', name: '가리기' },
+  { id: 'text', name: T('글자') }, { id: 'arrow', name: T('화살표') }, { id: 'box', name: T('네모') },
+  { id: 'image', name: T('그림') }, { id: 'blur', name: T('가리기') },
 ];
 
 export function newNote(type, t, duration) {
   const base = { type, start: t, end: Math.min(duration, t + 3), x: 0.5, y: 0.5 };
-  if (type === 'text') return { ...base, text: '여기에 글자', size: 54, color: '#ffffff', bg: '#000000', bgOn: true, bold: true };
+  if (type === 'text') return { ...base, text: T('여기에 글자'), size: 54, color: '#ffffff', bg: '#000000', bgOn: true, bold: true };
   if (type === 'arrow') return { ...base, w: 0.16, angle: 45, color: '#ff4d4f', stroke: 10 };
   if (type === 'box') return { ...base, w: 0.3, h: 0.2, color: '#ff4d4f', stroke: 6 };
   if (type === 'image') return { ...base, w: 0.25, file: null };
@@ -773,60 +842,126 @@ function drawNotes(ctx, W, H, t, notes, url, selectedId) {
 }
 
 // ------------------------------------------------------------------ subtitles
+/** Split words into the fewest lines that fit maxW (at least minLines), with similar widths. */
+function layoutWords(words, widths, spaceW, maxW, minLines) {
+  const total = widths.reduce((s, w, i) => s + w + (i && words[i].space ? spaceW : 0), 0);
+  const n = Math.max(minLines, Math.ceil(total / maxW));
+  const fill = (limit) => {
+    const lines = [];
+    let cur = null;
+    words.forEach((w, i) => {
+      const g = cur && cur.items.length && w.space ? spaceW : 0;
+      if (cur && cur.items.length && cur.width + g + widths[i] > limit) cur = null;
+      if (!cur) { cur = { items: [], width: 0 }; lines.push(cur); }
+      const gap = cur.items.length && w.space ? spaceW : 0;
+      cur.items.push({ word: w, x: cur.width + gap, w: widths[i] });
+      cur.width += gap + widths[i];
+    });
+    return lines;
+  };
+  // Start from an even split and widen until the words fit in n lines.
+  let limit = total / n;
+  let lines = fill(limit);
+  while (lines.length > n && limit < maxW) {
+    limit = Math.min(maxW, limit * 1.04 + 1);
+    lines = fill(limit);
+  }
+  return lines;
+}
+
 export function drawSubtitle(ctx, W, H, t, subtitles, opts, unit, bottomOffset = 0) {
   if (!opts.enabled || !subtitles?.length) return 0;
   const cue = cueAt(subtitles, t);
   if (!cue) return 0;
-  const size = 34 * unit * (opts.size || 1);
-  ctx.font = `600 ${size}px ${FONT}`;
-  let lines = wrapLines(cue.text);
+  const style = opts.style || 'box';
+  const minimal = style === 'minimal';
+  const pop = style === 'pop';
+  const size = 34 * unit * (opts.size || 1) * (minimal ? 0.82 : pop ? 1.12 : 1);
+  const weight = pop ? 800 : minimal ? 500 : 600;
+  const font = `${weight} ${size}px ${FONT}`;
+  ctx.save();
+  ctx.font = font;
+  const words = cueWords(cue);
+  const widths = words.map((w) => ctx.measureText(w.text).width);
+  const spaceW = ctx.measureText(' ').width;
   const maxW = W * 0.84;
-  // Hard wrap if a line still does not fit
-  lines = lines.flatMap((line) => {
-    if (ctx.measureText(line).width <= maxW) return [line];
-    const words = line.split(/(\s+)/);
-    const out = [];
-    let cur = '';
-    for (const w of words) {
-      if (ctx.measureText(cur + w).width > maxW && cur) { out.push(cur.trim()); cur = w; } else cur += w;
-    }
-    if (cur.trim()) out.push(cur.trim());
-    return out;
-  });
+  const lines = layoutWords(words, widths, spaceW, maxW, cue.text.length > lineLimit(cue.text) ? 2 : 1);
+
   const lineH = size * 1.32;
   const padX = 18 * unit;
   const padY = 9 * unit;
   const blockH = lines.length * lineH + padY * 2;
   const margin = 40 * unit;
-  const top = opts.position === 'top';
-  const y0 = top ? margin : H - margin - bottomOffset - blockH;
-  ctx.save();
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  lines.forEach((line, i) => {
-    const w = ctx.measureText(line).width;
-    const cy = y0 + padY + lineH * i + lineH / 2;
-    if (opts.style === 'box') {
+  const pos = opts.position || 'bottom';
+  let y0 = pos === 'top' ? margin : pos === 'middle' ? (H - blockH) / 2 : H - margin - bottomOffset - blockH;
+
+  // Entrance and exit.
+  const anim = opts.anim || 'fade';
+  const kin = anim === 'none' ? 1 : easeOut((t - cue.start) / 0.22);
+  const kout = anim === 'none' ? 1 : clamp01((cue.end - t) / 0.15);
+  ctx.globalAlpha = Math.min(kin, kout);
+  if (anim === 'rise') y0 += (1 - kin) * 18 * unit;
+  if (anim === 'pop') {
+    const sc = 0.82 + 0.18 * kin + 0.06 * Math.sin(Math.PI * clamp01((t - cue.start) / 0.3));
+    ctx.translate(W / 2, y0 + blockH / 2);
+    ctx.scale(sc, sc);
+    ctx.translate(-W / 2, -(y0 + blockH / 2));
+  }
+
+  const textColor = style === 'paper' ? '#111827' : style === 'yellow' ? '#ffe14d' : (opts.textColor || '#ffffff');
+  const hi = opts.highlight || '#ffd33d';
+  const bgAlpha = opts.bgOpacity ?? 0.68;
+  const boxed = style === 'box' || style === 'paper';
+  if (boxed && bgAlpha > 0) {
+    lines.forEach((line, i) => {
+      const cy = y0 + padY + lineH * i + lineH / 2;
       const top0 = i === 0 ? cy - lineH / 2 - padY : cy - lineH / 2;
       const bottom0 = i === lines.length - 1 ? cy + lineH / 2 + padY : cy + lineH / 2;
-      roundRect(ctx, W / 2 - w / 2 - padX, top0, w + padX * 2, bottom0 - top0, 10 * unit);
-      ctx.fillStyle = 'rgba(0,0,0,0.68)';
+      roundRect(ctx, W / 2 - line.width / 2 - padX, top0, line.width + padX * 2, bottom0 - top0, 10 * unit);
+      ctx.fillStyle = style === 'paper' ? rgba('#ffffff', Math.max(0.6, bgAlpha)) : rgba('#000000', bgAlpha);
       ctx.fill();
-    }
-  });
+    });
+  }
+
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+  ctx.lineJoin = 'round';
+  const stroke = !boxed;
   lines.forEach((line, i) => {
     const cy = y0 + padY + lineH * i + lineH / 2;
-    if (opts.style !== 'box') {
-      ctx.lineWidth = size * 0.16;
-      ctx.lineJoin = 'round';
-      ctx.strokeStyle = 'rgba(0,0,0,0.9)';
-      ctx.strokeText(line, W / 2, cy);
+    const x0 = W / 2 - line.width / 2;
+    for (const it of line.items) {
+      const w = it.word;
+      const active = t >= w.start && t < w.end;
+      const spoken = t >= w.end;
+      let color = textColor;
+      if (style === 'karaoke' && (active || spoken)) color = hi;
+      if (pop && active) color = hi;
+      ctx.save();
+      let x = x0 + it.x;
+      if (pop && active) {
+        const k = clamp01((t - w.start) / 0.12);
+        const sc = 1 + 0.14 * Math.sin(Math.PI * 0.5 * k);
+        ctx.translate(x + it.w / 2, cy);
+        ctx.scale(sc, sc);
+        ctx.translate(-(x + it.w / 2), -cy);
+      }
+      if (minimal) {
+        ctx.shadowColor = 'rgba(0,0,0,0.75)';
+        ctx.shadowBlur = size * 0.22;
+        ctx.shadowOffsetY = size * 0.05;
+      } else if (stroke) {
+        ctx.lineWidth = size * (pop ? 0.22 : 0.16);
+        ctx.strokeStyle = 'rgba(0,0,0,0.9)';
+        ctx.strokeText(w.text, x, cy);
+      }
+      ctx.fillStyle = color;
+      ctx.fillText(w.text, x, cy);
+      ctx.restore();
     }
-    ctx.fillStyle = opts.style === 'yellow' ? '#ffe14d' : '#ffffff';
-    ctx.fillText(line, W / 2, cy);
   });
   ctx.restore();
-  return top ? 0 : blockH + 12 * unit;
+  return pos === 'bottom' ? blockH + 12 * unit : 0;
 }
 
 /**
@@ -871,8 +1006,7 @@ export function renderFrame(ctx, f) {
   let bottom = 0;
   const keysBottom = s.keys.position?.startsWith('bottom');
   // Subtitles sit lowest; key bubbles stack above them when both are at the bottom.
-  if (subOpts.position !== 'top') bottom += drawSubtitle(ctx, W, H, t, project.subtitles, subOpts, unit, 0);
-  else drawSubtitle(ctx, W, H, t, project.subtitles, subOpts, unit, 0);
+  bottom += drawSubtitle(ctx, W, H, t, project.subtitles, subOpts, unit, 0);
   const keyUsed = drawKeys(ctx, W, H, t, derived.groups, s.keys, unit, keysBottom ? bottom : 0);
   if (s.webcam.enabled && f.webcam) {
     const side = (s.webcam.position || '').split('-')[1];

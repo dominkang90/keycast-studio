@@ -5,6 +5,7 @@ import { platform } from './platform.js';
 import { defaultSettings } from './compositor.js';
 import { autoZoomRegions } from './zoom.js';
 import { keepWithoutTyping } from './keys.js';
+import { T } from './i18n.js';
 
 function pickMime(candidates) {
   for (const m of candidates) if (window.MediaRecorder && MediaRecorder.isTypeSupported(m)) return m;
@@ -225,7 +226,7 @@ export class Recorder {
     this.seg = null;
     await Promise.all(seg.recs.map((r) => r.rec.stop()));
     const done = await platform.captureStop();
-    if (!done || !(done.duration > 0)) throw new Error('화면 캡처가 비어 있습니다.');
+    if (!done || !(done.duration > 0)) throw new Error(T('화면 캡처가 비어 있습니다.'));
     const { recs: _recs, ...files } = seg;
     this.segs.push({ ...files, t0: done.t0, duration: done.duration });
   }
@@ -332,7 +333,7 @@ export class Recorder {
       const project = {
         version: 1,
         id: this.projectId,
-        name: `녹화 ${createdAt.slice(0, 16).replace('T', ' ')}`,
+        name: T('녹화 {0}', createdAt.slice(0, 16).replace('T', ' ')),
         createdAt,
         source: { name: this.opts.source.name, kind: this.opts.source.kind, width: this.size.width, height: this.size.height },
         files: this.files,

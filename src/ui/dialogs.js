@@ -6,6 +6,7 @@ import { h, toast, kbdLabel, accelFromEvent } from './dom.js';
 import { store, state, shortcuts, savedLook } from './state.js';
 import { keyPanel } from './key-panel.js';
 import { showHome } from './home.js';
+import { T } from '../lib/i18n.js';
 /** Settings for the live key display, with a moving sample. */
 export function openKeyStyle() {
   const look = savedLook();
@@ -17,7 +18,7 @@ export function openKeyStyle() {
     { t: 3.2, type: 'kd', name: 'Alt', mods: { alt: true } }, { t: 3.3, type: 'md', button: 1, x: 0.5, y: 0.5 }, { t: 3.4, type: 'mu', button: 1, x: 0.5, y: 0.5 }, { t: 3.5, type: 'ku', name: 'Alt' },
     { t: 4.0, type: 'wh', rotation: 1, x: 0.5, y: 0.5 },
   ];
-  const canvas = h('canvas', { width: 800, height: 300, style: { width: '100%', borderRadius: '10px', background: '#2b2b2e' }, role: 'img', 'aria-label': '키 표시 미리보기' });
+  const canvas = h('canvas', { width: 800, height: 300, style: { width: '100%', borderRadius: '10px', background: '#2b2b2e' }, role: 'img', 'aria-label': T('키 표시 미리보기') });
   const ctx = canvas.getContext('2d');
   let groups = buildKeyGroups(sample, look.keys);
   const body = h('div', { style: { maxHeight: '48vh', overflow: 'auto', marginTop: '14px', paddingRight: '6px' } });
@@ -43,10 +44,10 @@ export function openKeyStyle() {
   };
   loop();
   const bg = h('div', { class: 'modal-bg' }, h('div', { class: 'modal', style: { width: '560px' } },
-    h('h2', {}, '키 표시 꾸미기'),
+    h('h2', {}, T('키 표시 꾸미기')),
     canvas, body,
-    h('div', { class: 'small muted', style: { marginTop: '10px' } }, '여기서 고른 모양은 화면 위 키 표시와 새 녹화에 쓰입니다. 켜져 있는 키 표시는 껐다 켜면 바뀝니다.'),
-    h('div', { class: 'actions' }, h('button', { class: 'btn primary', onclick: () => { cancelAnimationFrame(raf); bg.remove(); } }, '닫기'))));
+    h('div', { class: 'small muted', style: { marginTop: '10px' } }, T('여기서 고른 모양은 화면 위 키 표시와 새 녹화에 쓰입니다. 켜져 있는 키 표시는 껐다 켜면 바뀝니다.')),
+    h('div', { class: 'actions' }, h('button', { class: 'btn primary', onclick: () => { cancelAnimationFrame(raf); bg.remove(); } }, T('닫기')))));
   document.body.append(bg);
 }
 
@@ -56,30 +57,30 @@ export function openShortcuts() {
   const row = (key, label) => {
     const btn = h('button', { class: 'btn small', style: { minWidth: '150px' } }, sc[key].replace('Super', 'Win'));
     btn.onclick = () => {
-      btn.textContent = '새 단축키를 누르세요…';
+      btn.textContent = T('새 단축키를 누르세요…');
       const grab = (e) => {
         if (['Control', 'Alt', 'Shift', 'Meta'].includes(e.key)) return;
         e.preventDefault();
         e.stopPropagation();
         window.removeEventListener('keydown', grab, true);
         const accel = e.key === 'Escape' ? null : accelFromEvent(e);
-        if (accel && Object.entries(sc).some(([k, v]) => k !== key && v === accel)) toast('다른 기능이 이미 쓰는 단축키입니다.', true);
-        else if (accel) { sc[key] = accel; store.set('shortcuts', sc); } else if (e.key !== 'Escape') toast('Ctrl·Alt·Shift 중 하나와 글자·숫자 키를 함께 누르세요.', true);
+        if (accel && Object.entries(sc).some(([k, v]) => k !== key && v === accel)) toast(T('다른 기능이 이미 쓰는 단축키입니다.'), true);
+        else if (accel) { sc[key] = accel; store.set('shortcuts', sc); } else if (e.key !== 'Escape') toast(T('Ctrl·Alt·Shift 중 하나와 글자·숫자 키를 함께 누르세요.'), true);
         btn.textContent = sc[key].replace('Super', 'Win');
       };
       window.addEventListener('keydown', grab, true);
     };
     return h('div', { class: 'field inline' }, h('label', {}, label), btn);
   };
-  const ref = [['Space', '재생 / 정지'], ['← →', '한 프레임 이동 (Shift: 5초)'], ['Delete', '선택한 구간 지우기'], ['Ctrl+Z', '되돌리기'], ['Ctrl+Y', '다시 하기'], ['S', '여기서 영상 나누기(잘라낼 구간 만들기)'], ['K', '영상에 키 표시 켜기 / 끄기']];
+  const ref = [['Space', T('재생 / 정지')], ['← →', T('한 프레임 이동 (Shift: 5초)')], ['Delete', T('선택한 구간 지우기')], ['Ctrl+Z', T('되돌리기')], ['Ctrl+Y', T('다시 하기')], ['S', T('여기서 영상 나누기(잘라낼 구간 만들기)')], ['K', T('영상에 키 표시 켜기 / 끄기')]];
   const bg = h('div', { class: 'modal-bg' }, h('div', { class: 'modal' },
-    h('h2', {}, '단축키'),
-    h('div', { class: 'small muted', style: { marginBottom: '12px' } }, '녹화 중에는 어떤 프로그램에서든 듣는 단축키입니다. 버튼을 누르고 새 조합을 누르면 바뀝니다.'),
-    row('stop', '녹화 멈추기'), row('pause', '일시정지 / 다시 시작'), row('keys', '화면 키 표시 켜기 / 끄기'),
-    h('button', { class: 'btn small', onclick: () => { store.set('shortcuts', {}); bg.remove(); openShortcuts(); } }, '처음 값으로'),
-    h('div', { class: 'section' }, h('h3', { style: { fontSize: '14px', marginBottom: '10px' } }, '편집 화면에서'),
+    h('h2', {}, T('단축키')),
+    h('div', { class: 'small muted', style: { marginBottom: '12px' } }, T('녹화 중에는 어떤 프로그램에서든 듣는 단축키입니다. 버튼을 누르고 새 조합을 누르면 바뀝니다.')),
+    row('stop', T('녹화 멈추기')), row('pause', T('일시정지 / 다시 시작')), row('keys', T('화면 키 표시 켜기 / 끄기')),
+    h('button', { class: 'btn small', onclick: () => { store.set('shortcuts', {}); bg.remove(); openShortcuts(); } }, T('처음 값으로')),
+    h('div', { class: 'section' }, h('h3', { style: { fontSize: '14px', marginBottom: '10px' } }, T('편집 화면에서')),
       ref.map(([k, d]) => h('div', { class: 'field inline', style: { marginBottom: '8px' } }, h('label', {}, d), h('span', {}, kbdLabel(k))))),
-    h('div', { class: 'actions' }, h('button', { class: 'btn primary', onclick: () => { bg.remove(); if (!state.editor && !state.recorder) showHome(); } }, '닫기'))));
+    h('div', { class: 'actions' }, h('button', { class: 'btn primary', onclick: () => { bg.remove(); if (!state.editor && !state.recorder) showHome(); } }, T('닫기')))));
   document.body.append(bg);
 }
 
@@ -100,7 +101,7 @@ window.addEventListener('keydown', (e) => {
   const bg = topModal();
   if (!bg) return;
   if (e.key === 'Escape') {
-    const close = [...bg.querySelectorAll('.actions button')].find((b) => /닫기|취소|중지/.test(b.textContent));
+    const close = [...bg.querySelectorAll('.actions button')].find((b) => [T('닫기'), T('취소'), T('중지')].some((w) => b.textContent.includes(w)));
     if (close) { e.preventDefault(); close.click(); }
   } else if (e.key === 'Tab') {
     const stops = [...bg.querySelectorAll('button, select, input, textarea, [tabindex="0"]')].filter((el) => !el.disabled && el.offsetParent !== null);

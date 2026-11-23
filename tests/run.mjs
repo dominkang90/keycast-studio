@@ -7,14 +7,20 @@ import { join } from 'node:path';
 import { buildKeyGroups, visibleGroups, DRAG_LABEL, keepWithoutTyping } from '../src/lib/keys.js';
 import { segments, outDuration, srcToOut, outToSrc, mapCues } from '../src/lib/timemap.js';
 import { autoZoomRegions, cameraAt, CursorTrack, viewRect } from '../src/lib/zoom.js';
-import { shapeSubtitles, toSRT, wrapLines } from '../src/lib/subtitles.js';
+import { shapeSubtitles, toSRT, wrapLines, cueWords, SUBTITLE_STYLES } from '../src/lib/subtitles.js';
+import { drawSubtitle, drawClicks, CLICK_EFFECTS } from '../src/lib/compositor.js';
 
 const require = createRequire(import.meta.url);
 const { patchWebmDuration, locateInfo } = require('../electron/webm.cjs');
 
 let passed = 0;
 function test(name, fn) {
-  try { fn(); passed++; console.log(`ok - ${name}`); } catch (err) { console.error(`FAIL - ${name}\n${err.stack}`); process.exitCode = 1; }
+  const fail = (err) => { console.error(`FAIL - ${name}\n${err.stack}`); process.exitCode = 1; };
+  try {
+    const r = fn();
+    if (r && typeof r.then === 'function') r.then(() => { passed++; console.log(`ok - ${name}`); }, fail);
+    else { passed++; console.log(`ok - ${name}`); }
+  } catch (err) { fail(err); }
 }
 
 const ALL = { mode: 'all' };
@@ -173,6 +179,73 @@ test('drag, wheel and the custom key filter', () => {
   const only = buildKeyGroups(ev, { mode: 'custom', allowed: ['Alt'], showMouse: true });
   assert.equal(only.length, 1);
   assert.equal(buildKeyGroups(ev, { mode: 'all', showMouse: false }).length, 2); // lone Alt + A
+});
+
+test('word times cover the cue in order; text without spaces is cut', () => {
+  const w = cueWords({ start: 2, end: 6, text: '안녕하세요 오늘은 단축키를' });
+  assert.deepEqual(w.map((x) => x.text), ['안녕하세요', '오늘은', '단축키를']);
+  assert.equal(w[0].start, 2);
+  assert.ok(Math.abs(w[2].end - 6) < 1e-9);
+  for (let i = 1; i < w.length; i++) assert.ok(w[i].start >= w[i - 1].start && Math.abs(w[i].start - w[i - 1].end) < 1e-9);
+  const ja = cueWords({ start: 0, end: 3, text: '今日はショートカットを紹介します' });
+  assert.ok(ja.length >= 4 && ja.every((x) => x.text.length <= 3));
+  assert.equal(ja.map((x) => x.text).join(''), '今日はショートカットを紹介します');
+  assert.ok(!ja[1].space);
+  const given = cueWords({ start: 0, end: 2, text: 'a b', words: [{ text: 'a', start: 0, end: 0.5 }, { text: 'b', start: 1, end: 2 }] });
+  assert.equal(given[1].start, 1);
+});
+
+test('pointer rest time', () => {
+  const c = new CursorTrack([{ t: 1, type: 'mm', x: 0.1, y: 0.1 }, { t: 2, type: 'mm', x: 0.2, y: 0.2 }]);
+  assert.equal(c.idleFor(0.5), 0);
+  assert.equal(c.idleFor(1.5), 0.5);
+  assert.equal(c.idleFor(5), 3);
+});
+
+test('every subtitle style and click effect draws without errors', () => {
+  const calls = [];
+  const ctx = new Proxy({ measureText: (s) => ({ width: String(s).length * 10 }), createRadialGradient: () => ({ addColorStop() {} }) }, {
+    get: (o, k) => (k in o ? o[k] : (...a) => calls.push(k)),
+    set: (o, k, v) => { o[k] = v; return true; },
+  });
+  const subs = [{ id: 'a', start: 1, end: 4, text: '이 문장은 자막 스타일을 시험하려고 조금 길게 적은 문장입니다' }];
+  for (const st of SUBTITLE_STYLES) {
+    for (const position of ['bottom', 'middle', 'top']) {
+      for (const anim of ['none', 'fade', 'rise', 'pop']) {
+        const used = drawSubtitle(ctx, 1920, 1080, 2, subs, { enabled: true, style: st.id, position, anim, size: 1 }, 1);
+        assert.equal(used > 0, position === 'bottom');
+      }
+    }
+  }
+  assert.ok(calls.includes('fillText'));
+  const rect = { x: 0, y: 0, w: 1920, h: 1080 };
+  const view = { x: 0, y: 0, w: 1, h: 1 };
+  for (const e of CLICK_EFFECTS) {
+    drawClicks(ctx, 1.2, [{ t: 1, x: 0.5, y: 0.5, button: 1 }, { t: 1.1, x: 0.4, y: 0.4, button: 2 }], rect, view, { effect: e.id, color: '#ffd33d' }, 1, 1);
+  }
+});
+
+test('every interface text has an English translation', async () => {
+  const { default: en } = await import('../src/i18n/en.js');
+  const { readdirSync } = await import('node:fs');
+  const root = new URL('../src/', import.meta.url);
+  const files = [];
+  const walk = (dir) => {
+    for (const e of readdirSync(dir, { withFileTypes: true })) {
+      const u = new URL(e.name + (e.isDirectory() ? '/' : ''), dir);
+      if (e.isDirectory()) { if (e.name !== 'i18n') walk(u); } else if (e.name.endsWith('.js')) files.push(u);
+    }
+  };
+  walk(root);
+  const missing = [];
+  for (const f of files) {
+    const src = readFileSync(f, 'utf8');
+    for (const m of src.matchAll(/\bT\('((?:[^'\\]|\\.)*)'/g)) {
+      const key = m[1].replace(/\\n/g, '\n').replace(/\\'/g, "'").replace(/\\\\/g, '\\');
+      if (!(key in en)) missing.push(key);
+    }
+  }
+  assert.deepEqual([...new Set(missing)], []);
 });
 
 test('webm duration patch', () => {

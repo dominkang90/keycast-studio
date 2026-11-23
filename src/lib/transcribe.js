@@ -1,17 +1,18 @@
 import { shapeSubtitles } from './subtitles.js';
 // Inlined so the browser version also works when opened straight from a file.
 import TranscribeWorker from './transcribe.worker.js?worker&inline';
+import { T } from './i18n.js';
 
 export const MODELS = [
-  { id: 'onnx-community/whisper-tiny', name: '빠름 (tiny, 약 40MB)' },
-  { id: 'onnx-community/whisper-base', name: '보통 (base, 약 80MB)' },
-  { id: 'onnx-community/whisper-small', name: '정확 (small, 약 250MB)' },
-  { id: 'onnx-community/whisper-large-v3-turbo', name: '가장 정확 (large-v3-turbo, 약 600MB, 그래픽카드 권장)' },
+  { id: 'onnx-community/whisper-tiny', name: T('빠름 (tiny, 약 40MB)') },
+  { id: 'onnx-community/whisper-base', name: T('보통 (base, 약 80MB)') },
+  { id: 'onnx-community/whisper-small', name: T('정확 (small, 약 250MB)') },
+  { id: 'onnx-community/whisper-large-v3-turbo', name: T('가장 정확 (large-v3-turbo, 약 600MB, 그래픽카드 권장)') },
 ];
 
 export const LANGUAGES = [
-  { id: 'auto', name: '자동 감지' },
-  { id: 'korean', name: '한국어' },
+  { id: 'auto', name: T('자동 감지') },
+  { id: 'korean', name: T('한국어') },
   { id: 'english', name: 'English' },
   { id: 'japanese', name: '日本語' },
   { id: 'chinese', name: '中文' },
@@ -25,7 +26,7 @@ const SAMPLE_RATE = 16000;
 /** Decode any audio/video file to 16 kHz mono samples. */
 export async function decodeAudio(url) {
   const res = await fetch(url);
-  if (!res.ok) throw new Error(`오디오를 읽지 못했습니다 (${res.status})`);
+  if (!res.ok) throw new Error(T('오디오를 읽지 못했습니다 ({0})', res.status));
   const data = await res.arrayBuffer();
   const ctx = new AudioContext({ sampleRate: SAMPLE_RATE });
   try {
@@ -49,7 +50,7 @@ export async function decodeAudio(url) {
 export async function transcribe(opts) {
   opts.onProgress?.({ stage: 'decoding' });
   const audio = await decodeAudio(opts.url);
-  if (!audio.length) throw new Error('녹음된 소리가 없습니다.');
+  if (!audio.length) throw new Error(T('녹음된 소리가 없습니다.'));
   let result;
   try {
     result = await runWorker(opts, audio, opts.preferGpu !== false);
@@ -78,7 +79,7 @@ async function runWorker(opts, audio, preferGpu) {
   const files = new Map();
   try {
     return await new Promise((resolve, reject) => {
-      worker.onerror = (e) => reject(new Error(e.message || '음성 인식 작업을 시작하지 못했습니다.'));
+      worker.onerror = (e) => reject(new Error(e.message || T('음성 인식 작업을 시작하지 못했습니다.')));
       worker.onmessage = ({ data }) => {
         if (data.type === 'download') {
           if (data.status === 'progress' && data.file) {

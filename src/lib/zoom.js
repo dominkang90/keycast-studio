@@ -66,6 +66,19 @@ export class CursorTrack {
     return { x: a.x + (b.x - a.x) * k, y: a.y + (b.y - a.y) * k };
   }
 
+  /** Seconds since the pointer last moved or clicked, at time t (0 before the first event). */
+  idleFor(t) {
+    const p = this.points;
+    if (!p.length || t <= p[0].t) return 0;
+    let lo = 0;
+    let hi = p.length - 1;
+    while (lo < hi) {
+      const mid = (lo + hi + 1) >> 1;
+      if (p[mid].t <= t) lo = mid; else hi = mid - 1;
+    }
+    return t - p[lo].t;
+  }
+
   /** Average position around t, so the camera glides instead of shaking. */
   smooth(t, radius = 0.35) {
     if (!this.points.length) return null;

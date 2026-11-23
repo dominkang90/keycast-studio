@@ -44,7 +44,7 @@ npm run start:packaged
 |---|---|
 | `npm test` | Unit tests (key grouping, zoom, time mapping, subtitles, typing filter). Runs in a second |
 | `npm run build` | Interface, browser version and the packaged app in `release\KeyCast Studio-win32-x64` |
-| `npm run dist` | Installer and portable zip in `release\dist`. Bundles FFmpeg 8+ from your PATH (`winget install Gyan.FFmpeg`) |
+| `npm run dist` | Installer and single-file portable exe in `release\dist`. Bundles FFmpeg 8+ from `FFMPEG_PATH` or your PATH; releases use the smaller essentials build (`winget install Gyan.FFmpeg.Essentials`) |
 | `npm run icon` | Redraws `build/icon.png` and `build/icon.ico` from `build/icon.svg` |
 
 ### The self-test
@@ -83,21 +83,23 @@ Read [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) first. In short:
 4. Run `npm test`, and the self-test for anything that records, edits or exports.
 5. Open a pull request. The template asks what changed, how you checked it and on which computer.
 
-Interface text is Korean today. Keep new text short, plain and without a full stop at the end of buttons and labels; until the translation work below lands, add the Korean text and mention the English meaning in the pull request.
+Interface text is written in Korean in the code and translated through `T()` (see below). Keep new text short, plain and without a full stop at the end of buttons and labels. Add the English text to `src/i18n/en.js` in the same pull request; `npm test` fails if any text has no English entry.
 
 ## Translating the app
 
-The interface strings are still written directly in the code. The plan, tracked in [the roadmap](docs/ROADMAP.md):
+Every piece of interface text goes through `T()` from `src/lib/i18n.js`: the Korean text is the key, and `src/i18n/en.js` maps it to English. Placeholders are `{0}`, `{1}`, for example `T('자막 {0}개', n)`. The language menu sits at the top right of the home screen; the first start follows the Windows language (Korean on Korean Windows, English everywhere else).
 
-1. Move every string into `src/i18n/ko.json` and read it through a small `t('key')` helper.
-2. Add `en.json`, then other languages, and a language menu that follows the Windows language by default.
-3. Translate the manual (`사용설명서.html`).
+To add a language:
 
-Step 1 is a good first larger contribution. If you want to translate, open an issue saying which language, and you will get the string file as soon as step 1 is in.
+1. Copy `src/i18n/en.js` to `src/i18n/<code>.js` (for example `ja.js`) and translate the values. The English values are usually the easier starting point.
+2. Add it to `TABLES` and `LANGS` in `src/lib/i18n.js`.
+3. Run `npm test` and open the app with the new language.
+
+Missing entries fall back to Korean, so a partial translation still works. The user manual (`사용설명서.html`) is Korean only; other languages open the README on GitHub.
 
 ## Releases
 
-Maintainers only: bump `version` in `package.json`, add an entry to `CHANGELOG.md`, run `npm run dist`, check the installer on a clean user account, then create a GitHub release with the installer, the portable zip and `KeyCast-Studio-web.zip`, their SHA-256 values and a VirusTotal link.
+Maintainers only: bump `version` in `package.json`, add an entry to `CHANGELOG.md`, run `npm run dist`, check the installer on a clean user account, then create a GitHub release with the installer and the portable exe, their SHA-256 values and a VirusTotal link.
 
 ## Conduct
 

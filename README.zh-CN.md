@@ -22,7 +22,7 @@
 
 ![带按键显示、点击放大和字幕的录像](docs/demo.gif)
 
-> 用 KeyCast Studio 录制并直接导出。演示中的字幕是手动输入的。应用界面目前只有韩语（[帮忙翻译](CONTRIBUTING.md#translating-the-app)）。
+> 用 KeyCast Studio 录制并直接导出。演示中的字幕是手动输入的。应用界面支持英语和韩语（[帮忙翻译成中文](CONTRIBUTING.md#translating-the-app)）。
 
 ## 关于键盘记录
 
@@ -73,8 +73,7 @@
 | 文件 | 用途 |
 |---|---|
 | **KeyCast-Studio-Setup-x.y.z.exe** | 推荐。安装全部内容（含 FFmpeg），创建开始菜单和桌面快捷方式以及卸载程序 |
-| KeyCast-Studio-x.y.z-win-x64.zip | 便携版：解压后运行 `KeyCast Studio.exe`，同样包含 FFmpeg |
-| KeyCast-Studio-web.zip | 在 Chrome 或 Edge 中免安装试用，只记录在该标签页内按下的键 |
+| KeyCast-Studio-Portable-x.y.z.exe | 单个文件，免安装直接运行，包含 FFmpeg。每次启动先自解压，所以会慢几秒 |
 
 > 首次运行时如果出现 **Windows 已保护你的电脑**，请点 **更多信息 → 仍要运行**。这是因为软件还没有代码签名。可以用发布页上的 SHA-256 和 VirusTotal 结果核对文件。
 
@@ -131,7 +130,7 @@ npm install
 npm start
 ```
 
-`npm test` 运行单元测试，`npm run build` 生成 `release\KeyCast Studio-win32-x64`，`npm run dist` 生成安装包和便携 zip（需要 PATH 中有用于打包的 FFmpeg 8 或更高版本）。参见 [CONTRIBUTING.md](CONTRIBUTING.md) 和 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)。
+`npm test` 运行单元测试，`npm run build` 生成 `release\KeyCast Studio-win32-x64`，`npm run dist` 生成安装包和便携 exe（需要 PATH 中有用于打包的 FFmpeg 8 或更高版本）。参见 [CONTRIBUTING.md](CONTRIBUTING.md) 和 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)。
 
 ## 致谢与开源组件
 
@@ -144,7 +143,7 @@ npm start
 | [Transformers.js](https://github.com/huggingface/transformers.js) / ONNX Runtime Web | 语音识别（Whisper） | Apache-2.0 / MIT |
 | [mp4-muxer](https://github.com/Vanilagy/mp4-muxer), [webm-muxer](https://github.com/Vanilagy/webm-muxer) | 生成视频文件 | MIT |
 | [gifenc](https://github.com/mattdesl/gifenc) | 生成 GIF | MIT |
-| [FFmpeg](https://ffmpeg.org/) | 不带指针的屏幕捕获。以未修改的形式包含在安装包和 zip 中，作为独立程序运行 | GPL-3.0（[源代码](https://ffmpeg.org/download.html)） |
+| [FFmpeg](https://ffmpeg.org/) | 不带指针的屏幕捕获。以未修改的形式包含在安装包和便携 exe 中，作为独立程序运行 | GPL-3.0（[源代码](https://ffmpeg.org/download.html)） |
 
 ## 许可证
 

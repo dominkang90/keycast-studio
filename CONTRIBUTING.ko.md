@@ -44,7 +44,7 @@ npm run start:packaged
 |---|---|
 | `npm test` | 단위 테스트(키 묶기, 줌, 시간 계산, 자막, 타이핑 제외). 1초 안에 끝납니다 |
 | `npm run build` | 화면, 브라우저 버전, `release\KeyCast Studio-win32-x64` 패키지 |
-| `npm run dist` | `release\dist`에 설치 파일과 휴대용 zip. PATH의 FFmpeg 8 이상을 함께 넣습니다(`winget install Gyan.FFmpeg`) |
+| `npm run dist` | `release\dist`에 설치 파일과 한 파일짜리 휴대용 exe. `FFMPEG_PATH`나 PATH의 FFmpeg 8 이상을 함께 넣습니다. 릴리즈는 더 작은 essentials판을 씁니다(`winget install Gyan.FFmpeg.Essentials`) |
 | `npm run icon` | `build/icon.svg`로 `build/icon.png`, `build/icon.ico`를 다시 만듭니다 |
 
 ### 자체 점검
@@ -83,21 +83,23 @@ $env:KEYCAST_SELFTEST = "$PWD\tests\out"; & ".\release\KeyCast Studio-win32-x64\
 4. `npm test`를 돌리고, 녹화·편집·내보내기를 건드렸다면 자체 점검도 돌려 주세요.
 5. 풀 리퀘스트를 엽니다. 양식이 무엇을 바꿨는지, 어떻게 확인했는지, 어떤 컴퓨터였는지 묻습니다.
 
-화면 문구는 지금 한국어입니다. 짧고 쉽게 쓰고, 버튼과 이름표 끝에는 마침표를 찍지 않습니다. 아래 번역 작업이 들어가기 전까지는 한국어 문구를 넣고 풀 리퀘스트에 영어 뜻을 적어 주세요.
+화면 문구는 코드에 한국어로 쓰고 `T()`로 번역합니다(아래 참고). 짧고 쉽게 쓰고, 버튼과 이름표 끝에는 마침표를 찍지 않습니다. 같은 풀 리퀘스트에서 `src/i18n/en.js`에 영어 문구도 넣어 주세요. 영어가 빠진 문구가 있으면 `npm test`가 실패합니다.
 
 ## 앱 번역 계획
 
-화면 문구가 아직 코드 안에 직접 적혀 있습니다. 계획은 [로드맵](docs/ROADMAP.md)에서 관리합니다.
+모든 화면 문구는 `src/lib/i18n.js`의 `T()`를 거칩니다. 한국어 문구가 열쇠이고 `src/i18n/en.js`가 영어로 바꿉니다. 자리 표시는 `{0}`, `{1}`입니다(예: `T('자막 {0}개', n)`). 언어 메뉴는 첫 화면 오른쪽 위에 있고, 처음에는 Windows 언어를 따릅니다(한국어 Windows는 한국어, 나머지는 영어).
 
-1. 모든 문구를 `src/i18n/ko.json`으로 옮기고 작은 `t('key')` 함수로 읽기
-2. `en.json`과 다른 언어를 추가하고, 기본은 Windows 언어를 따르는 언어 메뉴 만들기
-3. 사용설명서(`사용설명서.html`) 번역
+새 언어 추가 방법:
 
-1단계는 처음 맡기 좋은 큰 작업입니다. 번역하고 싶으시면 어떤 언어인지 이슈로 알려 주세요. 1단계가 들어가는 대로 문구 파일을 드리겠습니다.
+1. `src/i18n/en.js`를 `src/i18n/<코드>.js`(예: `ja.js`)로 복사하고 값을 번역합니다.
+2. `src/lib/i18n.js`의 `TABLES`와 `LANGS`에 추가합니다.
+3. `npm test`를 돌리고 새 언어로 앱을 열어 봅니다.
+
+번역이 빠진 문구는 한국어로 나오므로 일부만 번역해도 됩니다. 사용설명서(`사용설명서.html`)는 한국어만 있고, 다른 언어에서는 GitHub README를 엽니다.
 
 ## 릴리즈
 
-관리자용: `package.json`의 `version`을 올리고, `CHANGELOG.md`에 항목을 추가하고, `npm run dist`를 돌리고, 새 사용자 계정에서 설치 파일을 확인한 뒤 GitHub 릴리즈를 만듭니다. 설치 파일, 휴대용 zip, `KeyCast-Studio-web.zip`과 각 SHA-256 값, VirusTotal 링크를 붙입니다.
+관리자용: `package.json`의 `version`을 올리고, `CHANGELOG.md`에 항목을 추가하고, `npm run dist`를 돌리고, 새 사용자 계정에서 설치 파일을 확인한 뒤 GitHub 릴리즈를 만듭니다. 설치 파일, 휴대용 exe와 각 SHA-256 값, VirusTotal 링크를 붙입니다.
 
 ## 행동 규칙
 

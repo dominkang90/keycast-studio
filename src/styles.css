@@ -133,6 +133,7 @@ input[type="color"] { width: 36px; height: 28px; padding: 0; border: 1px solid v
 .brand i { font-style: normal; font-weight: 400; color: var(--text-2); }
 .brand-mark { width: 24px; height: 24px; border-radius: 50%; border: 1.5px solid var(--text); position: relative; flex: none; }
 .brand-mark::after { content: ""; position: absolute; left: 50%; top: 50%; width: 10px; height: 10px; margin: -5px 0 0 -5px; border-radius: 50%; background: var(--rec); }
+.topbar .lang-menu { width: auto; height: 32px; padding: 0 28px 0 10px; font-size: var(--t-meta); }
 .topbar input[type="text"] { height: 32px; background: transparent; border-color: transparent; font-weight: 500; }
 .topbar input[type="text"]:hover { border-color: var(--line-input); }
 .topbar input[type="text"]:focus { background: var(--bg); }

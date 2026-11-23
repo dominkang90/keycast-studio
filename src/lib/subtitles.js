@@ -3,8 +3,17 @@
 // keeps lines short enough to read, and gives each cue a sensible length.
 
 import { newId } from './zoom.js';
+import { T } from './i18n.js';
 
-export const SUBTITLE_DEFAULTS = { enabled: true, size: 1, position: 'bottom', style: 'box' };
+export const SUBTITLE_DEFAULTS = {
+  enabled: true, size: 1, position: 'bottom', style: 'box',
+  textColor: '#ffffff', highlight: '#ffd33d', bgOpacity: 0.68, anim: 'fade',
+};
+
+export const SUBTITLE_STYLES = [
+  { id: 'box', name: T('상자') }, { id: 'outline', name: T('테두리') }, { id: 'yellow', name: T('노란 글씨') },
+  { id: 'karaoke', name: T('노래방') }, { id: 'pop', name: T('강조 팝') }, { id: 'paper', name: T('종이') }, { id: 'minimal', name: T('미니멀') },
+];
 
 const HALLUCINATIONS = [
   /^(thank you|thanks) (for watching|so much)[.!]*$/i,
@@ -180,4 +189,43 @@ export function toSRT(subtitles, from = 0, to = Infinity) {
     lines.push(String(n++), `${srtTime(start)} --> ${srtTime(end)}`, wrapLines(s.text).join('\n'), '');
   }
   return lines.join('\r\n');
+}
+
+/**
+ * Words of a cue with an estimated time for each, so styles can highlight the word being
+ * spoken. Uses cue.words when the recogniser gave word times; otherwise shares the cue's time
+ * by word length. Text without spaces (Japanese, Chinese) is cut into short pieces.
+ * @returns {Array<{text:string,start:number,end:number,space:boolean}>}
+ */
+export function cueWords(cue) {
+  if (Array.isArray(cue.words) && cue.words.length) {
+    return cue.words.map((w, i) => ({ text: String(w.text).trim(), start: w.start, end: w.end, space: i > 0 && w.space !== false }));
+  }
+  const pieces = [];
+  for (const token of String(cue.text || '').split(/\s+/).filter(Boolean)) {
+    const noSpaces = token.length > 6 && /[぀-ヿ一-鿿]/.test(token);
+    if (!noSpaces) { pieces.push({ text: token, space: pieces.length > 0 }); continue; }
+    // Cut after punctuation or every 3 characters.
+    let cur = '';
+    let first = true;
+    for (const ch of token) {
+      cur += ch;
+      if (cur.length >= 3 || /[、。，！？・]/.test(ch)) {
+        pieces.push({ text: cur, space: first && pieces.length > 0 });
+        cur = '';
+        first = false;
+      }
+    }
+    if (cur) pieces.push({ text: cur, space: first && pieces.length > 0 });
+  }
+  const weight = (p) => p.text.replace(/[.,!?。、，！？…"'()]/g, '').length + 1;
+  const total = pieces.reduce((s, p) => s + weight(p), 0) || 1;
+  const span = Math.max(0, cue.end - cue.start);
+  let at = cue.start;
+  return pieces.map((p) => {
+    const d = (span * weight(p)) / total;
+    const w = { ...p, start: at, end: at + d };
+    at += d;
+    return w;
+  });
 }

@@ -143,7 +143,7 @@ function openToolbar(display) {
     x: Math.round(display.workArea.x + display.workArea.width / 2 - width / 2),
     y: display.workArea.y + 16,
     frame: false, resizable: false, alwaysOnTop: true, skipTaskbar: false,
-    transparent: true, hasShadow: false, title: 'KeyCast — 녹화 중',
+    transparent: true, hasShadow: false, title: 'KeyCast — Recording',
     webPreferences: { preload: path.join(__dirname, 'preload.cjs'), contextIsolation: true },
   });
   toolbar.setAlwaysOnTop(true, 'screen-saver');
@@ -632,6 +632,8 @@ function registerIpc() {
   });
 
   ipcMain.handle('shell:openFolder', () => shell.openPath(MEDIA_ROOT));
+  // The English user guide is the README on GitHub; the address is fixed here, not passed in.
+  ipcMain.handle('shell:openHelp', () => shell.openExternal('https://github.com/dominkang90/keycast-studio#readme'));
 }
 
 // ---------------------------------------------------------------- self-test
