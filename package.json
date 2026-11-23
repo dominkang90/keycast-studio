@@ -31,7 +31,9 @@
     "start:packaged": "npm run build:ui && npm run package && node scripts/run-packaged.cjs",
     "test": "node tests/run.mjs",
     "readme-art": "node scripts/readme-art.cjs",
-    "bundle:wgc": "node scripts/bundle-wgc.cjs"
+    "bundle:wgc": "node scripts/bundle-wgc.cjs",
+    "dist:mac": "npm run build:ui && electron-builder --mac",
+    "dist:linux": "npm run build:ui && electron-builder --linux"
   },
   "dependencies": {
     "koffi": "^3.3.8",

@@ -27,7 +27,7 @@ export async function startRecording() {
   const rec = new Recorder({
     source,
     micId: o.micId || null,
-    systemAudio: o.systemAudio,
+    systemAudio: o.systemAudio && state.info?.systemAudio !== false,
     webcamId: o.webcamId || null,
     liveOverlay: o.liveOverlay,
     recordTyping: !!o.recordTyping,

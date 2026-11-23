@@ -482,4 +482,9 @@ export default {
   "정확 (small, 약 250MB)": "Preciso (small, circa 250 MB)",
   "보통 (base, 약 80MB)": "Bilanciato (base, circa 80 MB)",
   "빠름 (tiny, 약 40MB)": "Veloce (tiny, circa 40 MB)",
+  "macOS에서는 손쉬운 사용(키 기록)과 화면 기록 권한이 필요합니다. 허용한 뒤 앱을 다시 여세요.": "Su macOS KeyCast ha bisogno dei permessi Accessibilità (tasti) e Registrazione schermo. Concedili e riapri l'app.",
+  "권한 설정 열기": "Apri i permessi",
+  "Wayland 세션에서는 다른 프로그램의 키와 클릭을 기록하지 못하고 커서를 숨길 수 없습니다. 로그인 화면에서 X11(Xorg) 세션을 고르면 모두 쓸 수 있습니다.": "In una sessione Wayland non si possono registrare tasti e clic degli altri programmi né nascondere il puntatore. Scegli una sessione X11 (Xorg) nella schermata di accesso per usare tutto.",
+  "컴퓨터 소리 녹음은 Windows에서만 됩니다.": "La registrazione dell'audio del computer funziona solo su Windows.",
+  "키 이름": "Nomi dei tasti",
 };

@@ -541,11 +541,17 @@ function drawWebcam(ctx, video, W, H, opts, unit, avoidBottom, camScale) {
 
 // ------------------------------------------------------------------ key bubbles
 const MOD_SYMBOLS = { Ctrl: '⌃', Alt: '⌥', Shift: '⇧', Win: '⊞' };
+// Keys are recorded with Windows names; on a Mac keyboard the same keys are called these.
+const MAC_NAMES = { Win: 'Cmd', Alt: 'Option', Ctrl: 'Control' };
+const MAC_SYMBOLS = { Win: '⌘', Alt: '⌥', Ctrl: '⌃', Shift: '⇧' };
 
 function keyLabel(k, opts) {
   if (isModifier(k)) {
-    if (opts.modLabel === 'symbol') return MOD_SYMBOLS[k];
-    return opts.modLabel === 'both' ? `${MOD_SYMBOLS[k]} ${k}` : k;
+    const mac = opts.keyNames === 'mac';
+    const symbol = (mac ? MAC_SYMBOLS : MOD_SYMBOLS)[k];
+    const name = mac ? MAC_NAMES[k] || k : k;
+    if (opts.modLabel === 'symbol') return symbol;
+    return opts.modLabel === 'both' ? `${symbol} ${name}` : name;
   }
   if (k.length === 1 && opts.caps === 'lower') return k.toLowerCase();
   return k;

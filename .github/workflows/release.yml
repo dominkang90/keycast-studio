@@ -1,0 +1,79 @@
+# Builds the macOS and Linux versions on GitHub's machines (the Windows installer is built and
+# checked on a Windows computer: npm run dist). Each build starts the app once in smoke-test mode
+# (KEYCAST_SMOKE) to check that it opens, draws its home screen and loads the key hook.
+# Run by hand from the Actions tab, or by pushing a version tag (v2.0.0): then the files are
+# added to that tag's GitHub release.
+name: Release builds
+
+on:
+  workflow_dispatch:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  mac:
+    runs-on: macos-14
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - name: Build (Apple silicon and Intel)
+        run: npm run dist:mac
+      - name: Smoke test (Apple silicon)
+        run: |
+          app="release/dist/mac-arm64/KeyCast Studio.app/Contents/MacOS/KeyCast Studio"
+          KEYCAST_SMOKE="$PWD/smoke-mac.json" "$app" --user-data-dir="$RUNNER_TEMP/kc-profile"
+          cat smoke-mac.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mac
+          path: |
+            release/dist/*.dmg
+            release/dist/*.zip
+            smoke-mac.json
+      - name: Add to the release
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "${GITHUB_REF_NAME}" release/dist/*.dmg release/dist/*.zip --clobber
+
+  linux:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - name: System packages (virtual screen, key hook libraries, FFmpeg)
+        run: sudo apt-get update && sudo apt-get install -y xvfb libxtst6 libxkbcommon-x11-0 libx11-xcb1 ffmpeg
+      - run: npm ci
+      - run: npm test
+      - name: Build (AppImage and deb)
+        run: npm run dist:linux
+      - name: Smoke test
+        run: |
+          KEYCAST_SMOKE="$PWD/smoke-linux.json" xvfb-run -a -s "-screen 0 1920x1080x24" \
+            release/dist/linux-unpacked/keycast-studio --no-sandbox --user-data-dir="$RUNNER_TEMP/kc-profile"
+          cat smoke-linux.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: linux
+          path: |
+            release/dist/*.AppImage
+            release/dist/*.deb
+            smoke-linux.json
+      - name: Add to the release
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "${GITHUB_REF_NAME}" release/dist/*.AppImage release/dist/*.deb --clobber

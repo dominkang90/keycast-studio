@@ -40,6 +40,8 @@ export const KEY_DEFAULTS = {
   animDur: 0.25,
   caps: 'upper', // 'upper' | 'lower' | 'asis'
   modLabel: 'text', // 'text' (Ctrl) | 'symbol' (⌃)
+  // 'windows' (Win, Alt) or 'mac' (Cmd, Option): names drawn for the same recorded keys
+  keyNames: typeof navigator !== 'undefined' && /Mac/i.test(navigator.platform || navigator.userAgent || '') ? 'mac' : 'windows',
   showCount: true,
   // used when theme === 'custom'
   custom: {

@@ -73,6 +73,7 @@ export function keyPanel(k, change, redraw) {
       c.panel ? [colorField(T('바탕 색'), c.panelColor, (v) => { c.panelColor = v; change(); }),
         rangeField(T('바탕 진하기'), c.panelOpacity, 0.1, 1, 0.05, (v) => { c.panelOpacity = v; change(); }, (v) => `${Math.round(v * 100)}%`)] : null,
     ] : null,
+    segField(T('키 이름'), k.keyNames || 'windows', [{ id: 'windows', name: 'Windows · Linux' }, { id: 'mac', name: 'Mac (⌘ ⌥)' }], (v) => { k.keyNames = v; change(); }),
     segField(T('조합키 표기'), k.modLabel || 'text', [{ id: 'text', name: 'Ctrl' }, { id: 'symbol', name: T('⌃ 기호') }, { id: 'both', name: '⌃ Ctrl' }], (v) => { k.modLabel = v; change(); }),
     segField(T('글자'), k.caps || 'upper', [{ id: 'upper', name: T('대문자 A') }, { id: 'lower', name: T('소문자 a') }], (v) => { k.caps = v; change(); }),
     inlineSwitch(T('여러 번 누르면 ×3 처럼 세기'), k.showCount !== false, (v) => { k.showCount = v; change(); }),

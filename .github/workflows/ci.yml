@@ -1,5 +1,6 @@
 # Runs on every push to main and every pull request: unit tests, then a full build of the
-# interface, the browser version and the packaged Windows app.
+# interface, the browser version and the packaged Windows app; tests and the interface build on
+# macOS and Linux too.
 name: CI
 
 on:
@@ -29,3 +30,22 @@ jobs:
         run: Get-ChildItem src, electron, scripts -Recurse -Include *.js, *.cjs, *.mjs | ForEach-Object { node --check $_.FullName; if ($LASTEXITCODE) { exit 1 } }
       - name: Build interface, browser version and packaged app
         run: npm run build
+  test-mac-linux:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-14, ubuntu-22.04]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install
+        run: npm ci
+      - name: Unit tests
+        run: npm test
+      - name: Build interface
+        run: npm run build:ui

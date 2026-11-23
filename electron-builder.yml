@@ -1,6 +1,6 @@
-# Windows installer and a single-file portable exe, made from the folder that "npm run package"
-# builds.
-# Run: npm run dist
+# Windows: installer and a single-file portable exe, made from the folder that "npm run package"
+# builds (npm run dist). macOS and Linux: built straight from the project on those systems
+# (npm run dist:mac, npm run dist:linux; see .github/workflows/release.yml).
 appId: io.github.dominkang90.keycaststudio
 productName: KeyCast Studio
 copyright: Copyright (c) 2026 dominkang90
@@ -8,6 +8,16 @@ directories:
   output: release/dist
   buildResources: build
 compression: maximum
+# Used by the macOS and Linux builds (the Windows build is prepackaged). The app reads its own
+# files from disk (ffmpeg next to it, the speech runtime), so it is not put in an asar archive.
+files:
+  - package.json
+  - electron/**/*
+  - dist/**/*
+  - "!dist/assets/*.wasm"
+  - build/icon.png
+asar: false
+npmRebuild: false
 win:
   target:
     - nsis
@@ -35,3 +45,33 @@ nsis:
 portable:
   # One exe that runs without installing; it unpacks itself to a temporary folder on each start.
   artifactName: KeyCast-Studio-Portable-${version}.${ext}
+mac:
+  target:
+    - target: dmg
+      arch: [arm64, x64]
+    - target: zip
+      arch: [arm64, x64]
+  icon: build/icon.png
+  category: public.app-category.video
+  artifactName: KeyCast-Studio-${version}-mac-${arch}.${ext}
+  # Ad-hoc signature only (no Apple Developer ID yet): Apple silicon needs at least this to start.
+  identity: "-"
+  hardenedRuntime: false
+  extendInfo:
+    NSMicrophoneUsageDescription: KeyCast Studio records your voice for subtitles.
+    NSCameraUsageDescription: KeyCast Studio records your webcam for the face bubble.
+dmg:
+  artifactName: KeyCast-Studio-${version}-mac-${arch}.${ext}
+linux:
+  target:
+    - AppImage
+    - deb
+  icon: build/icon.png
+  category: AudioVideo
+  synopsis: Screen recorder that shows the shortcuts you press
+  maintainer: dominkang90 <219975812+dominkang90@users.noreply.github.com>
+  artifactName: KeyCast-Studio-${version}-linux-${arch}.${ext}
+deb:
+  # electron-builder's usual list plus what uiohook (keys and clicks) needs; FFmpeg hides the pointer.
+  depends: [libgtk-3-0, libnotify4, libnss3, libxss1, libxtst6, xdg-utils, libatspi2.0-0, libuuid1, libsecret-1-0, libxkbcommon-x11-0, libx11-xcb1]
+  recommends: [ffmpeg]

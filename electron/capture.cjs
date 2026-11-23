@@ -1,6 +1,7 @@
 // Screen capture without the mouse pointer, so the editor can draw a nicer one instead.
-// Preferred: wgc-capture.exe (Windows Graphics Capture with hardware H.264, from Recordly, see
-// scripts/bundle-wgc.cjs). Fallback: ffmpeg's gfxcapture filter (the same Windows API).
+// Windows: wgc-capture.exe (Windows Graphics Capture with hardware H.264, from Recordly, see
+// scripts/bundle-wgc.cjs), or else ffmpeg's gfxcapture filter (the same Windows API).
+// macOS: ffmpeg with AVFoundation. Linux: ffmpeg with X11 (not under Wayland).
 // A recording is made of segments (one per stretch between pauses); each is later joined
 // with its sound and all of them are put together into one file.
 const { spawn, spawnSync } = require('child_process');
@@ -9,19 +10,49 @@ const fs = require('fs');
 const fsp = fs.promises;
 
 let cached;
-/** ffmpeg shipped next to the app (bin/ffmpeg.exe), or one installed on this computer. */
+/** Whether this desktop can be captured without the pointer at all (X11 only on Linux). */
+function canHidePointer() {
+  if (process.platform === 'linux') return process.env.XDG_SESSION_TYPE !== 'wayland' && !!process.env.DISPLAY;
+  return process.platform === 'win32' || process.platform === 'darwin';
+}
+
+/** ffmpeg shipped next to the app (bin/), or one installed on this computer. */
 function ffmpegPath() {
   if (cached !== undefined) return cached;
   cached = null;
-  if (process.platform !== 'win32') return cached;
-  const local = path.join(__dirname, '..', 'bin', 'ffmpeg.exe');
+  if (!canHidePointer()) return cached;
+  const win = process.platform === 'win32';
+  const local = path.join(__dirname, '..', 'bin', win ? 'ffmpeg.exe' : 'ffmpeg');
   if (fs.existsSync(local)) { cached = local; return cached; }
+  // Apps started from the Dock or a desktop menu do not get the shell's PATH: look in the usual
+  // places of Homebrew and Linux packages too.
+  if (!win) {
+    const known = ['/opt/homebrew/bin/ffmpeg', '/usr/local/bin/ffmpeg', '/usr/bin/ffmpeg', '/snap/bin/ffmpeg'].find((p) => fs.existsSync(p));
+    if (known) { cached = known; return cached; }
+  }
   try {
-    const r = spawnSync('where', ['ffmpeg'], { encoding: 'utf8', windowsHide: true });
+    const r = spawnSync(win ? 'where' : 'which', ['ffmpeg'], { encoding: 'utf8', windowsHide: true });
     const first = r.status === 0 ? r.stdout.split(/\r?\n/).find((l) => l.trim()) : null;
     if (first) cached = first.trim();
   } catch { /* not installed */ }
   return cached;
+}
+
+/** ffmpeg input arguments that capture one screen without the pointer on this system. */
+function captureInput({ index, fps, display }) {
+  if (process.platform === 'darwin') {
+    // AVFoundation names screens "Capture screen 0", "Capture screen 1", … in display order.
+    return ['-f', 'avfoundation', '-capture_cursor', '0', '-capture_mouse_clicks', '0', '-framerate', String(fps), '-pixel_format', 'nv12', '-i', `Capture screen ${index}:none`,
+      '-vf', 'crop=trunc(iw/2)*2:trunc(ih/2)*2'];
+  }
+  if (process.platform === 'linux') {
+    const b = display?.bounds || { displayX: 0, displayY: 0, displayW: 1920, displayH: 1080 };
+    return ['-f', 'x11grab', '-draw_mouse', '0', '-framerate', String(fps), '-video_size', `${b.displayW - (b.displayW % 2)}x${b.displayH - (b.displayH % 2)}`,
+      '-i', `${process.env.DISPLAY || ':0'}+${b.displayX},${b.displayY}`];
+  }
+  // Windows Graphics Capture: full frame rate and no mouse pointer (desktop duplication keeps
+  // the pointer on some graphics cards, and GDI capture is far too slow on large screens).
+  return ['-f', 'lavfi', '-i', `gfxcapture=monitor_idx=${index}:capture_cursor=0:max_framerate=${fps},hwdownload,format=bgra,crop=trunc(iw/2)*2:trunc(ih/2)*2`];
 }
 
 /** wgc-capture.exe shipped next to the app, or one named in KEYCAST_WGC_PATH (development). */
@@ -86,12 +117,10 @@ function startWgc({ file, fps, display }) {
   });
 }
 
-function startFfmpeg({ file, index, fps }) {
+function startFfmpeg({ file, index, fps, display }) {
   const args = [
     '-y', '-hide_banner', '-loglevel', 'error', '-nostats', '-progress', 'pipe:1', '-stats_period', '0.1',
-    // Windows Graphics Capture: full frame rate and no mouse pointer (desktop duplication keeps
-    // the pointer on some graphics cards, and GDI capture is far too slow on large screens).
-    '-f', 'lavfi', '-i', `gfxcapture=monitor_idx=${index}:capture_cursor=0:max_framerate=${fps},hwdownload,format=bgra,crop=trunc(iw/2)*2:trunc(ih/2)*2`,
+    ...captureInput({ index, fps, display }),
     '-c:v', 'libx264', '-preset', 'ultrafast', '-tune', 'zerolatency', '-crf', '20', '-pix_fmt', 'yuv420p', '-g', String(fps * 2),
     file,
   ];
@@ -224,4 +253,4 @@ async function finish(dir, segments) {
   return { file: 'screen.mp4', audio, voice, webcam, duration: segments.reduce((sum, s) => sum + s.duration, 0) };
 }
 
-module.exports = { ffmpegPath, wgcPath, backend, start, stop, abort, finish };
+module.exports = { ffmpegPath, wgcPath, backend, canHidePointer, captureInput, start, stop, abort, finish };

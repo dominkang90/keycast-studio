@@ -172,6 +172,7 @@ export const platform = {
 
   async listWallpapers() { return isDesktop ? api.listWallpapers() : []; },
   async listExtensions() { return isDesktop ? api.listExtensions() : []; },
+  askAccess() { return isDesktop && api.askAccess ? api.askAccess() : Promise.resolve(null); },
   openExtensions() { if (isDesktop) api.openExtensions(); },
   addExampleExtension(text) { return isDesktop ? api.addExampleExtension(text) : Promise.resolve(false); },
   openWallpapers() { if (isDesktop) api.openWallpapers(); },

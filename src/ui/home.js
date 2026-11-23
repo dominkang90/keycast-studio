@@ -95,13 +95,21 @@ export function renderHome(projects) {
     h('div', { class: 'sub' }, T('누른 키와 클릭은 항상 함께 기록됩니다. 편집 화면에서 켜고 끌 수 있어요.')),
     !state.info?.inputHook && isDesktop ? h('div', { class: 'hint warn' }, T('키보드 기록 모듈을 불러오지 못했습니다. 키 표시 없이 녹화됩니다.')) : null,
     !isDesktop ? h('div', { class: 'hint warn' }, T('브라우저에서는 이 탭에 초점이 있을 때 누른 키만 기록됩니다. 모든 프로그램의 키를 표시하려면 데스크톱 앱을 실행하세요.')) : null,
+    // macOS asks for Accessibility (keys) and Screen Recording before they work.
+    state.info?.access && (!state.info.access.accessibility || state.info.access.screen !== 'granted')
+      ? h('div', { class: 'hint warn' }, T('macOS에서는 손쉬운 사용(키 기록)과 화면 기록 권한이 필요합니다. 허용한 뒤 앱을 다시 여세요.'),
+        h('div', { style: { marginTop: '8px' } }, h('button', { class: 'btn small', onclick: async () => { await platform.askAccess(); state.info = await platform.info(); showHome(); } }, T('권한 설정 열기'))))
+      : null,
+    state.info?.wayland ? h('div', { class: 'hint warn' }, T('Wayland 세션에서는 다른 프로그램의 키와 클릭을 기록하지 못하고 커서를 숨길 수 없습니다. 로그인 화면에서 X11(Xorg) 세션을 고르면 모두 쓸 수 있습니다.')) : null,
     selectField(T('마이크 (자막을 만들 목소리)'), o.micId, micOptions, (v) => { o.micId = v; saveOptions(); }),
-    inlineSwitch(T('컴퓨터 소리 함께 녹음'), o.systemAudio, (v) => { o.systemAudio = v; saveOptions(); }),
+    state.info?.systemAudio === false
+      ? h('div', { class: 'small muted', style: { marginBottom: '12px' } }, T('컴퓨터 소리 녹음은 Windows에서만 됩니다.'))
+      : inlineSwitch(T('컴퓨터 소리 함께 녹음'), o.systemAudio, (v) => { o.systemAudio = v; saveOptions(); }),
     selectField(T('웹캠 (얼굴 말풍선)'), o.webcamId, camOptions, (v) => { o.webcamId = v; saveOptions(); }),
     inlineSwitch(T('타이핑한 글자도 기록'), !!o.recordTyping, (v) => { o.recordTyping = v; saveOptions(); }, T('끄면 단축키만 저장합니다. 비밀번호 같은 입력이 녹화 파일에 남지 않습니다')),
     isDesktop ? inlineSwitch(T('녹화 중 화면에 키 보여주기'), o.liveOverlay, (v) => { o.liveOverlay = v; saveOptions(); }, T('나에게만 보이고 녹화 파일에는 들어가지 않습니다')) : null,
     isDesktop && state.info?.ffmpeg ? inlineSwitch(T('실제 마우스 커서 숨기고 녹화'), o.hideCursor !== false, (v) => { o.hideCursor = v; saveOptions(); }, T('전체 화면 녹화에서만. 편집 화면에서 크고 부드러운 커서를 대신 그려 넣습니다')) : null,
-    isDesktop && state.info && !state.info.ffmpeg ? h('div', { class: 'small muted', style: { marginBottom: '12px' } }, T('ffmpeg를 설치하면 실제 마우스 커서를 숨기고 녹화할 수 있습니다.')) : null,
+    isDesktop && state.info && !state.info.ffmpeg && !state.info.wayland ? h('div', { class: 'small muted', style: { marginBottom: '12px' } }, T('ffmpeg를 설치하면 실제 마우스 커서를 숨기고 녹화할 수 있습니다.')) : null,
     inlineSwitch(T('3초 카운트다운'), o.countdown, (v) => { o.countdown = v; saveOptions(); }),
     h('button', { class: 'btn rec wide', onclick: startRecording }, h('span', { class: 'recdot', style: { animation: 'none', background: '#fff' } }), T('녹화 시작')),
     isDesktop ? h('div', { class: 'keys-ref' },

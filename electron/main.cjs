@@ -2,8 +2,18 @@
 // Owns windows, screen-source selection, the global keyboard/mouse hook and file storage.
 const {
   app, BrowserWindow, ipcMain, desktopCapturer, screen, session, protocol,
-  dialog, shell, globalShortcut, Menu,
+  dialog, shell, globalShortcut, Menu, systemPreferences,
 } = require('electron');
+
+const MAC = process.platform === 'darwin';
+/** macOS asks before an app may read every key (Accessibility) and see the screen (Screen Recording). */
+function macAccess(prompt = false) {
+  if (!MAC) return { accessibility: true, screen: 'granted' };
+  return {
+    accessibility: systemPreferences.isTrustedAccessibilityClient(prompt),
+    screen: systemPreferences.getMediaAccessStatus('screen'),
+  };
+}
 const path = require('path');
 const fs = require('fs');
 const fsp = fs.promises;
@@ -122,6 +132,7 @@ function createStudio() {
     },
   });
   studio.once('ready-to-show', () => studio.show());
+  if (process.env.KEYCAST_SMOKE) smokeTest(studio, process.env.KEYCAST_SMOKE);
   studio.loadURL(`${UI_ORIGIN}/index.html${SELFTEST ? '#selftest' : ''}`);
   if (SELFTEST) setupSelfTest(studio);
   studio.on('closed', () => {
@@ -300,6 +311,8 @@ function startInput(display, isScreen) {
   // The kind of pointer (arrow, hand, text…) so the editor can draw the matching shape.
   cursorType.watch((cursor) => pushEvent({ t: Date.now(), type: 'ct', cursor }));
   if (!uIOhook) return false;
+  // Without Accessibility permission the hook cannot start on macOS; ask, and record without keys.
+  if (MAC && !macAccess(true).accessibility) return false;
   attachHook();
   try {
     uIOhook.start();
@@ -423,6 +436,11 @@ function registerIpc() {
     inputHook: !!uIOhook,
     ffmpeg: !!capture.ffmpegPath(),
     captureBackend: capture.backend(),
+    // Electron records the computer's sound ("loopback") on Windows only.
+    systemAudio: process.platform === 'win32',
+    // Linux under Wayland: keys and pointer come only from apps running through XWayland.
+    wayland: process.platform === 'linux' && process.env.XDG_SESSION_TYPE === 'wayland',
+    access: macAccess(),
   }));
 
   // Screen capture through ffmpeg, which can leave the mouse pointer out of the picture.
@@ -702,6 +720,18 @@ function registerIpc() {
   });
 
   ipcMain.handle('shell:openFolder', () => shell.openPath(MEDIA_ROOT));
+  // macOS: show the permission prompts, then open the matching page of System Settings.
+  ipcMain.handle('access:ask', async () => {
+    if (!MAC) return macAccess();
+    const now = macAccess(true);
+    if (now.screen !== 'granted') {
+      try { await desktopCapturer.getSources({ types: ['screen'], thumbnailSize: { width: 1, height: 1 } }); } catch { /* prompt only */ }
+      await shell.openExternal('x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture');
+    } else if (!now.accessibility) {
+      await shell.openExternal('x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility');
+    }
+    return macAccess();
+  });
   // The English user guide is the README on GitHub; the address is fixed here, not passed in.
   ipcMain.handle('shell:openHelp', () => shell.openExternal('https://github.com/dominkang90/keycast-studio#readme'));
 }
@@ -752,7 +782,8 @@ if (!single) {
     // KEYCAST_MEDIA_ROOT points a test or demo run at its own folder instead of the user's recordings.
     MEDIA_ROOT = process.env.KEYCAST_MEDIA_ROOT || path.join(app.getPath('videos'), 'KeyCast Studio');
     await fsp.mkdir(MEDIA_ROOT, { recursive: true });
-    Menu.setApplicationMenu(null);
+    // macOS needs the standard menus for Cmd+C, Cmd+V and Cmd+Q; elsewhere the window has none.
+    Menu.setApplicationMenu(MAC ? Menu.buildFromTemplate([{ role: 'appMenu' }, { role: 'editMenu' }, { role: 'windowMenu' }]) : null);
     registerProtocol();
     setupDisplayMedia();
     registerIpc();
@@ -766,4 +797,40 @@ if (!single) {
   });
 
   app.on('window-all-closed', () => app.quit());
+}
+
+/**
+ * KEYCAST_SMOKE=<file>: start, check that the home screen drew and what this system offers, write
+ * the result as JSON to <file> and quit (exit 0 when the page works). Used by the macOS and Linux
+ * builds on GitHub Actions, where nothing can be recorded.
+ */
+function smokeTest(win, file) {
+  const finish = (report, code) => {
+    try { fs.writeFileSync(file, JSON.stringify(report, null, 2)); } catch { /* print only */ }
+    console.log(`SMOKE ${JSON.stringify(report)}`);
+    app.exit(code);
+  };
+  const timer = setTimeout(() => finish({ ok: false, error: 'timed out' }, 3), 60000);
+  win.webContents.once('render-process-gone', (_e, d) => { clearTimeout(timer); finish({ ok: false, error: `renderer ${d.reason}` }, 2); });
+  win.webContents.once('did-finish-load', () => {
+    setTimeout(async () => {
+      try {
+        const page = await win.webContents.executeJavaScript(`({
+          home: !!document.querySelector('.topbar') && !!document.querySelector('.home'),
+          lang: document.documentElement.lang,
+          title: document.title,
+          buttons: document.querySelectorAll('button').length,
+        })`);
+        const sources = await desktopCapturer.getSources({ types: ['screen'], thumbnailSize: { width: 1, height: 1 } }).then((s) => s.length, (e) => `error: ${e.message}`);
+        clearTimeout(timer);
+        finish({
+          ok: page.home, version: app.getVersion(), platform: process.platform, arch: process.arch, page,
+          inputHook: !!uIOhook, ffmpeg: capture.ffmpegPath(), captureBackend: capture.backend(), screens: sources, access: macAccess(),
+        }, page.home ? 0 : 1);
+      } catch (err) {
+        clearTimeout(timer);
+        finish({ ok: false, error: err.message }, 1);
+      }
+    }, 4000);
+  });
 }
