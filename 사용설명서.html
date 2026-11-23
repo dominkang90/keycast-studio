@@ -61,6 +61,10 @@
   </div>
   <h3>실제 마우스 커서를 숨기고 녹화하려면</h3>
   <p>설치 파일이나 휴대용 exe로 받았다면 따로 할 일이 없습니다. 이 기능에 쓰는 무료 프로그램 FFmpeg가 함께 들어 있습니다. 소스 코드로 직접 빌드했다면 <code>winget install Gyan.FFmpeg</code>로 FFmpeg 8 이상을 설치하세요.</p>
+  <h3>macOS와 Linux</h3>
+  <p><b>macOS</b>: 릴리즈에서 <code>-mac-arm64.dmg</code>(Apple 실리콘) 또는 <code>-mac-x64.dmg</code>(Intel)를 받아 앱을 응용 프로그램 폴더로 옮깁니다. 아직 Apple 공증 전이라 처음에는 앱을 <b>오른쪽 클릭 → 열기</b>로 실행하세요. 첫 화면의 <b>권한 설정 열기</b>를 눌러 <b>손쉬운 사용</b>(키 기록)과 <b>화면 기록</b>을 허용한 뒤 앱을 다시 엽니다. 커서 숨김 녹화에는 <code>brew install ffmpeg</code>가 필요합니다.</p>
+  <p><b>Linux</b>: <code>.AppImage</code>에 실행 권한을 주어 실행하거나 <code>.deb</code>를 설치합니다. 키·클릭 기록과 커서 숨김 녹화는 <b>X11</b> 세션에서만 되고, 커서 숨김에는 <code>sudo apt install ffmpeg</code>가 필요합니다.</p>
+  <p>컴퓨터 소리 녹음은 Windows에서만 됩니다. 맥·리눅스판은 아직 자동 검사만 거친 베타입니다.</p>
   <h3>화면 언어</h3>
   <p>첫 화면 오른쪽 위 언어 메뉴에서 12개 언어 중 하나를 고릅니다(한국어, English, 日本語, 简体中文, 繁體中文, Español, Français, Deutsch, Italiano, Nederlands, Português (Brasil), Русский). 처음에는 Windows 언어를 따릅니다.</p>
   <h3>확장 기능</h3>

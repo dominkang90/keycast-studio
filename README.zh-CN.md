@@ -84,7 +84,7 @@
 
 <p align="center"><img src="docs/readme/size.zh-CN.svg" width="100%" alt="v1.2 下载更小"></p>
 
-**需要：** Windows 10 或 11（64 位）
+**需要：** Windows 10/11（64 位）、macOS 11 或更高版本（Apple 芯片或 Intel），或使用 X11 的 64 位 Linux。macOS 和 Linux 版在 2.0 中新增，目前只经过自动检查。macOS 首次请右键点击 →“打开”，并允许“辅助功能”和“屏幕录制”（不带指针录制需要 `brew install ffmpeg`）。Linux 请使用 `.AppImage` 或 `.deb`，在 X11 会话中才能记录按键和点击（`sudo apt install ffmpeg`）。录制电脑声音仅支持 Windows。
 
 从[最新版本](https://github.com/dominkang90/keycast-studio/releases/latest)下载：
 

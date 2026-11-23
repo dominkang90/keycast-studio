@@ -1,5 +1,15 @@
 # 변경 내역
 
+## v2.0.0 (2026-11-23, 베타)
+
+### 새로 생긴 것
+- **macOS판**(Apple 실리콘·Intel, dmg·zip)과 **Linux판**(AppImage·deb). GitHub의 맥·리눅스 컴퓨터에서 만들고 실행 검사(앱이 열리고 첫 화면이 그려지고 키 기록 모듈이 올라오는지)를 거칩니다. 실제 녹화는 아직 사용자 확인 전이라 미검증 베타입니다.
+  - macOS: 커서 숨김 녹화는 FFmpeg(AVFoundation, `brew install ffmpeg`), 손쉬운 사용·화면 기록 권한 안내와 설정 열기 버튼, 표준 메뉴(Cmd+C·V·Q). Apple 공증 전이라 처음에는 오른쪽 클릭 → 열기.
+  - Linux: X11에서 키·클릭 기록과 커서 숨김 녹화(FFmpeg x11grab, `sudo apt install ffmpeg`). Wayland에서는 화면만 녹화되고 안내가 나옵니다.
+  - 컴퓨터 소리 녹음은 Windows에서만 됩니다(맥·리눅스에서는 스위치 대신 안내).
+- **Mac 키 이름**: 키 표시를 ⌘ Cmd, ⌥ Option, ⌃ Control로 그리는 옵션(맥에서는 기본).
+- **실행 검사 모드**(`KEYCAST_SMOKE`): 앱을 열어 상태를 JSON으로 남기고 닫습니다. CI에서 씁니다.
+
 ## v1.4.0 (2026-11-23, 베타)
 
 ### 새로 생긴 것

@@ -84,7 +84,7 @@
 
 <p align="center"><img src="docs/readme/size.ja.svg" width="100%" alt="v1.2 で軽くなったダウンロード"></p>
 
-**必要なもの:** Windows 10 または 11（64 ビット）
+**必要なもの:** Windows 10・11（64 ビット）、macOS 11 以降（Apple シリコン・Intel）、または X11 の 64 ビット Linux。macOS・Linux 版は 2.0 で追加され、まだ自動チェックのみです。macOS では初回に右クリック →「開く」で起動し、アクセシビリティと画面収録を許可してください（ポインターなし録画には `brew install ffmpeg`）。Linux では `.AppImage` か `.deb` を使い、X11 セッションでキーとクリックを記録できます（`sudo apt install ffmpeg`）。パソコンの音の録音は Windows のみです。
 
 [最新リリース](https://github.com/dominkang90/keycast-studio/releases/latest)からダウンロードしてください。
 
