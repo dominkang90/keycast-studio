@@ -24,12 +24,12 @@ jobs:
       - name: Signature and Gatekeeper
         run: |
           mkdir -p diag
-          for a in arm64 x64; do
-            app="release/dist/mac-$a/KeyCast Studio.app"
+          for a in mac-arm64 mac; do
+            app="release/dist/$a/KeyCast Studio.app"
             echo "== $a" | tee -a diag/sign.txt
             codesign -dv --verbose=2 "$app" >> diag/sign.txt 2>&1 || true
             codesign --verify --deep --strict --verbose=2 "$app" >> diag/sign.txt 2>&1 && echo "verify OK" >> diag/sign.txt || echo "verify FAILED" >> diag/sign.txt
-            xattr -w com.apple.quarantine "0083;$(printf %x $(date +%s));Safari;" "$app"
+            xattr -w com.apple.quarantine "0083;$(printf %x $(date +%s));Safari;" "$app" || true
             spctl --assess --type execute -vv "$app" >> diag/sign.txt 2>&1 || true
             xattr -d com.apple.quarantine "$app" || true
           done
