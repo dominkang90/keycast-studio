@@ -27,6 +27,9 @@ jobs:
       - run: npm test
       - name: Build (Apple silicon and Intel)
         run: npm run dist:mac
+      - name: Check the signature
+        run: |
+          for a in mac-arm64 mac; do codesign --verify --deep --strict --verbose=2 "release/dist/$a/KeyCast Studio.app"; done
       - name: Smoke test (Apple silicon)
         env:
           ELECTRON_ENABLE_LOGGING: "1"
