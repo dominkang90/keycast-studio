@@ -1,0 +1,51 @@
+# Diagnoses the intermittent macOS start-up crash (Trace/BPT trap, exit 133): starts the app many
+# times in smoke-test mode and keeps every crash report. Runs on pushes to diag/* branches or by hand.
+name: macOS start-up diagnosis
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ['diag/**']
+
+jobs:
+  mac:
+    runs-on: macos-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build:ui
+      - name: Build the app folder (Apple silicon only)
+        run: npx electron-builder --mac dir --arm64 --publish never
+      - name: Start it many times
+        env:
+          ELECTRON_ENABLE_LOGGING: "1"
+        run: |
+          mkdir -p diag
+          app="release/dist/mac-arm64/KeyCast Studio.app/Contents/MacOS/KeyCast Studio"
+          codesign -dv --verbose=2 "release/dist/mac-arm64/KeyCast Studio.app" > diag/codesign.txt 2>&1 || true
+          run() { # name, extra args…
+            local name=$1; shift
+            for i in $(seq 1 12); do
+              rm -rf "$RUNNER_TEMP/p"; code=0
+              KEYCAST_SMOKE="$PWD/diag/$name-$i.json" "$@" --user-data-dir="$RUNNER_TEMP/p" > "diag/$name-$i.log" 2>&1 || code=$?
+              echo "$name $i exit $code" | tee -a diag/summary.txt
+              [ "$code" != "0" ] && sleep 8
+            done
+          }
+          run packaged "$app"
+          run packaged-nogpu "$app" --disable-gpu
+          run dev npx electron .
+          echo; sort diag/summary.txt | awk '{print $1, $4}' | sort | uniq -c
+          cp ~/Library/Logs/DiagnosticReports/*.ips diag/ 2>/dev/null || true
+          ls ~/Library/Logs/DiagnosticReports/ || true
+          for f in diag/*.ips; do [ -f "$f" ] && { echo "== $f"; head -c 6000 "$f"; echo; }; done
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mac-diag
+          path: diag/
