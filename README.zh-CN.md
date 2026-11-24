@@ -75,7 +75,7 @@
 - 1920×1200 及以下的录制导出比视频本身更快（11 秒视频约 6 秒）
 
 **扩展**
-- 添加背景、按键主题、指针包、点击效果和字幕样式的数据包，不运行任何代码。制作方法见 [docs/EXTENSIONS.md](docs/EXTENSIONS.md)
+- 添加背景、按键主题、指针包、点击效果和字幕样式的数据包，不运行任何代码。内置 6 个官方扩展，还可在**制作扩展**界面中边看实时预览边制作。详见 [docs/EXTENSIONS.md](docs/EXTENSIONS.md)
 
 **界面**
 - 12 种语言：한국어, English, 日本語, 简体中文, 繁體中文, Español, Français, Deutsch, Italiano, Nederlands, Português (Brasil), Русский，首次启动时跟随系统语言

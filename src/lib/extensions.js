@@ -108,6 +108,7 @@ export function readExtension(folder, json) {
     name: text(json?.name) || id,
     version: text(json?.version, 20),
     author: text(json?.author),
+    description: text(json?.description, 200),
     backgrounds: map('backgrounds', background),
     keyThemes: map('keyThemes', keyTheme),
     cursorPacks: map('cursorPacks', cursorPack),

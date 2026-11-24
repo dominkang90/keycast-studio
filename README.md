@@ -75,7 +75,7 @@ KeyCast Studio has to see the keys you press to show them in the video, so pleas
 - Recordings up to 1920×1200 export faster than real time (an 11-second clip in about 6 seconds)
 
 **Extensions**
-- Data-only packs of backgrounds, key themes, cursor packs, click effects and subtitle styles; no code is run. See [docs/EXTENSIONS.md](docs/EXTENSIONS.md)
+- Data-only packs of backgrounds, key themes, cursor packs, click effects and subtitle styles; no code is run. Six official packs come with the app, and the **extension maker** builds your own with a live preview. See [docs/EXTENSIONS.md](docs/EXTENSIONS.md)
 
 **Interface**
 - 12 languages: 한국어, English, 日本語, 简体中文, 繁體中文, Español, Français, Deutsch, Italiano, Nederlands, Português (Brasil), Русский; the first start follows the system language
@@ -103,7 +103,7 @@ From the [latest release](https://github.com/dominkang90/keycast-studio/releases
 
 > Windows may show **Windows protected your PC** the first time. Choose **More info → Run anyway**. The app is not code-signed yet, which is why the warning appears. Compare the file with the SHA-256 and VirusTotal links on the release page if you want to be sure.
 
-**macOS:** `KeyCast-Studio-x.y.z-mac-arm64.dmg` (Apple silicon) or `-mac-x64.dmg` (Intel). Drag the app to Applications. The app is not notarized yet, so the first time **right-click it → Open → Open** (or run `xattr -cr "/Applications/KeyCast Studio.app"`). Then allow **Accessibility** (to see keys) and **Screen Recording** in System Settings → Privacy & Security; the app has a button that opens both. For recording without the pointer install FFmpeg: `brew install ffmpeg`. Recording the computer's sound is Windows only.
+**macOS:** `KeyCast-Studio-x.y.z-mac-arm64.dmg` (Apple silicon) or `-mac-x64.dmg` (Intel). Drag the app to Applications. The app is not notarized yet, so macOS may say the app **"is damaged and can't be opened"**. It is not damaged: run `xattr -cr "/Applications/KeyCast Studio.app"` in Terminal once, then open it. Then allow **Accessibility** (to see keys) and **Screen Recording** in System Settings → Privacy & Security; the app has a button that opens both. For recording without the pointer install FFmpeg: `brew install ffmpeg`. Recording the computer's sound is Windows only.
 
 **Linux:** `KeyCast-Studio-x.y.z-linux-x86_64.AppImage` (make it executable and run it) or `KeyCast-Studio-x.y.z-linux-amd64.deb` (`sudo apt install ./KeyCast-Studio-*.deb`). Keys, clicks and recording without the pointer need an **X11** session; under Wayland only the screen itself can be recorded. For recording without the pointer: `sudo apt install ffmpeg`.
 

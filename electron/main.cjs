@@ -590,11 +590,13 @@ function registerIpc() {
     await fsp.mkdir(extDir(), { recursive: true });
     return shell.openPath(extDir());
   });
-  // Writes the sample pack (sent as JSON text) to _extensions/example/ only.
-  ipcMain.handle('extensions:example', async (_e, text) => {
-    if (typeof text !== 'string' || text.length > 64 * 1024) throw new Error('bad example');
+  // Installs a pack (an official one, or one made in the extension maker) as
+  // _extensions/<folder>/extension.json. The folder name is checked; only that file is written.
+  ipcMain.handle('extensions:install', async (_e, folder, text) => {
+    if (typeof folder !== 'string' || !/^[a-z0-9][a-z0-9-]{0,48}$/.test(folder)) throw new Error('bad extension folder name');
+    if (typeof text !== 'string' || text.length > 256 * 1024) throw new Error('bad extension');
     JSON.parse(text);
-    const dir = path.join(extDir(), 'example');
+    const dir = path.join(extDir(), folder);
     await fsp.mkdir(dir, { recursive: true });
     await fsp.writeFile(path.join(dir, 'extension.json'), text);
     return true;

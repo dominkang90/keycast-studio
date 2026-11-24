@@ -1,0 +1,27 @@
+{
+  "name": "Pastel",
+  "version": "1.0",
+  "author": "KeyCast Studio",
+  "description": "Soft, light colours for calm tutorials.",
+  "backgrounds": [
+    { "name": "Cotton candy", "gradient": ["#fbcfe8", "#ddd6fe", "#bfdbfe"], "angle": 135 },
+    { "name": "Lemon cream", "gradient": ["#fef9c3", "#fde68a", "#fed7aa"], "angle": 160 },
+    { "name": "Mint milk", "base": "#ecfdf5", "blobs": [[0.15, 0.2, 0.7, "#a7f3d0"], [0.85, 0.25, 0.6, "#bae6fd"], [0.5, 1, 0.7, "#fbcfe8"]] }
+  ],
+  "keyThemes": [
+    { "name": "Marshmallow", "face": "#ffffff", "text": "#6d28d9", "modFace": "#f9a8d4", "modText": "#4c1d95", "borderColor": "#e9d5ff", "borderWidth": 2, "radius": 14, "capStyle": "raised", "panel": true, "panelColor": "#ffffff", "panelOpacity": 0.6 },
+    { "name": "Sky", "face": "#e0f2fe", "text": "#0c4a6e", "modFace": "#7dd3fc", "modText": "#0c4a6e", "borderColor": "#bae6fd", "borderWidth": 1, "radius": 12, "capStyle": "flat", "panel": false }
+  ],
+  "cursorPacks": [
+    { "name": "Lilac", "fill": "#c4b5fd", "edge": "#4c1d95", "width": 1.3 },
+    { "name": "Peach", "fill": "#fdba74", "edge": "#7c2d12", "width": 1.3 }
+  ],
+  "clickEffects": [
+    { "name": "Pink ripple", "effect": "ripple", "color": "#f472b6", "size": 1.1, "duration": 0.7, "opacity": 0.8 },
+    { "name": "Lavender glow", "effect": "spotlight", "color": "#a78bfa", "size": 1.3, "duration": 0.8, "opacity": 0.7 }
+  ],
+  "subtitleStyles": [
+    { "name": "Soft paper", "style": "paper", "bgOpacity": 0.85, "anim": "rise", "size": 1, "position": "bottom" },
+    { "name": "Lilac karaoke", "style": "karaoke", "textColor": "#ffffff", "highlight": "#c4b5fd", "anim": "fade", "size": 1.05, "position": "bottom" }
+  ]
+}

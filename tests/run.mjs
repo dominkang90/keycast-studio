@@ -1,7 +1,7 @@
 // Unit checks for the logic that doesn't need a window: key grouping, zoom, subtitles, WebM patching.
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
-import { writeFileSync, readFileSync, mkdtempSync, rmSync } from 'node:fs';
+import { writeFileSync, readFileSync, mkdtempSync, rmSync, readdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { buildKeyGroups, visibleGroups, DRAG_LABEL, keepWithoutTyping } from '../src/lib/keys.js';
@@ -339,3 +339,18 @@ test('webm duration patch', () => {
 });
 
 console.log(`${passed} checks ran`);
+
+test('every official extension in extensions/ is valid and loses nothing', () => {
+  const dir = new URL('../extensions/', import.meta.url);
+  const folders = readdirSync(dir, { withFileTypes: true }).filter((d) => d.isDirectory()).map((d) => d.name);
+  assert.ok(folders.length >= 6, 'official packs are present');
+  const kinds = ['backgrounds', 'keyThemes', 'cursorPacks', 'clickEffects', 'subtitleStyles'];
+  for (const folder of folders) {
+    assert.match(folder, /^[a-z0-9-]+$/, `${folder}: folder names are lowercase words joined by -`);
+    const json = JSON.parse(readFileSync(new URL(`${folder}/extension.json`, dir), 'utf8'));
+    const ext = readExtension(folder, json);
+    assert.ok(ext.name && ext.version && ext.author && ext.description, `${folder}: name, version, author and description`);
+    for (const k of kinds) assert.equal(ext[k].length, (json[k] || []).length, `${folder}: every ${k} entry is valid`);
+    assert.ok(ext.count > 0);
+  }
+});

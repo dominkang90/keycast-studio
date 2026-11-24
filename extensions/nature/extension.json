@@ -1,0 +1,27 @@
+{
+  "name": "Nature",
+  "version": "1.0",
+  "author": "KeyCast Studio",
+  "description": "Forest, ocean and sunrise colours.",
+  "backgrounds": [
+    { "name": "Forest", "base": "#052e16", "blobs": [[0.2, 0.2, 0.7, "#166534"], [0.85, 0.3, 0.6, "#65a30d"], [0.5, 1, 0.7, "#14532d"]] },
+    { "name": "Ocean", "gradient": ["#67e8f9", "#0891b2", "#164e63"], "angle": 170 },
+    { "name": "Sunrise", "gradient": ["#fde047", "#fb923c", "#e11d48", "#581c87"], "angle": 200 }
+  ],
+  "keyThemes": [
+    { "name": "Moss", "face": "#ecfccb", "text": "#365314", "modFace": "#65a30d", "modText": "#ffffff", "borderColor": "#4d7c0f", "borderWidth": 2, "radius": 10, "capStyle": "raised", "panel": true, "panelColor": "#1a2e05", "panelOpacity": 0.5 },
+    { "name": "Sea glass", "face": "#cffafe", "text": "#155e75", "modFace": "#06b6d4", "modText": "#ffffff", "borderColor": "#0e7490", "borderWidth": 1, "radius": 12, "capStyle": "flat", "panel": true, "panelColor": "#083344", "panelOpacity": 0.45 }
+  ],
+  "cursorPacks": [
+    { "name": "Leaf", "fill": "#4d7c0f", "edge": "#ecfccb", "width": 1.4 },
+    { "name": "Coral", "fill": "#fb7185", "edge": "#ffffff", "width": 1.4 }
+  ],
+  "clickEffects": [
+    { "name": "Leaf ripple", "effect": "ripple", "color": "#84cc16", "size": 1.1, "duration": 0.7, "opacity": 0.9 },
+    { "name": "Sun glow", "effect": "spotlight", "color": "#facc15", "size": 1.3, "duration": 0.8, "opacity": 0.8 }
+  ],
+  "subtitleStyles": [
+    { "name": "Leafy pop", "style": "pop", "textColor": "#ffffff", "highlight": "#a3e635", "anim": "pop", "size": 1.15, "position": "bottom" },
+    { "name": "Ocean box", "style": "box", "textColor": "#ecfeff", "bgOpacity": 0.6, "anim": "rise", "size": 1, "position": "bottom" }
+  ]
+}

@@ -1,0 +1,27 @@
+{
+  "name": "Neon night",
+  "version": "1.0",
+  "author": "KeyCast Studio",
+  "description": "Dark backgrounds with glowing accents, for coding and gaming videos.",
+  "backgrounds": [
+    { "name": "Midnight grid", "base": "#05010f", "blobs": [[0.15, 0.1, 0.6, "#7c3aed"], [0.9, 0.9, 0.6, "#db2777"], [0.6, 0.4, 0.4, "#0891b2"]] },
+    { "name": "Synth sunset", "gradient": ["#1e1b4b", "#7e22ce", "#f43f5e", "#f59e0b"], "angle": 180 },
+    { "name": "Deep space", "gradient": ["#020617", "#0f172a", "#1e1b4b"], "angle": 200 }
+  ],
+  "keyThemes": [
+    { "name": "Cyber", "face": "#0b1020", "text": "#22d3ee", "modFace": "#db2777", "modText": "#ffffff", "borderColor": "#22d3ee", "borderWidth": 2, "radius": 8, "capStyle": "outline", "panel": true, "panelColor": "#000000", "panelOpacity": 0.7 },
+    { "name": "Magenta", "face": "#1f0b2e", "text": "#f0abfc", "modFace": "#a21caf", "modText": "#ffffff", "borderColor": "#e879f9", "borderWidth": 2, "radius": 10, "capStyle": "raised", "gradient": true, "panel": true, "panelColor": "#0b0014", "panelOpacity": 0.6 }
+  ],
+  "cursorPacks": [
+    { "name": "Cyan glow", "fill": "#02131a", "edge": "#22d3ee", "width": 1.6, "glow": "#06b6d4" },
+    { "name": "Pink glow", "fill": "#1a0213", "edge": "#f472b6", "width": 1.6, "glow": "#ec4899" }
+  ],
+  "clickEffects": [
+    { "name": "Cyan burst", "effect": "burst", "color": "#22d3ee", "size": 1.3, "duration": 0.55, "opacity": 1 },
+    { "name": "Magenta echo", "effect": "echo", "color": "#e879f9", "size": 1.2, "duration": 0.8, "opacity": 0.95 }
+  ],
+  "subtitleStyles": [
+    { "name": "Neon pop", "style": "pop", "textColor": "#ffffff", "highlight": "#22d3ee", "anim": "pop", "size": 1.2, "position": "bottom" },
+    { "name": "Night karaoke", "style": "karaoke", "textColor": "#e2e8f0", "highlight": "#f472b6", "anim": "rise", "size": 1.1, "position": "bottom" }
+  ]
+}

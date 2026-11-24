@@ -76,7 +76,7 @@
 - 1920×1200 이하 녹화는 영상 길이보다 빨리 내보냅니다(11초 영상을 약 6초에).
 
 **확장 기능**
-- 배경·키 테마·커서 묶음·클릭 효과·자막 스타일을 더하는 데이터 묶음. 코드는 실행하지 않습니다. 만드는 법은 [docs/EXTENSIONS.md](docs/EXTENSIONS.md)
+- 배경·키 테마·커서 묶음·클릭 효과·자막 스타일을 더하는 데이터 묶음. 코드는 실행하지 않습니다. 공식 확장 6종이 들어 있고, **확장 만들기** 화면에서 실시간 미리보기를 보며 직접 만들 수 있습니다. 자세한 내용은 [docs/EXTENSIONS.md](docs/EXTENSIONS.md)
 
 **화면**
 - 12개 언어: 한국어, English, 日本語, 简体中文, 繁體中文, Español, Français, Deutsch, Italiano, Nederlands, Português (Brasil), Русский. 처음에는 시스템 언어를 따릅니다.
@@ -104,7 +104,7 @@
 
 > 처음 실행할 때 **Windows의 PC 보호** 창이 뜨면 **추가 정보 → 실행**을 누르세요. 아직 코드 서명 인증서가 없어서 나오는 안내입니다. 릴리즈 페이지의 SHA-256 값과 VirusTotal 결과로 파일을 확인할 수 있습니다.
 
-**macOS:** `KeyCast-Studio-x.y.z-mac-arm64.dmg`(Apple 실리콘) 또는 `-mac-x64.dmg`(Intel)를 받아 앱을 응용 프로그램 폴더로 끌어 넣습니다. 아직 Apple 공증을 받지 않아 처음에는 **앱을 마우스 오른쪽 버튼 → 열기 → 열기**로 실행하세요(또는 `xattr -cr "/Applications/KeyCast Studio.app"`). 그다음 시스템 설정 → 개인정보 보호 및 보안에서 **손쉬운 사용**(키 기록)과 **화면 기록**을 허용합니다. 앱의 **권한 설정 열기** 버튼이 이 화면을 열어 줍니다. 커서 숨김 녹화에는 FFmpeg가 필요합니다: `brew install ffmpeg`. 컴퓨터 소리 녹음은 Windows에서만 됩니다.
+**macOS:** `KeyCast-Studio-x.y.z-mac-arm64.dmg`(Apple 실리콘) 또는 `-mac-x64.dmg`(Intel)를 받아 앱을 응용 프로그램 폴더로 끌어 넣습니다. 아직 Apple 공증을 받지 않아 macOS가 **"손상되었기 때문에 열 수 없습니다"**라고 할 수 있습니다. 실제로 손상된 것이 아니니 터미널에서 `xattr -cr "/Applications/KeyCast Studio.app"`을 한 번 실행한 뒤 여세요. 그다음 시스템 설정 → 개인정보 보호 및 보안에서 **손쉬운 사용**(키 기록)과 **화면 기록**을 허용합니다. 앱의 **권한 설정 열기** 버튼이 이 화면을 열어 줍니다. 커서 숨김 녹화에는 FFmpeg가 필요합니다: `brew install ffmpeg`. 컴퓨터 소리 녹음은 Windows에서만 됩니다.
 
 **Linux:** `KeyCast-Studio-x.y.z-linux-x86_64.AppImage`(실행 권한을 주고 실행) 또는 `KeyCast-Studio-x.y.z-linux-amd64.deb`(`sudo apt install ./KeyCast-Studio-*.deb`). 키·클릭 기록과 커서 숨김 녹화는 **X11** 세션에서만 됩니다. Wayland에서는 화면만 녹화됩니다. 커서 숨김 녹화: `sudo apt install ffmpeg`.
 

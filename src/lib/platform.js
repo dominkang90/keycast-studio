@@ -174,7 +174,7 @@ export const platform = {
   async listExtensions() { return isDesktop ? api.listExtensions() : []; },
   askAccess() { return isDesktop && api.askAccess ? api.askAccess() : Promise.resolve(null); },
   openExtensions() { if (isDesktop) api.openExtensions(); },
-  addExampleExtension(text) { return isDesktop ? api.addExampleExtension(text) : Promise.resolve(false); },
+  installExtension(folder, text) { return isDesktop ? api.installExtension(folder, text) : Promise.resolve(false); },
   openWallpapers() { if (isDesktop) api.openWallpapers(); },
   async toggleKeys(opts) { return isDesktop ? api.toggleKeys(opts) : false; },
   async keysState() { return isDesktop ? api.keysState() : false; },

@@ -1,0 +1,28 @@
+{
+  "name": "Retro terminal",
+  "version": "1.0",
+  "author": "KeyCast Studio",
+  "description": "Green and amber phosphor colours, for command-line and old-school videos.",
+  "backgrounds": [
+    { "name": "CRT green", "base": "#020a04", "blobs": [[0.5, 0.5, 0.9, "#064e1a"], [0.1, 0.1, 0.4, "#022c0d"]] },
+    { "name": "Amber glow", "base": "#0d0700", "blobs": [[0.5, 0.45, 0.9, "#78350f"], [0.9, 0.9, 0.4, "#451a03"]] },
+    { "name": "Beige case", "gradient": ["#e7e0c9", "#d6cfb4", "#bfb79b"], "angle": 170 }
+  ],
+  "keyThemes": [
+    { "name": "Phosphor", "face": "#031a08", "text": "#4ade80", "modFace": "#14532d", "modText": "#bbf7d0", "borderColor": "#22c55e", "borderWidth": 2, "radius": 3, "capStyle": "outline", "panel": true, "panelColor": "#000000", "panelOpacity": 0.75 },
+    { "name": "Amber", "face": "#1c1005", "text": "#fbbf24", "modFace": "#78350f", "modText": "#fde68a", "borderColor": "#f59e0b", "borderWidth": 2, "radius": 3, "capStyle": "flat", "panel": true, "panelColor": "#000000", "panelOpacity": 0.7 },
+    { "name": "Beige keycap", "face": "#efe8d0", "text": "#3f3a2b", "modFace": "#a8a08a", "modText": "#1f1c14", "borderColor": "#8a826b", "borderWidth": 2, "radius": 5, "capStyle": "raised", "panel": false }
+  ],
+  "cursorPacks": [
+    { "name": "Green", "fill": "#031a08", "edge": "#4ade80", "width": 1.6, "glow": "#22c55e" },
+    { "name": "Amber", "fill": "#1c1005", "edge": "#fbbf24", "width": 1.6, "glow": "#f59e0b" }
+  ],
+  "clickEffects": [
+    { "name": "Green pulse", "effect": "echo", "color": "#4ade80", "size": 1, "duration": 0.6, "opacity": 0.9 },
+    { "name": "Amber burst", "effect": "burst", "color": "#fbbf24", "size": 1, "duration": 0.45, "opacity": 1 }
+  ],
+  "subtitleStyles": [
+    { "name": "Terminal", "style": "outline", "textColor": "#4ade80", "anim": "none", "size": 1, "position": "bottom" },
+    { "name": "Amber karaoke", "style": "karaoke", "textColor": "#fde68a", "highlight": "#f59e0b", "anim": "fade", "size": 1, "position": "bottom" }
+  ]
+}

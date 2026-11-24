@@ -42,7 +42,7 @@ contextBridge.exposeInMainWorld('keycast', {
   listWallpapers: () => ipcRenderer.invoke('wallpapers:list'),
   listExtensions: () => ipcRenderer.invoke('extensions:list'),
   openExtensions: () => ipcRenderer.invoke('extensions:open'),
-  addExampleExtension: (text) => ipcRenderer.invoke('extensions:example', text),
+  installExtension: (folder, text) => ipcRenderer.invoke('extensions:install', folder, text),
   openWallpapers: () => ipcRenderer.invoke('wallpapers:open'),
   toggleKeys: (opts) => ipcRenderer.invoke('keys:toggle', opts),
   keysState: () => ipcRenderer.invoke('keys:state'),

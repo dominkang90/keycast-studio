@@ -303,3 +303,17 @@ html[lang="zh-TW"] {
 /* Long tab names (Japanese, German, Russian…) stay on one line. */
 .side-tabs button > :not(.ic) { max-width: 100%; padding: 0 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .ext-row { margin-bottom: var(--s3); }
+.modal-wide { width: 560px; }
+.ext-head { font-size: var(--t-small); color: var(--text-2); margin: var(--s4) 0 var(--s2); text-transform: none; }
+
+/* Extension maker */
+.modal.maker { width: min(1180px, calc(100vw - 32px)); height: calc(100vh - 48px); display: flex; flex-direction: column; overflow: hidden; }
+.maker-body { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(320px, 400px) 1fr; gap: var(--s5); }
+.maker-form { overflow: auto; padding-right: var(--s2); }
+.maker-form h3 { font-size: var(--t-body); font-weight: 600; margin: var(--s3) 0 var(--s2); }
+.maker-form .section { border-top: 1px solid var(--line); padding-top: var(--s3); margin-top: var(--s4); }
+.maker-item { display: grid; gap: var(--s2); padding: var(--s3); border: 1px solid var(--line); border-radius: var(--r-ctl, 8px); background: var(--surface-2, rgba(255,255,255,0.02)); }
+.maker-item > .btn.danger { justify-self: start; }
+.maker-side { display: flex; flex-direction: column; gap: var(--s2); min-width: 0; }
+.maker-preview { width: 100%; aspect-ratio: 16 / 9; height: auto; border-radius: var(--r-ctl, 8px); border: 1px solid var(--line); background: #000; }
+.maker-template { max-width: 200px; }

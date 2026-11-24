@@ -10,7 +10,19 @@ When you pick an item from an extension in the editor, its values are copied int
 2. Put the extension's folder there, so that you have `_extensions\<folder>\extension.json`.
 3. Choose **↻ Reload**. Each extension can be turned on or off.
 
-**+ Add the example** writes a sample pack to `_extensions\example`. Copy it to start your own.
+The same window lists the **official extensions** that come with the app (Starter pack, Nature, Neon night, Office, Pastel, Retro terminal). **Add** copies one into the folder; **Reinstall** puts back the original.
+
+## Making one with the extension maker
+
+Choose **🧩 Extensions → ✏ Make a new extension**. The maker has a form on the left and a live preview on the right that is drawn by the same code that draws your videos: a made-up screen with a key bubble, a moving pointer with clicks and a subtitle, using the item picked in each section.
+
+- Fill in the name, author, version and description, then add items of each kind with **+ Add** and set their colours and sliders.
+- **Start from official…** copies an official pack so you can change it. A copy is saved in its own folder (`<name>-custom`), so reinstalling the official pack does not overwrite it.
+- **⤒ Open JSON** loads an existing `extension.json` to edit.
+- **Add to app** saves it to `_extensions/<folder>/extension.json` (the folder name comes from the pack's name).
+- **⤓ Download JSON** saves the file to share it. This also works in the browser version.
+
+Picture backgrounds are not made in the maker: add an `image` item by hand and put the picture next to `extension.json`.
 
 ## Format
 
@@ -57,4 +69,4 @@ Invalid entries are skipped, numbers outside their range are clamped, and at mos
 
 ## Sharing
 
-Extensions are plain folders, so a zip of the folder is enough. If you made one you want to share, open an issue or a pull request that adds it to a `extensions/` folder in this repository.
+Extensions are plain folders, so a zip of the folder is enough. To suggest one for the official list, open a pull request that adds `extensions/<folder>/extension.json` to this repository. The folder name may use lowercase letters, digits and dashes. `npm test` checks that every entry in every official pack is valid, so nothing is dropped silently.

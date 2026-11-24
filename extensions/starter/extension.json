@@ -1,0 +1,27 @@
+{
+  "name": "Starter pack",
+  "version": "1.0",
+  "author": "KeyCast Studio",
+  "description": "A little of everything: three backgrounds, two key themes, two cursor packs, two click effects and two subtitle styles.",
+  "backgrounds": [
+    { "name": "Deep sea", "gradient": ["#0ea5e9", "#1e3a8a", "#0b1020"], "angle": 160 },
+    { "name": "Peach", "gradient": ["#fde68a", "#fb923c", "#f43f5e"], "angle": 120 },
+    { "name": "Northern lights", "base": "#04121a", "blobs": [[0.2, 0.15, 0.7, "#22d3ee"], [0.85, 0.3, 0.6, "#a855f7"], [0.5, 1, 0.7, "#10b981"]] }
+  ],
+  "keyThemes": [
+    { "name": "Mint", "face": "#d1fae5", "text": "#064e3b", "modFace": "#10b981", "modText": "#ffffff", "borderColor": "#065f46", "borderWidth": 2, "radius": 10, "capStyle": "raised", "panel": true, "panelColor": "#022c22", "panelOpacity": 0.5 },
+    { "name": "Ink", "face": "#111827", "text": "#f9fafb", "modFace": "#f59e0b", "modText": "#111827", "border": false, "radius": 6, "capStyle": "flat", "panel": false }
+  ],
+  "cursorPacks": [
+    { "name": "Lime", "fill": "#a3e635", "edge": "#1a2e05", "width": 1.4 },
+    { "name": "Glow blue", "fill": "#0b1020", "edge": "#60a5fa", "width": 1.5, "glow": "#3b82f6" }
+  ],
+  "clickEffects": [
+    { "name": "Soft blue echo", "effect": "echo", "color": "#3b82f6", "size": 1.2, "duration": 0.8, "opacity": 0.9 },
+    { "name": "Orange burst", "effect": "burst", "color": "#fb923c", "size": 1.1, "duration": 0.5, "opacity": 1 }
+  ],
+  "subtitleStyles": [
+    { "name": "Big pop", "style": "pop", "textColor": "#ffffff", "highlight": "#facc15", "anim": "pop", "size": 1.25, "position": "bottom" },
+    { "name": "Calm paper", "style": "paper", "bgOpacity": 0.9, "anim": "fade", "size": 1, "position": "bottom" }
+  ]
+}
