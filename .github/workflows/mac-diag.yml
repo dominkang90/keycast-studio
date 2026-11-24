@@ -1,5 +1,6 @@
-# Diagnoses the intermittent macOS start-up crash (Trace/BPT trap, exit 133): starts the app many
-# times in smoke-test mode and keeps every crash report. Runs on pushes to diag/* branches or by hand.
+# Diagnoses the macOS start-up crash (Trace/BPT trap, exit 133) and the signature: builds exactly
+# like the release (npm run dist:mac), checks the signature and Gatekeeper's verdict, then starts
+# the app many times in smoke-test mode and keeps every crash report. Runs on diag/* branches.
 name: macOS start-up diagnosis
 
 on:
@@ -18,32 +19,35 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npm run build:ui
-      - name: Build the app folder (Apple silicon only)
-        run: npx electron-builder --mac dir --arm64 --publish never
+      - name: Build like the release
+        run: npm run dist:mac
+      - name: Signature and Gatekeeper
+        run: |
+          mkdir -p diag
+          for a in arm64 x64; do
+            app="release/dist/mac-$a/KeyCast Studio.app"
+            echo "== $a" | tee -a diag/sign.txt
+            codesign -dv --verbose=2 "$app" >> diag/sign.txt 2>&1 || true
+            codesign --verify --deep --strict --verbose=2 "$app" >> diag/sign.txt 2>&1 && echo "verify OK" >> diag/sign.txt || echo "verify FAILED" >> diag/sign.txt
+            xattr -w com.apple.quarantine "0083;$(printf %x $(date +%s));Safari;" "$app"
+            spctl --assess --type execute -vv "$app" >> diag/sign.txt 2>&1 || true
+            xattr -d com.apple.quarantine "$app" || true
+          done
+          cat diag/sign.txt
       - name: Start it many times
         env:
           ELECTRON_ENABLE_LOGGING: "1"
         run: |
-          mkdir -p diag
           app="release/dist/mac-arm64/KeyCast Studio.app/Contents/MacOS/KeyCast Studio"
-          codesign -dv --verbose=2 "release/dist/mac-arm64/KeyCast Studio.app" > diag/codesign.txt 2>&1 || true
-          run() { # name, extra args…
-            local name=$1; shift
-            for i in $(seq 1 12); do
-              rm -rf "$RUNNER_TEMP/p"; code=0
-              KEYCAST_SMOKE="$PWD/diag/$name-$i.json" "$@" --user-data-dir="$RUNNER_TEMP/p" > "diag/$name-$i.log" 2>&1 || code=$?
-              echo "$name $i exit $code" | tee -a diag/summary.txt
-              [ "$code" != "0" ] && sleep 8
-            done
-          }
-          run packaged "$app"
-          run packaged-nogpu "$app" --disable-gpu
-          run dev npx electron .
-          echo; sort diag/summary.txt | awk '{print $1, $4}' | sort | uniq -c
+          for i in $(seq 1 20); do
+            rm -rf "$RUNNER_TEMP/p"; code=0
+            KEYCAST_SMOKE="$PWD/diag/run-$i.json" "$app" --user-data-dir="$RUNNER_TEMP/p" > "diag/run-$i.log" 2>&1 || code=$?
+            echo "run $i exit $code" | tee -a diag/summary.txt
+            if [ "$code" != "0" ]; then sleep 8; fi
+          done
+          echo; awk '{print $4}' diag/summary.txt | sort | uniq -c
           cp ~/Library/Logs/DiagnosticReports/*.ips diag/ 2>/dev/null || true
-          ls ~/Library/Logs/DiagnosticReports/ || true
-          for f in diag/*.ips; do [ -f "$f" ] && { echo "== $f"; head -c 6000 "$f"; echo; }; done
+          for f in diag/*.ips; do if [ -f "$f" ]; then echo "== $f"; head -c 8000 "$f"; echo; fi; done
       - uses: actions/upload-artifact@v4
         if: always()
         with:

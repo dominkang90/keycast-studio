@@ -18,6 +18,7 @@ files:
   - build/icon.png
 asar: false
 npmRebuild: false
+afterPack: scripts/mac-adhoc-sign.cjs
 win:
   target:
     - nsis
@@ -54,8 +55,9 @@ mac:
   icon: build/icon.png
   category: public.app-category.video
   artifactName: KeyCast-Studio-${version}-mac-${arch}.${ext}
-  # Ad-hoc signature only (no Apple Developer ID yet): Apple silicon needs at least this to start.
-  identity: "-"
+  # No Apple Developer ID yet: electron-builder's own signing is off and scripts/mac-adhoc-sign.cjs
+  # (afterPack) signs the whole bundle ad hoc, so macOS does not call a download "damaged".
+  identity: null
   hardenedRuntime: false
   extendInfo:
     NSMicrophoneUsageDescription: KeyCast Studio records your voice for subtitles.
