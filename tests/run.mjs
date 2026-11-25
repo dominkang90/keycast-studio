@@ -9,6 +9,7 @@ import { segments, outDuration, srcToOut, outToSrc, mapCues } from '../src/lib/t
 import { autoZoomRegions, cameraAt, CursorTrack, viewRect } from '../src/lib/zoom.js';
 import { shapeSubtitles, toSRT, wrapLines, cueWords, SUBTITLE_STYLES } from '../src/lib/subtitles.js';
 import { drawSubtitle, drawClicks, CLICK_EFFECTS } from '../src/lib/compositor.js';
+import { HangulComposer, hangulText, jamoForKey } from '../src/lib/hangul.js';
 import { readExtension, applyBackground, EXAMPLE_EXTENSION } from '../src/lib/extensions.js';
 
 const require = createRequire(import.meta.url);
@@ -90,6 +91,41 @@ test('repeats are counted, lone modifier shown, shortcuts mode hides typing', ()
   const g = buildKeyGroups(ev, ALL);
   assert.equal(g[0].items[0].count, 3);
   assert.deepEqual(g[1].items[0].keys, ['Win']);
+  assert.equal(buildKeyGroups(ev, { mode: 'shortcuts' }).length, 0);
+});
+
+test('Hangul: the Korean layout composes syllables like the Windows IME', () => {
+  const split = (s) => s.split(' ').flatMap((w) => (['Space', 'Backspace'].includes(w) ? [w] : [...w]));
+  const cases = {
+    dkssudgktpdy: '안녕하세요', gksrmf: '한글', rhkd: '광', dlfrdj: '읽어', ekfr: '닭', qkfqdk: '밟아', dho: '왜', dmlwk: '의자',
+    'rk Space sk': '가 나', 'gksrmf Backspace': '한그', 'gksrmf Backspace Backspace Backspace': '한', 'rkskd Backspace': '가나', rt: 'ㄱㅅ',
+  };
+  for (const [keys, want] of Object.entries(cases)) assert.equal(hangulText(split(keys)), want, keys);
+  assert.equal(hangulText(['^r', 'k', '^t', 'm']), '까쓰');
+  assert.equal(jamoForKey('Q', true), 'ㅃ');
+  assert.equal(jamoForKey('F1'), null);
+  const h = new HangulComposer();
+  for (const j of 'ㄷㅏㄹㄱ') h.type(j);
+  h.backspace();
+  assert.deepEqual(h.labels(), ['달']);
+});
+
+test('Hangul typing shows growing syllables and follows the IME state', () => {
+  const kd = (t, name, hangul) => ({ t, type: 'kd', name, hangul });
+  const ev = [...'GKSRMF'].map((k, i) => kd(1 + i * 0.1, k, true));
+  const g = buildKeyGroups(ev, { ...ALL });
+  assert.equal(g.length, 1);
+  const at = (t) => visibleGroups(g, t, { ...ALL, hold: 5 })[0].items.map((it) => it.keys[0]).join('');
+  assert.equal(at(1.05), 'ㅎ');
+  assert.equal(at(1.25), '한');
+  assert.equal(at(1.55), '한글');
+  // English mode (no hangul flag) keeps the letters, and 'off' ignores the flag.
+  assert.equal(buildKeyGroups([...'GKS'].map((k, i) => kd(i * 0.1, k)), ALL)[0].items.length, 3);
+  assert.equal(buildKeyGroups(ev, { ...ALL, hangul: 'off' })[0].items[0].keys[0], 'G');
+  // 'always' reads older recordings without the flag; Backspace edits the text.
+  const old = buildKeyGroups([kd(0, 'R'), kd(0.1, 'K'), kd(0.2, 'Backspace'), kd(0.3, 'H'), kd(0.4, 'Space'), kd(0.5, 'S'), kd(0.6, 'K')], { ...ALL, hangul: 'always' });
+  assert.equal(visibleGroups(old, 0.7, { ...ALL, hold: 5 })[0].items.map((it) => it.keys[0]).join('|'), '고|Space|나');
+  // Shortcuts mode still shows shortcuts only.
   assert.equal(buildKeyGroups(ev, { mode: 'shortcuts' }).length, 0);
 });
 

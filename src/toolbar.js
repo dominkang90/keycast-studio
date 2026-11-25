@@ -12,6 +12,21 @@ function fmt(ms) {
 }
 
 const keys = document.getElementById('keys');
+const keyrec = document.getElementById('keyrec');
+const keynote = document.getElementById('keynote');
+let keyRecAccel = 'Alt+Shift+L';
+let keysRecorded = true;
+let typing = false;
+// What the recording keeps from the keyboard: shortcuts only, typing too, or nothing (paused).
+function showKeyNote() {
+  keynote.textContent = keysRecorded ? `· ${typing ? T('키·타이핑 기록') : T('단축키 기록')}` : `· ${T('키 기록 멈춤')}`;
+  keynote.classList.toggle('off', !keysRecorded);
+  keyrec.setAttribute('aria-pressed', String(!keysRecorded));
+  keyrec.setAttribute('aria-label', keysRecorded ? T('키 기록 멈춤') : T('키 다시 기록'));
+  keyrec.title = `${keysRecorded ? T('키 기록 멈춤 (비밀번호를 칠 때)') : T('키 다시 기록')} (${keyRecAccel})`;
+}
+keyrec.addEventListener('click', () => api?.toolbarAction('toggle-keyrec'));
+api?.onKeysRecording?.((on) => { keysRecorded = on; showKeyNote(); });
 
 // The page is written in Korean; put the interface language in before the first status.
 document.title = T('KeyCast — 녹화 중');
@@ -46,4 +61,8 @@ api?.onStatus((s) => {
   pause.title = s.paused ? T('다시 시작 ({0})', key) : T('일시정지 ({0})', key);
   stop.title = T('멈추기 ({0})', s.shortcuts?.stop || 'Alt+Shift+S');
   keyAccel = s.shortcuts?.keys || 'Alt+Shift+K';
+  keyRecAccel = s.shortcuts?.keyRec || 'Alt+Shift+L';
+  typing = !!s.typing;
+  if (typeof s.keysPaused === 'boolean') keysRecorded = !s.keysPaused;
+  showKeyNote();
 });

@@ -19,14 +19,12 @@ What comes next, roughly in order. Items marked **good first issue** are self-co
 | Item | Why | Size |
 |---|---|---|
 | Code-sign the installer | Removes the "Windows protected your PC" warning; needs a certificate | Small once a certificate exists |
-| Show a small "keys are being recorded" indicator in the recording bar | Makes recording state obvious at a glance | Small · **good first issue** ([#4](https://github.com/dominkang90/keycast-studio/issues/4)) |
-| "Pause key recording" button while recording | Lets you type a password mid-recording even with typing recorded | Small |
 
 ## Features
 
 | Item | Why |
 |---|---|
-| Show Hangul and other typed text as entered, not as Latin key letters | Requested for Korean tutorials |
+| Show Japanese and Chinese typing as entered (Hangul is shown since v2.2) | Needs the composition text from the IME, not only the key letters |
 | Pointer hiding for window recordings and for more than one monitor | Today it works for whole-screen recordings and has been checked with one monitor |
 | Optional bundled speech model for fully offline subtitles | Today the model is downloaded on first use |
 | Real-world checks on macOS and Linux | Built and smoke-tested since v2.0 but never recorded on a real Mac or Linux desktop |

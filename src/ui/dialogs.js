@@ -80,7 +80,7 @@ export function openShortcuts() {
   const bg = h('div', { class: 'modal-bg' }, h('div', { class: 'modal' },
     h('h2', {}, T('단축키')),
     h('div', { class: 'small muted', style: { marginBottom: '12px' } }, T('녹화 중에는 어떤 프로그램에서든 듣는 단축키입니다. 버튼을 누르고 새 조합을 누르면 바뀝니다.')),
-    row('stop', T('녹화 멈추기')), row('pause', T('일시정지 / 다시 시작')), row('keys', T('화면 키 표시 켜기 / 끄기')),
+    row('stop', T('녹화 멈추기')), row('pause', T('일시정지 / 다시 시작')), row('keys', T('화면 키 표시 켜기 / 끄기')), row('keyRec', T('키 기록 멈춤 / 다시 기록')),
     h('button', { class: 'btn small', onclick: () => { store.set('shortcuts', {}); bg.remove(); openShortcuts(); } }, T('처음 값으로')),
     h('div', { class: 'section' }, h('h3', { style: { fontSize: '14px', marginBottom: '10px' } }, T('편집 화면에서')),
       ref.map(([k, d]) => h('div', { class: 'field inline', style: { marginBottom: '8px' } }, h('label', {}, d), h('span', {}, kbdLabel(k))))),

@@ -34,6 +34,9 @@ export function keyPanel(k, change, redraw) {
   };
   return [
     segField(T('무엇을 보여줄까요'), k.mode, [{ id: 'all', name: T('모든 키') }, { id: 'shortcuts', name: T('단축키만') }, { id: 'custom', name: T('고른 키만') }], (v) => { k.mode = v; change(true); redraw(); }),
+    k.mode === 'all' ? h('div', { class: 'field' },
+      segField(T('한글 입력'), k.hangul || 'auto', [{ id: 'auto', name: T('자동') }, { id: 'always', name: T('항상 한글') }, { id: 'off', name: T('영문 키 그대로') }], (v) => { k.hangul = v; change(true); }),
+      h('div', { class: 'hint' }, T('자동: 녹화할 때 한글 입력기가 한글 상태였던 글자를 "안녕"처럼 조합해 보여줍니다(Windows). 예전 녹화나 맥·리눅스는 "항상 한글"을 고르세요.'))) : null,
     k.mode === 'custom' ? h('div', { class: 'field' },
       h('label', {}, T('이 키로 시작하는 입력만 보여줍니다')),
       chips,

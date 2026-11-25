@@ -29,6 +29,12 @@
       #keys[aria-pressed="true"] { color: #ededed; background: #2c2c2f; border-color: rgba(237, 237, 237, 0.28); }
       #keys .slash { display: block; }
       #keys[aria-pressed="true"] .slash { display: none; }
+      .keynote { color: #a1a1a6; }
+      .keynote.off { color: #e3b341; font-weight: 600; }
+      #keyrec .i-lock { display: none; }
+      #keyrec[aria-pressed="true"] { color: #e3b341; background: rgba(227, 179, 65, 0.14); border-color: rgba(227, 179, 65, 0.5); }
+      #keyrec[aria-pressed="true"] .i-lock { display: block; }
+      #keyrec[aria-pressed="true"] .i-rec { display: none; }
       #pause .i-play { display: none; }
       #pause.is-paused .i-play { display: block; }
       #pause.is-paused .i-pause { display: none; }
@@ -39,9 +45,13 @@
     <div class="bar" id="bar">
       <div class="dot"></div>
       <div class="time" id="time">0:00</div>
-      <div class="label" id="label">녹화 중</div>
+      <div class="label"><span id="label">녹화 중</span> <span class="keynote" id="keynote"></span></div>
       <button id="keys" class="icon-only" title="화면 키 표시 켜기/끄기 (Alt+Shift+K)" aria-label="화면 키 표시" aria-pressed="false">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="6" width="19" height="12" rx="2"/><path d="M6.5 10h.01M10 10h.01M13.5 10h.01M17 10h.01M7.5 14h9"/><path class="slash" d="M4 3.5l16 17"/></svg>
+      </button>
+      <button id="keyrec" class="icon-only" aria-pressed="false" title="키 기록 멈춤 (Alt+Shift+L)" aria-label="키 기록 멈춤">
+        <svg class="i-rec" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="8" width="13" height="9" rx="1.6"/><path d="M5.5 11h.01M8.5 11h.01M11.5 11h.01M6.5 14h5"/><path d="M18.5 9v7M21.5 9v7"/></svg>
+        <svg class="i-lock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
       </button>
       <button id="pause" class="icon-only" title="일시정지 (Alt+Shift+P)" aria-label="일시정지">
         <svg class="i-pause" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M8.5 5.5v13M15.5 5.5v13"/></svg>

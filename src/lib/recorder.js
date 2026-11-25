@@ -195,7 +195,7 @@ export class Recorder {
   }
 
   emitStatus() {
-    const status = { elapsedMs: this.elapsedMs(), paused: this.paused, shortcuts: this.opts.shortcuts };
+    const status = { elapsedMs: this.elapsedMs(), paused: this.paused, shortcuts: this.opts.shortcuts, typing: !!this.opts.recordTyping };
     this.onStatus(status);
     platform.sendStatus(status);
   }

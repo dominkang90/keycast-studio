@@ -33,6 +33,7 @@ KeyCast Studio has to see the keys you press to show them in the video, so pleas
 
 - **When:** keys and clicks are recorded only while a recording is running. The optional "show keys without recording" mode draws them on screen and saves nothing.
 - **What:** by default letters, digits and symbols typed on their own are dropped before anything is saved, so text such as passwords never reaches the recording. Shortcuts (Ctrl / Alt / Win combinations, F-keys, Esc) and keys like Enter or the arrows are kept. Turn on **타이핑한 글자도 기록** (also record typing) if you want typing in the video.
+- **Pause:** the 🔒 button in the recording bar (or Alt+Shift+L) stops recording keys until you press it again, for typing a password mid-recording. The bar always says what is being kept: shortcuts, keys and typing, or nothing.
 - **Where:** everything stays in `Videos\KeyCast Studio` on your computer. Nothing is sent anywhere. The internet is used only once, to download the speech model when you first make subtitles.
 - **Check it yourself:** the source code is all here, and each release lists its SHA-256 checksums and a VirusTotal scan. Details in [SECURITY.md](SECURITY.md).
 
@@ -145,7 +146,7 @@ Not yet checked: Windows 10, NVIDIA and AMD graphics, more than one monitor, a r
 - Linux: keys, clicks and hiding the pointer need an X11 session; under Wayland only the screen is recorded.
 - The pointer kind (hand, text cursor, …) is recorded on Windows only; elsewhere the arrow is drawn.
 - Hiding the real pointer works for whole-screen recordings only.
-- Typing Hangul shows the Latin key letters (for example `G` for `ㅎ`), because the key display is meant for shortcuts.
+- Typed Hangul is shown as Hangul (안녕) when the recording saw the Korean IME in Hangul mode, which is detected on Windows only; on macOS and Linux choose **Always Hangul** in the Keys tab. Other IMEs (Japanese, Chinese) still show the Latin key letters.
 - Translations other than Korean and English were made with machine help and still need native speakers to check them.
 - Without a graphics card that works for speech recognition, subtitles use the processor and can take longer than the video.
 

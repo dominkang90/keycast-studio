@@ -24,7 +24,7 @@ export const state = {
 };
 
 // ------------------------------------------------------------------ saved preferences
-export const DEFAULT_SHORTCUTS = { stop: 'Alt+Shift+S', pause: 'Alt+Shift+P', keys: 'Alt+Shift+K' };
+export const DEFAULT_SHORTCUTS = { stop: 'Alt+Shift+S', pause: 'Alt+Shift+P', keys: 'Alt+Shift+K', keyRec: 'Alt+Shift+L' };
 export function shortcuts() { return { ...DEFAULT_SHORTCUTS, ...store.get('shortcuts', {}) }; }
 
 /** The look used last time (new recordings start from it). */

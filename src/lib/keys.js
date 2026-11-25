@@ -2,6 +2,7 @@
 // Times are in seconds on the project timeline.
 
 import { T } from './i18n.js';
+import { HangulComposer, jamoForKey } from './hangul.js';
 
 const MOD_ORDER = ['Ctrl', 'Alt', 'Shift', 'Win'];
 const MODIFIERS = new Set(MOD_ORDER);
@@ -43,6 +44,9 @@ export const KEY_DEFAULTS = {
   // 'windows' (Win, Alt) or 'mac' (Cmd, Option): names drawn for the same recorded keys
   keyNames: typeof navigator !== 'undefined' && /Mac/i.test(navigator.platform || navigator.userAgent || '') ? 'mac' : 'windows',
   showCount: true,
+  // Typed Hangul: 'auto' when the recording saw the Korean IME in Hangul mode (Windows), 'always'
+  // to read every typed letter on the Korean layout (older recordings, macOS, Linux), or 'off'.
+  hangul: 'auto',
   // used when theme === 'custom'
   custom: {
     capStyle: 'raised', // 'raised' | 'flat' | 'outline'
@@ -132,6 +136,23 @@ export function buildKeyGroups(events, opts = KEY_DEFAULTS) {
     return item;
   };
 
+  // Hangul typing: one composer per typing bubble; each change hides the old characters and shows
+  // the new ones from that moment (items get hideAt), so a syllable grows as it is typed.
+  let hg = null;
+  const showHangul = (t) => {
+    const labels = hg.comp.labels();
+    let same = 0;
+    while (same < hg.shown.length && same < labels.length && hg.shown[same].keys[0] === labels[same]) same++;
+    for (const it of hg.shown.slice(same)) it.hideAt = t;
+    hg.shown = hg.shown.slice(0, same);
+    for (const label of labels.slice(same)) {
+      const item = { t, keys: [label], count: 1 };
+      current.items.push(item);
+      hg.shown.push(item);
+    }
+    current.end = t;
+  };
+
   for (const ev of events) {
     if (ev.type === 'kd') {
       const name = ev.name;
@@ -139,6 +160,24 @@ export function buildKeyGroups(events, opts = KEY_DEFAULTS) {
         if (!held.has(name)) held.set(name, { t: ev.t, used: false });
         continue;
       }
+      const m = ev.mods || {};
+      const plain = !(m.ctrl || m.alt || m.meta || held.has('Ctrl') || held.has('Alt') || held.has('Win'));
+      if (opts.mode === 'all' && plain && (!ev.repeat || name === 'Backspace')) {
+        const shift = !!m.shift || held.has('Shift');
+        const hangulOn = opts.hangul === 'always' || (opts.hangul !== 'off' && ev.hangul === true);
+        const jamo = hangulOn ? jamoForKey(name, shift) : null;
+        const inBubble = current && current.kind === 'typing' && ev.t - current.end <= typingGap;
+        if (jamo || (hg && inBubble && hg.group === current && (isPrintable(name) || name === 'Backspace'))) {
+          if (!inBubble) startGroup('typing', ev.t);
+          if (!hg || hg.group !== current) hg = { group: current, comp: new HangulComposer(), shown: [] };
+          if (jamo) hg.comp.type(jamo);
+          else if (name === 'Backspace') hg.comp.backspace();
+          else hg.comp.other(shift && SHIFTED[name] ? SHIFTED[name] : displayLabel(name));
+          showHangul(ev.t);
+          continue;
+        }
+      }
+      hg = null;
       if (ev.repeat) {
         if (current && current.items.length) {
           const last = current.items[current.items.length - 1];
@@ -229,7 +268,7 @@ export function visibleGroups(groups, t, opts = KEY_DEFAULTS) {
       if (t - g.end > 30) break;
       continue;
     }
-    const items = g.items.filter((it) => it.t <= t + 1e-6);
+    const items = g.items.filter((it) => it.t <= t + 1e-6 && !(it.hideAt <= t + 1e-6));
     if (!items.length) continue;
     // How far the bubble is into appearing (0..1) and into leaving (0..1).
     const enter = Math.min(1, (t - g.start) / fade);

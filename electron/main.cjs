@@ -22,6 +22,7 @@ const { patchWebmDuration } = require('./webm.cjs');
 const { labelForKey, MODIFIER_NAMES } = require('./keys.cjs');
 const capture = require('./capture.cjs');
 const cursorType = require('./cursor-type.cjs');
+const imeState = require('./ime-state.cjs');
 
 let uIOhook = null;
 try {
@@ -148,7 +149,7 @@ function displayFor(displayId) {
 }
 
 function openToolbar(display) {
-  const width = 384;
+  const width = 500;
   const height = 64;
   toolbar = new BrowserWindow({
     width, height,
@@ -171,6 +172,13 @@ let liveKeys = { display: null, settings: null, visible: false, accel: 'Alt+Shif
 
 function sendKeysVisible() {
   if (toolbar && !toolbar.isDestroyed()) toolbar.webContents.send('keys:visible', liveKeys.visible, liveKeys.accel);
+}
+
+/** Pauses or resumes recording key presses (for typing a password while recording). */
+function toggleKeyRecording() {
+  if (!input.running) return;
+  input.keysPaused = !input.keysPaused;
+  if (toolbar && !toolbar.isDestroyed()) toolbar.webContents.send('keys:recording', !input.keysPaused);
 }
 
 function toggleLiveKeys() {
@@ -236,6 +244,8 @@ const input = {
   isScreen: false,
   down: new Set(),
   lastMove: 0,
+  // "Pause key recording" from the recording bar: key presses are left out until it is turned back on.
+  keysPaused: false,
 };
 
 function cursorPoint() {
@@ -255,6 +265,9 @@ function overToolbar() {
 
 function pushEvent(ev) {
   if (!input.running) return;
+  // Paused key recording keeps no key at all, only the release of Ctrl, Alt, Shift or Win so a
+  // modifier held when the pause began is not left pressed in the recording.
+  if (input.keysPaused && (ev.type === 'kd' || (ev.type === 'ku' && !MODIFIER_NAMES.has(ev.name)))) return;
   // Clicks on the recording controls are not part of what is being shown.
   if ((ev.type === 'md' || ev.type === 'mu') && overToolbar()) return;
   if (!keysOnly) input.events.push(ev);
@@ -274,7 +287,10 @@ function attachHook() {
     const repeat = input.down.has(e.keycode);
     input.down.add(e.keycode);
     const name = labelForKey(e.keycode);
-    pushEvent({ t: Date.now(), type: 'kd', code: e.keycode, name, repeat, mods: mods(e), modifier: MODIFIER_NAMES.has(name) });
+    const ev = { t: Date.now(), type: 'kd', code: e.keycode, name, repeat, mods: mods(e), modifier: MODIFIER_NAMES.has(name) };
+    // A letter typed while the Korean IME is in Hangul mode: the editor shows it as Hangul.
+    if (!repeat && name.length === 1 && /[A-Z]/.test(name) && !e.ctrlKey && !e.altKey && !e.metaKey && !input.keysPaused && input.running && imeState.hangul() === true) ev.hangul = true;
+    pushEvent(ev);
   });
   uIOhook.on('keyup', (e) => {
     input.down.delete(e.keycode);
@@ -308,6 +324,7 @@ function startInput(display, isScreen) {
   input.display = display;
   input.isScreen = isScreen;
   input.running = true;
+  input.keysPaused = false;
   // The kind of pointer (arrow, hand, text…) so the editor can draw the matching shape.
   cursorType.watch((cursor) => pushEvent({ t: Date.now(), type: 'ct', cursor }));
   if (!uIOhook) return false;
@@ -374,13 +391,14 @@ function unregisterShortcuts() {
 function registerShortcuts(sc = {}) {
   unregisterShortcuts();
   const result = {};
-  for (const [command, fallback, key] of [['stop', 'Alt+Shift+S', 'stop'], ['toggle-pause', 'Alt+Shift+P', 'pause'], ['toggle-keys', 'Alt+Shift+K', 'keys']]) {
+  for (const [command, fallback, key] of [['stop', 'Alt+Shift+S', 'stop'], ['toggle-pause', 'Alt+Shift+P', 'pause'], ['toggle-keys', 'Alt+Shift+K', 'keys'], ['toggle-keyrec', 'Alt+Shift+L', 'keyRec']]) {
     const accel = sc[key] || fallback;
     let ok = false;
     try {
       ok = globalShortcut.register(accel, () => {
         dropShortcutEvents(accel);
         if (command === 'toggle-keys') toggleLiveKeys();
+        else if (command === 'toggle-keyrec') toggleKeyRecording();
         else studio?.webContents.send('recorder:command', command);
       });
     } catch { ok = false; }
@@ -512,11 +530,12 @@ function registerIpc() {
 
   ipcMain.on('toolbar:action', (_e, action) => {
     if (action === 'toggle-keys') { toggleLiveKeys(); return; }
+    if (action === 'toggle-keyrec') { toggleKeyRecording(); return; }
     studio?.webContents.send('recorder:command', action);
   });
 
   ipcMain.on('recorder:status', (_e, status) => {
-    if (toolbar && !toolbar.isDestroyed()) toolbar.webContents.send('recorder:status', status);
+    if (toolbar && !toolbar.isDestroyed()) toolbar.webContents.send('recorder:status', { ...status, keysPaused: input.keysPaused });
   });
 
   ipcMain.handle('project:create', () => newProjectDir());
