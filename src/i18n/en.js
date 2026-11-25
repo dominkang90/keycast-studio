@@ -652,4 +652,13 @@ export default {
   "받으러 가기": "Get it",
   "이 버전은 다시 알리지 않습니다": "Don't mention this version again",
   "건너뛰기": "Skip",
+  "살짝 당기기": "Push in",
+  "어둡게 넘기기": "Dip to black",
+  "자른 곳 전환": "Transition at cuts",
+  "잘라낸 곳에서 화면이 툭 끊기지 않게 넘깁니다. 소리도 이음새에서 부드럽게 줄였다 키웁니다.": "Smooths over the jump where something was cut out. The sound is eased down and up at the join too.",
+  "전환 길이": "Transition length",
+  "움직임 느낌": "How it moves",
+  "빠르게": "Quick",
+  "탄력 있게": "Springy",
+  "움직임 잔상": "Motion blur",
 };

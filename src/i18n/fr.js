@@ -605,4 +605,13 @@ export default {
   "받으러 가기": "Télécharger",
   "이 버전은 다시 알리지 않습니다": "Ne plus signaler cette version",
   "건너뛰기": "Ignorer",
+  "살짝 당기기": "Léger zoom avant",
+  "어둡게 넘기기": "Fondu au noir",
+  "자른 곳 전환": "Transition aux coupes",
+  "잘라낸 곳에서 화면이 툭 끊기지 않게 넘깁니다. 소리도 이음새에서 부드럽게 줄였다 키웁니다.": "Adoucit le saut là où un passage a été coupé. Le son baisse et remonte doucement à la jonction.",
+  "전환 길이": "Durée de la transition",
+  "움직임 느낌": "Type de mouvement",
+  "빠르게": "Rapide",
+  "탄력 있게": "Avec rebond",
+  "움직임 잔상": "Flou de mouvement",
 };

@@ -605,4 +605,13 @@ export default {
   "받으러 가기": "Scarica",
   "이 버전은 다시 알리지 않습니다": "Non segnalare più questa versione",
   "건너뛰기": "Salta",
+  "살짝 당기기": "Leggero avvicinamento",
+  "어둡게 넘기기": "Dissolvenza al nero",
+  "자른 곳 전환": "Transizione ai tagli",
+  "잘라낸 곳에서 화면이 툭 끊기지 않게 넘깁니다. 소리도 이음새에서 부드럽게 줄였다 키웁니다.": "Ammorbidisce il salto dove è stato tagliato qualcosa. Anche l'audio scende e risale dolcemente nel punto di giunzione.",
+  "전환 길이": "Durata della transizione",
+  "움직임 느낌": "Tipo di movimento",
+  "빠르게": "Veloce",
+  "탄력 있게": "Elastico",
+  "움직임 잔상": "Sfocatura di movimento",
 };

@@ -192,6 +192,24 @@ async function exportExact(o, { screen, webcam, W, H, audioCtx, plan }) {
   // Sound may never run ahead of the picture: when drawing is slower than playback, sound that
   // arrives late (silence from a paused or finished player) is left out.
   let audioCap = 0;
+  // Where the finished video jumps over a cut, the sound is faded out and in over a few
+  // milliseconds (longer with the dip transition), so the jump does not click.
+  const cutTimes = segs.slice(1).filter((g, i) => Math.abs(g.s0 - segs[i].s1) > 1e-3).map((g) => g.o0);
+  const fadeLen = project.settings.cut?.transition === 'fade' ? Math.min(0.2, (project.settings.cut.duration || 0.3) / 2) : 0.02;
+  const softenCuts = (buf, n, start, sampleRate) => {
+    if (!cutTimes.length) return;
+    const t0 = start / sampleRate;
+    const t1 = (start + n) / sampleRate;
+    for (const c of cutTimes) {
+      if (c + fadeLen < t0 || c - fadeLen > t1) continue;
+      for (let i = 0; i < n; i++) {
+        const d = Math.abs((start + i) / sampleRate - c);
+        if (d >= fadeLen) continue;
+        const g = d / fadeLen;
+        for (let ch = 0; ch < CHANNELS; ch++) buf[ch * n + i] *= g;
+      }
+    }
+  };
   const audioLoop = (async () => {
     for (;;) {
       const { value, done } = await reader.read();
@@ -204,6 +222,7 @@ async function exportExact(o, { screen, webcam, W, H, audioCtx, plan }) {
       for (let c = 0; c < CHANNELS; c++) {
         value.copyTo(buf.subarray(c * n, (c + 1) * n), { planeIndex: Math.min(c, value.numberOfChannels - 1), format: 'f32-planar' });
       }
+      softenCuts(buf, n, samples, value.sampleRate);
       const data = new AudioData({
         format: 'f32-planar', sampleRate: value.sampleRate, numberOfFrames: n, numberOfChannels: CHANNELS,
         timestamp: Math.round((samples / value.sampleRate) * 1e6), data: buf,
@@ -238,7 +257,7 @@ async function exportExact(o, { screen, webcam, W, H, audioCtx, plan }) {
   const emitTo = (target) => {
     const stop = Math.min(total, target);
     while (slot < stop) {
-      renderFrame(ctx, { W, H, t: outToSrc(segs, slot / fps), screen, webcam, project, derived: o.derived, burnSubtitles: o.burnSubtitles, url: o.url });
+      renderFrame(ctx, { W, H, t: outToSrc(segs, slot / fps), screen, webcam, project, derived: o.derived, burnSubtitles: o.burnSubtitles, url: o.url, segs });
       const frame = new VideoFrame(canvas, { timestamp: Math.round(slot * frameUs), duration: Math.round(frameUs) });
       venc.encode(frame, { keyFrame: slot % keyEvery === 0 });
       frame.close();

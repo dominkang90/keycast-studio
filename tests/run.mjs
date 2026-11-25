@@ -6,9 +6,9 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { buildKeyGroups, visibleGroups, DRAG_LABEL, keepWithoutTyping } from '../src/lib/keys.js';
 import { segments, outDuration, srcToOut, outToSrc, mapCues } from '../src/lib/timemap.js';
-import { autoZoomRegions, cameraAt, CursorTrack, viewRect } from '../src/lib/zoom.js';
+import { autoZoomRegions, cameraAt, CursorTrack, viewRect, easeIn } from '../src/lib/zoom.js';
 import { shapeSubtitles, toSRT, wrapLines, cueWords, SUBTITLE_STYLES } from '../src/lib/subtitles.js';
-import { drawSubtitle, drawClicks, CLICK_EFFECTS } from '../src/lib/compositor.js';
+import { drawSubtitle, drawClicks, CLICK_EFFECTS, cutPhase } from '../src/lib/compositor.js';
 import { HangulComposer, hangulText, jamoForKey } from '../src/lib/hangul.js';
 import { readExtension, applyBackground, EXAMPLE_EXTENSION } from '../src/lib/extensions.js';
 import { findSilences, busyTimes } from '../src/lib/silence.js';
@@ -355,6 +355,33 @@ test('quiet parts with typing or clicks are kept', () => {
 test('a recording without clear talk gets no cuts', () => {
   assert.equal(findSilences(new Float32Array(16000 * 3), 16000).cuts.length, 0);
   assert.equal(findSilences(talkAndPause([[3, true]]), 16000).cuts.length, 0);
+});
+
+test('cut transitions play only around real cuts', () => {
+  const project = { durationMs: 10000, trim: { start: 0, end: 10 }, cuts: [{ start: 4, end: 6 }], speeds: [{ start: 7, end: 9, speed: 2 }] };
+  const segs = segments(project);
+  const zoom = { transition: 'zoom', duration: 0.4 };
+  assert.equal(cutPhase(3.9, segs, zoom).k, 0); // a push-in plays after the cut only
+  assert.ok(Math.abs(cutPhase(6.0, segs, zoom).k - 1) < 1e-6);
+  assert.ok(Math.abs(cutPhase(6.2, segs, zoom).k - 0.5) < 1e-6);
+  assert.equal(cutPhase(6.5, segs, zoom).k, 0);
+  const fade = { transition: 'fade', duration: 0.4 };
+  assert.ok(Math.abs(cutPhase(3.9, segs, fade).k - 0.5) < 1e-6);
+  assert.equal(cutPhase(3.9, segs, fade).side, -1);
+  // a speed change is not a cut, nor are the start and end of the video
+  assert.equal(cutPhase(7.0, segs, fade).k, 0);
+  assert.equal(cutPhase(0.05, segs, fade).k, 0);
+  assert.equal(cutPhase(9.95, segs, fade).k, 0);
+  assert.equal(cutPhase(6.0, segs, { transition: 'none' }).k, 0);
+});
+
+test('zoom feels start at 0 and end at 1; spring goes past', () => {
+  for (const feel of ['smooth', 'quick', 'spring']) {
+    assert.ok(Math.abs(easeIn(0, feel)) < 1e-6, feel);
+    assert.ok(Math.abs(easeIn(1, feel) - 1) < 1e-3, feel);
+  }
+  assert.ok(easeIn(0.3, 'quick') > easeIn(0.3, 'smooth'));
+  assert.ok(Math.max(...[0.5, 0.6, 0.7, 0.8, 0.9].map((k) => easeIn(k, 'spring'))) > 1.05);
 });
 
 test('every interface text has an English translation', async () => {

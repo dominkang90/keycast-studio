@@ -605,4 +605,13 @@ export default {
   "받으러 가기": "Herunterladen",
   "이 버전은 다시 알리지 않습니다": "Diese Version nicht mehr melden",
   "건너뛰기": "Überspringen",
+  "살짝 당기기": "Leicht heranzoomen",
+  "어둡게 넘기기": "Abblende",
+  "자른 곳 전환": "Übergang an Schnitten",
+  "잘라낸 곳에서 화면이 툭 끊기지 않게 넘깁니다. 소리도 이음새에서 부드럽게 줄였다 키웁니다.": "Glättet den Sprung an geschnittenen Stellen. Auch der Ton wird an der Nahtstelle sanft aus- und eingeblendet.",
+  "전환 길이": "Übergangsdauer",
+  "움직임 느낌": "Bewegungsart",
+  "빠르게": "Schnell",
+  "탄력 있게": "Federnd",
+  "움직임 잔상": "Bewegungsunschärfe",
 };

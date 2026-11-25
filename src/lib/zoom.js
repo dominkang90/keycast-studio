@@ -1,7 +1,7 @@
 // Auto-zoom on clicks and the smoothed camera that follows the cursor.
 // Positions are normalised (0..1) across the recorded screen; times are seconds.
 
-export const ZOOM_DEFAULTS = { enabled: true, scale: 1.8, follow: true, ramp: 0.55 };
+export const ZOOM_DEFAULTS = { enabled: true, scale: 1.8, follow: true, ramp: 0.55, feel: 'smooth', motionBlur: 0.5 };
 
 let idSeq = 1;
 export function newId(prefix = 'z') {
@@ -157,6 +157,19 @@ export class CursorTrack {
 }
 
 const ease = (k) => (k < 0.5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2);
+/**
+ * How a zoom moves in: smooth (slow start and end), quick (gets there fast, then settles)
+ * or spring (goes a little past and comes back). Zooming out is always smooth.
+ */
+export const ZOOM_FEELS = ['smooth', 'quick', 'spring'];
+export function easeIn(k, feel) {
+  if (feel === 'quick') return k >= 1 ? 1 : 1 - Math.pow(2, -10 * k);
+  if (feel === 'spring') {
+    const c = 1.6;
+    return 1 + (c + 1) * Math.pow(k - 1, 3) + c * Math.pow(k - 1, 2);
+  }
+  return ease(k);
+}
 
 /** Camera at time t: zoom factor and the normalised point it looks at. */
 export function cameraAt(t, regions, cursor, opts = ZOOM_DEFAULTS) {
@@ -195,7 +208,7 @@ function rawCamera(t, regions, cursor, opts) {
   for (const r of regions) {
     if (t < r.start - 0.001 || t > r.end + ramp) continue;
     let amount;
-    if (t < r.start + ramp) amount = ease(Math.max(0, (t - r.start) / ramp));
+    if (t < r.start + ramp) amount = easeIn(Math.max(0, (t - r.start) / ramp), opts.feel);
     else if (t > r.end) amount = ease(Math.max(0, 1 - (t - r.end) / ramp));
     else amount = 1;
     if (amount <= 0) continue;

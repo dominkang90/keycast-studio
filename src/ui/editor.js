@@ -3,7 +3,7 @@
 import { platform, isDesktop } from '../lib/platform.js';
 import { buildKeyGroups, KEY_DEFAULTS } from '../lib/keys.js';
 import { clicksOf, CursorTrack, autoZoomRegions, newId } from '../lib/zoom.js';
-import { renderFrame, projectOutputSize, BACKGROUNDS, WALLPAPERS, CURSOR_STYLES, CLICK_EFFECTS, MOTION_PRESETS, NOTE_TYPES, defaultSettings, newNote, noteRect } from '../lib/compositor.js';
+import { renderFrame, projectOutputSize, BACKGROUNDS, WALLPAPERS, CURSOR_STYLES, CLICK_EFFECTS, MOTION_PRESETS, NOTE_TYPES, CUT_TRANSITIONS, defaultSettings, newNote, noteRect } from '../lib/compositor.js';
 import { Timeline, fmt, listOfKind } from '../lib/timeline.js';
 import { transcribe, decodeAudio, MODELS, LANGUAGES } from '../lib/transcribe.js';
 import { findSilences, busyTimes } from '../lib/silence.js';
@@ -374,7 +374,7 @@ export async function openEditor(id, preloaded) {
     }
     screen.volume = Math.min(1, Math.max(0, project.settings.audio?.volume ?? 1));
     syncAudios(ed.audioEls, project, segs, t, !screen.paused);
-    renderFrame(pctx, { W: preview.width, H: preview.height, t, screen, webcam, project, derived: ed.derived, url, selectedNote: ed.selected?.kind === 'note' ? ed.selected.id : null });
+    renderFrame(pctx, { W: preview.width, H: preview.height, t, screen, webcam, project, derived: ed.derived, url, segs: ed.segs, selectedNote: ed.selected?.kind === 'note' ? ed.selected.id : null });
     const now = performance.now();
     if (now - ed.lastTimelineDraw > 50) {
       ed.lastTimelineDraw = now;
@@ -543,6 +543,11 @@ export async function openEditor(id, preloaded) {
             cut ? h('div', { style: { marginTop: '12px' } },
               h('div', { class: 'field-label', style: { marginBottom: '6px' } }, T('선택한 구간 {0} ~ {1}', fmt(cut.start, true), fmt(cut.end, true))),
               h('div', { class: 'row' }, edge(cut, 'start'), edge(cut, 'end'), h('button', { class: 'btn small danger', onclick: removeSelected }, T('되살리기')))) : null),
+          h('div', { class: 'section' },
+            h('h3', {}, T('자른 곳 전환')),
+            h('div', { class: 'small muted', style: { marginBottom: '10px' } }, T('잘라낸 곳에서 화면이 툭 끊기지 않게 넘깁니다. 소리도 이음새에서 부드럽게 줄였다 키웁니다.')),
+            segField('', s.cut.transition, CUT_TRANSITIONS, (v) => { s.cut.transition = v; markDirty(); drawPanel(); }, 2),
+            s.cut.transition !== 'none' ? rangeField(T('전환 길이'), s.cut.duration, 0.15, 0.8, 0.05, (v) => { s.cut.duration = v; markDirty(); }, (v) => T('{0}초', v.toFixed(2))) : null),
           silenceSection(),
           h('div', { class: 'section' },
             h('h3', {}, T('속도 바꾸기')),
@@ -563,6 +568,8 @@ export async function openEditor(id, preloaded) {
             ? T('창을 녹화하면 클릭 위치를 알 수 없어 자동 확대가 만들어지지 않습니다. 타임라인 줌 줄을 더블클릭해 직접 넣을 수 있어요.')
             : T('이 녹화에는 마우스 위치 기록이 없습니다. 줌 줄을 더블클릭해 직접 넣을 수 있어요.')) : null,
           inlineSwitch(T('줌 효과 사용'), s.zoom.enabled, (v) => { s.zoom.enabled = v; markDirty(); }),
+          segField(T('움직임 느낌'), s.zoom.feel || 'smooth', [{ id: 'smooth', name: T('부드럽게') }, { id: 'quick', name: T('빠르게') }, { id: 'spring', name: T('탄력 있게') }], (v) => { s.zoom.feel = v; markDirty(); }),
+          rangeField(T('움직임 잔상'), s.zoom.motionBlur ?? 0.5, 0, 1, 0.05, (v) => { s.zoom.motionBlur = v; markDirty(); }, (v) => (v ? `${Math.round(v * 100)}%` : T('끔'))),
           h('button', { class: 'btn wide', disabled: noCursor, onclick: () => {
             project.zooms = [...project.zooms.filter((z) => !z.auto), ...autoZoomRegions(project.events, project.durationMs / 1000, s.zoom.scale)].sort((a, b) => a.start - b.start);
             ed.selected = null;

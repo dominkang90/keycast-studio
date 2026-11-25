@@ -4,6 +4,7 @@
 
 import { visibleGroups, KEY_DEFAULTS, isModifier } from './keys.js';
 import { cameraAt, viewRect } from './zoom.js';
+import { segments, segIndexAt } from './timemap.js';
 import { cueAt, cueWords, lineLimit, SUBTITLE_DEFAULTS } from './subtitles.js';
 import { CURSOR_STYLES, cursorShape, isCentred } from './cursors.js';
 import { T } from './i18n.js';
@@ -41,7 +42,8 @@ export const FULL_CROP = { x: 0, y: 0, w: 1, h: 1 };
 export function defaultSettings() {
   return {
     frame: { aspect: '16:9', background: 'aurora', image: null, blur: 0, padding: 7, radius: 14, shadow: true, shadowSize: 1, crop: { ...FULL_CROP } },
-    zoom: { enabled: true, scale: 1.8, follow: true, ramp: 0.55 },
+    zoom: { enabled: true, scale: 1.8, follow: true, ramp: 0.55, feel: 'smooth', motionBlur: 0.5 },
+    cut: { transition: 'zoom', duration: 0.3 },
     cursor: {
       clicks: true, effect: 'ripple', clickSize: 1, clickDur: 0.65, clickOpacity: 1, highlight: false, color: '#ffd33d', scrolls: true,
       show: false, style: 'arrow', size: 1.6, smoothing: 0.25, motionBlur: 0.3, bounce: 0.5, bounceDur: 0.28, sway: 0.3, loop: false, idleHide: 0,
@@ -220,7 +222,7 @@ export function contentRect(W, H, sw, sh, frame) {
   return { x: (W - w) / 2, y: (H - h) / 2, w, h };
 }
 
-function drawScreen(ctx, video, rect, view, frame, scaleUnit) {
+function drawScreen(ctx, video, rect, view, frame, scaleUnit, blurPx = 0) {
   const radius = frame.background === 'none' ? 0 : (frame.radius ?? 14) * scaleUnit;
   const shadow = frame.shadow ? (frame.shadowSize ?? 1) : 0;
   if (shadow > 0 && frame.background !== 'none') {
@@ -254,8 +256,25 @@ function drawScreen(ctx, video, rect, view, frame, scaleUnit) {
   const vh = video?.videoHeight || video?.displayHeight || 0;
   if (vw && vh) {
     ctx.imageSmoothingQuality = 'high';
+    if (blurPx > 0.3) ctx.filter = `blur(${blurPx.toFixed(1)}px)`;
     ctx.drawImage(video, view.x * vw, view.y * vh, view.w * vw, view.h * vh, rect.x, rect.y, rect.w, rect.h);
   }
+  ctx.restore();
+}
+
+/** Faint copies of the screen along the way the camera just moved: motion blur for zoom and pan. */
+function drawCameraTrail(ctx, video, rect, views, frame, scaleUnit, strength) {
+  const vw = video?.videoWidth || video?.displayWidth || 0;
+  const vh = video?.videoHeight || video?.displayHeight || 0;
+  if (!vw || !vh || strength <= 0) return;
+  const radius = frame.background === 'none' ? 0 : (frame.radius ?? 14) * scaleUnit;
+  ctx.save();
+  roundRect(ctx, rect.x, rect.y, rect.w, rect.h, radius);
+  ctx.clip();
+  views.forEach((v, i) => {
+    ctx.globalAlpha = strength * (0.45 - i * 0.1);
+    ctx.drawImage(video, v.x * vw, v.y * vh, v.w * vw, v.h * vh, rect.x, rect.y, rect.w, rect.h);
+  });
   ctx.restore();
 }
 
@@ -980,6 +999,48 @@ export function drawSubtitle(ctx, W, H, t, subtitles, opts, unit, bottomOffset =
   return pos === 'bottom' ? blockH + 12 * unit : 0;
 }
 
+// ---- cut transitions
+export const CUT_TRANSITIONS = [
+  { id: 'none', name: T('없음') },
+  { id: 'zoom', name: T('살짝 당기기') },
+  { id: 'fade', name: T('어둡게 넘기기') },
+  { id: 'blur', name: T('흐리게') },
+];
+
+let segCache = { key: '', segs: [] };
+function segmentsOf(project) {
+  const key = JSON.stringify([project.durationMs, project.trim, project.cuts, project.speeds]);
+  if (key !== segCache.key) segCache = { key, segs: segments(project) };
+  return segCache.segs;
+}
+
+/**
+ * How close recording time t is to a cut, in the finished video: k goes 1 at the cut to 0 at
+ * the edge of the transition; side is -1 before the cut and 1 after it.
+ * A push-in only plays after the cut, over the whole length; a dip or blur is split around it.
+ */
+export function cutPhase(t, segs, opts) {
+  const style = opts?.transition || 'none';
+  const none = { k: 0, side: 0, style };
+  if (style === 'none' || !segs?.length) return none;
+  const i = segIndexAt(segs, t);
+  if (i < 0) return none;
+  const g = segs[i];
+  const dur = Math.max(0.05, opts.duration || 0.3);
+  const after = style === 'zoom' ? dur : dur / 2;
+  const before = style === 'zoom' ? 0 : dur / 2;
+  const since = (t - g.s0) / g.speed;
+  const left = (g.s1 - t) / g.speed;
+  let k = 0;
+  let side = 0;
+  if (i > 0 && Math.abs(g.s0 - segs[i - 1].s1) > 1e-3 && since < after) { k = 1 - since / after; side = 1; }
+  if (before && i < segs.length - 1 && Math.abs(segs[i + 1].s0 - g.s1) > 1e-3 && left < before) {
+    const k2 = 1 - left / before;
+    if (k2 > k) { k = k2; side = -1; }
+  }
+  return { k: Math.max(0, Math.min(1, k)), side, style };
+}
+
 /**
  * @param {CanvasRenderingContext2D} ctx
  * @param {{W:number,H:number,t:number,screen:HTMLVideoElement,webcam?:HTMLVideoElement,
@@ -998,9 +1059,27 @@ export function renderFrame(ctx, f) {
   const rect = contentRect(W, H, srcW * crop.w, srcH * crop.h, s.frame);
   // The camera works inside the cropped picture; `view` is the part of the whole recording shown.
   const cam = cameraAt(t, project.zooms || [], derived.cursor, s.zoom);
-  const inCrop = viewRect({ scale: cam.scale, x: clamp01((cam.x - crop.x) / crop.w), y: clamp01((cam.y - crop.y) / crop.h) });
-  const view = { x: crop.x + inCrop.x * crop.w, y: crop.y + inCrop.y * crop.h, w: inCrop.w * crop.w, h: inCrop.h * crop.h };
-  drawScreen(ctx, f.screen, rect, view, s.frame, unit);
+  // Just around a cut: the transition picked in Edit > Cut (a small push-in, a dip or a blur).
+  const cut = cutPhase(t, f.segs || segmentsOf(project), s.cut);
+  if (cut.style === 'zoom' && cut.side > 0) cam.scale *= 1 + 0.07 * cut.k * cut.k;
+  const viewOf = (c) => {
+    const inCrop = viewRect({ scale: c.scale, x: clamp01((c.x - crop.x) / crop.w), y: clamp01((c.y - crop.y) / crop.h) });
+    return { x: crop.x + inCrop.x * crop.w, y: crop.y + inCrop.y * crop.h, w: inCrop.w * crop.w, h: inCrop.h * crop.h };
+  };
+  const view = viewOf(cam);
+  drawScreen(ctx, f.screen, rect, view, s.frame, unit, cut.style === 'blur' ? cut.k * 16 * unit : 0);
+  // Motion blur while the camera zooms or pans quickly (not across a cut: that is a jump).
+  const blurAmount = s.zoom.motionBlur ?? 0;
+  if (blurAmount > 0 && s.zoom.enabled && project.zooms?.length && cut.k === 0) {
+    const dt = 1 / 30;
+    const back = viewOf(cameraAt(t - dt, project.zooms, derived.cursor, s.zoom));
+    const move = (Math.abs(back.x - view.x) + Math.abs(back.y - view.y) + Math.abs(back.w - view.w)) / view.w;
+    const strength = Math.min(1, Math.max(0, (move - 0.004) * 25)) * blurAmount;
+    if (strength > 0.02) {
+      const mix = (a) => ({ x: view.x + (back.x - view.x) * a, y: view.y + (back.y - view.y) * a, w: view.w + (back.w - view.w) * a, h: view.h + (back.h - view.h) * a });
+      drawCameraTrail(ctx, f.screen, rect, [mix(0.33), mix(0.66), mix(1)], s.frame, unit, strength);
+    }
+  }
 
   ctx.save();
   ctx.beginPath();
@@ -1014,6 +1093,12 @@ export function renderFrame(ctx, f) {
   if (s.cursor.clicks && s.cursor.effect !== 'none') drawClicks(ctx, t, derived.clicks, rect, view, s.cursor, unit, cam.scale);
   if (s.cursor.scrolls !== false && derived.scrolls?.length) drawScrolls(ctx, t, derived.scrolls, rect, view, s.cursor, unit);
   if (s.cursor.show && hasCursor) drawCursor(ctx, t, derived, rect, view, s.cursor, unit, cam.scale, project.trim);
+  if (cut.style === 'fade' && cut.k > 0) {
+    ctx.globalAlpha = Math.min(1, cut.k * 1.1);
+    ctx.fillStyle = '#000';
+    ctx.fillRect(rect.x, rect.y, rect.w, rect.h);
+    ctx.globalAlpha = 1;
+  }
   ctx.restore();
 
   if (project.annotations?.length) drawNotes(ctx, W, H, t, project.annotations, f.url, f.selectedNote);

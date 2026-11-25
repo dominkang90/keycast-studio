@@ -2,7 +2,7 @@
 
 import { platform } from '../lib/platform.js';
 import { autoZoomRegions } from '../lib/zoom.js';
-import { newNote } from '../lib/compositor.js';
+import { newNote, renderFrame } from '../lib/compositor.js';
 import { transcribe, decodeAudio } from '../lib/transcribe.js';
 import { findSilences } from '../lib/silence.js';
 import { toSRT } from '../lib/subtitles.js';
@@ -156,6 +156,28 @@ export async function selfTest() {
     const segs = segments(p);
     const expected = outDuration(segs);
     ok('time map', Math.abs(expected - (total - 1 - (Math.min(total, 4.5) - 2.5) / 2)) < 0.01, `${expected.toFixed(2)}s from ${total.toFixed(2)}s`);
+    // v2.7: the dip transition darkens the screen right after the cut at 2.0 s; with none it does not.
+    {
+      ed.screen.currentTime = 2.0;
+      await new Promise((r) => { ed.screen.addEventListener('seeked', r, { once: true }); setTimeout(r, 3000); });
+      const c = document.createElement('canvas');
+      c.width = 640;
+      c.height = 360;
+      const cx = c.getContext('2d', { willReadFrequently: true });
+      const light = (transition) => {
+        p.settings.cut = { transition, duration: 0.4 };
+        renderFrame(cx, { W: 640, H: 360, t: 2.0, screen: ed.screen, project: p, derived: ed.derived, segs });
+        const d = cx.getImageData(200, 120, 240, 120).data;
+        let sum = 0;
+        for (let i = 0; i < d.length; i += 4) sum += d[i] + d[i + 1] + d[i + 2];
+        return sum / (d.length / 4) / 3;
+      };
+      const plain = light('none');
+      const dipped = light('fade');
+      light('zoom'); // draws without errors
+      ok('cut transition draws', dipped < plain - 5 && dipped < plain * 0.6, `none ${plain.toFixed(0)} · dip ${dipped.toFixed(0)}`);
+      p.settings.cut = { transition: 'zoom', duration: 0.3 };
+    }
     ed.screen.currentTime = 0.9;
     await sleep(700);
     await api.selftestShot('editor2');

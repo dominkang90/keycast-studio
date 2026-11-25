@@ -134,7 +134,7 @@ On a Mac, `Alt` is the `Option` key and `Ctrl` + `Z` / `Y` is `Cmd` + `Z` / `Y`.
 
 This is a beta.
 
-- **Windows:** checked by hand on one computer (Windows 11, Intel Arc graphics, a 2880×1800 screen, one monitor), including the installer, the portable exe and the built-in self-test of 29 checks.
+- **Windows:** checked by hand on one computer (Windows 11, Intel Arc graphics, a 2880×1800 screen, one monitor), including the installer, the portable exe and the built-in self-test of 30 checks.
 - **macOS and Linux:** built on GitHub's machines for every release and started once in a smoke test (the window opens, the home screen draws, the key hook loads). Nobody has recorded on a real Mac or Linux desktop yet.
 
 Not yet checked: Windows 10, NVIDIA and AMD graphics, more than one monitor, a real microphone and webcam together with the hidden-pointer recording, and anything on a real Mac or Linux computer. If you try it, a [test report](https://github.com/dominkang90/keycast-studio/issues/new?template=test_report.yml) takes two minutes and helps a lot.

@@ -605,4 +605,13 @@ export default {
   "받으러 가기": "Baixar",
   "이 버전은 다시 알리지 않습니다": "Não avisar mais sobre esta versão",
   "건너뛰기": "Pular",
+  "살짝 당기기": "Aproximar um pouco",
+  "어둡게 넘기기": "Fade para preto",
+  "자른 곳 전환": "Transição nos cortes",
+  "잘라낸 곳에서 화면이 툭 끊기지 않게 넘깁니다. 소리도 이음새에서 부드럽게 줄였다 키웁니다.": "Suaviza o salto onde algo foi cortado. O som também desce e sobe suavemente na emenda.",
+  "전환 길이": "Duração da transição",
+  "움직임 느낌": "Tipo de movimento",
+  "빠르게": "Rápido",
+  "탄력 있게": "Com mola",
+  "움직임 잔상": "Desfoque de movimento",
 };
