@@ -565,4 +565,12 @@ export default {
   "단축키·부드러운 커서": "Kürzel, weicher Zeiger",
   "그냥 녹화": "Einfach aufnehmen",
   "화면과 소리만": "Nur Bild und Ton",
+  "자세히": "Mehr",
+  "꾸미기": "Aussehen",
+  "편집": "Schnitt",
+  "소리·자막": "Ton & Untertitel",
+  "추천 스타일": "Vorgeschlagene Stile",
+  "처음 모양으로": "Zurück zum Standard-Aussehen",
+  "기본": "Standard",
+  "배경·키·커서·클릭 효과·자막 모양을 한 번에 바꿉니다. 하나씩은 아래와 다른 탭에서 고칠 수 있습니다.": "Ändert Hintergrund, Tasten, Zeiger, Klickeffekt und Untertitelstil auf einmal. Einzelheiten unten und in den anderen Bereichen.",
 };

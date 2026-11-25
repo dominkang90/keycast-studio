@@ -10,12 +10,13 @@ import { toSRT, SUBTITLE_STYLES } from '../lib/subtitles.js';
 import { exportVideo, exportFormats } from '../lib/exporter.js';
 import { setLabel } from '../lib/icons.js';
 import { segments, outDuration, srcToOut, segIndexAt, mapCues, syncAudios } from '../lib/timemap.js';
-import { h, toast, app, mount, topbar, inlineSwitch, rangeField, selectField, segField, colorField, positionField, formatBytes, safeFileName } from './dom.js';
+import { h, toast, app, mount, topbar, inlineSwitch, rangeField, selectField, segField, colorField, positionField, formatBytes, safeFileName, more } from './dom.js';
 import { store, state, loadExtensions, extensionItems } from './state.js';
-import { applyBackground } from '../lib/extensions.js';
+import { applyBackground, readExtension } from '../lib/extensions.js';
 import { keyPanel } from './key-panel.js';
 import { showHome } from './home.js';
 import { openShortcuts } from './dialogs.js';
+import { OFFICIAL_EXTENSIONS } from '../lib/official-extensions.js';
 import { T } from '../lib/i18n.js';
 // ------------------------------------------------------------------ editor
 export function derive(project) {
@@ -121,13 +122,34 @@ export async function openEditor(id, preloaded) {
   const saveTag = h('span', { class: 'small muted' }, T('저장됨'));
   const sideBody = h('div', { class: 'side-body' });
   const sideTabs = h('div', { class: 'side-tabs' });
+  const sideSub = h('div', { class: 'side-sub', role: 'tablist' });
 
+  // Nine panels in three groups: how it looks, what is in it, what is heard and read.
   const tabs = [
     ['frame', '🖼', T('화면')], ['clip', '✂', T('자르기')], ['zoom', '🔍', T('줌')], ['notes', '✏', T('주석')], ['keys', '⌨', T('키')],
     ['cursor', '🖱', T('커서')], ['webcam', '🙂', T('웹캠')], ['audio', '🔊', T('소리')], ['subs', '💬', T('자막')],
   ];
-  const drawTabs = () => sideTabs.replaceChildren(...tabs.map(([k, ic, n]) =>
-    h('button', { class: ed.tab === k ? 'on' : '', title: n, onclick: () => { ed.tab = k; drawTabs(); drawPanel(); } }, h('span', { class: 'ic' }, ic), h('span', {}, n))));
+  const groups = [
+    ['look', '🎨', T('꾸미기'), ['frame', 'cursor', 'keys', 'webcam']],
+    ['edit', '✂', T('편집'), ['clip', 'zoom', 'notes']],
+    ['sound', '💬', T('소리·자막'), ['subs', 'audio']],
+  ];
+  const groupOf = (tab) => groups.find((g) => g[3].includes(tab)) || groups[0];
+  ed.lastTab = ed.lastTab || {};
+  const openTab = (k) => { ed.tab = k; ed.lastTab[groupOf(k)[0]] = k; drawTabs(); drawPanel(); };
+  const drawTabs = () => {
+    const cur = groupOf(ed.tab);
+    ed.lastTab[cur[0]] = ed.tab;
+    sideTabs.replaceChildren(...groups.map(([id, ic, n, list]) =>
+      h('button', { class: cur[0] === id ? 'on' : '', title: n, onclick: () => openTab(ed.lastTab[id] || list[0]) }, h('span', { class: 'ic' }, ic), h('span', {}, n))));
+    sideSub.replaceChildren(...cur[3].map((k) => {
+      const [, ic, n] = tabs.find((x) => x[0] === k);
+      return h('button', { class: ed.tab === k ? 'on' : '', role: 'tab', 'aria-selected': String(ed.tab === k), onclick: () => openTab(k) }, `${ic} ${n}`);
+    }));
+    // The timeline shows the rows in use, and the one this panel works on.
+    // (the timeline exists once the editor is built)
+    try { timeline.setFocus({ clip: 'speed', zoom: 'zoom', notes: 'notes', audio: 'audio', keys: 'keys', subs: 'subs' }[ed.tab] || null); } catch { /* not built yet */ }
+  };
 
   const url = (name) => platform.mediaUrl(project.id, name);
   // With the ffmpeg capture the webcam and microphone files begin a moment after the picture.
@@ -387,6 +409,46 @@ export async function openEditor(id, preloaded) {
       h('div', { class: 'ext-row' }, items.map((it) => h('button', { class: 'btn small', title: T('{0}에서', it.from), onclick: () => { apply(it); markDirty(); drawPanel(); } }, it.name))));
   }
 
+  /** A whole look in one click: background, key theme, pointer, click effect and subtitle style. */
+  function styleStrip() {
+    const s = project.settings;
+    const packs = OFFICIAL_EXTENSIONS.map((o) => readExtension(o.folder, o.json)).filter((e) => e.count);
+    const d = defaultSettings();
+    const apply = (e) => {
+      const f = s.frame;
+      if (!e) {
+        Object.assign(f, { background: d.frame.background, image: null, custom: null });
+        s.keys.theme = d.keys.theme;
+        Object.assign(s.cursor, { style: d.cursor.style, look: null, lookName: null, effect: d.cursor.effect, color: d.cursor.color, clickSize: d.cursor.clickSize, clickDur: d.cursor.clickDur, clickOpacity: d.cursor.clickOpacity });
+        Object.assign(s.subtitles, { style: d.subtitles.style, textColor: d.subtitles.textColor, highlight: d.subtitles.highlight, bgOpacity: d.subtitles.bgOpacity, anim: d.subtitles.anim });
+        project.styleName = null;
+      } else {
+        if (e.backgrounds[0]) applyBackground(f, e.backgrounds[0]);
+        if (e.keyThemes[0]) { s.keys.theme = 'custom'; s.keys.custom = { ...s.keys.custom, ...e.keyThemes[0].custom }; }
+        if (e.cursorPacks[0]) { s.cursor.style = 'custom'; s.cursor.look = { ...e.cursorPacks[0].look }; s.cursor.lookName = e.cursorPacks[0].name; }
+        if (e.clickEffects[0]) Object.assign(s.cursor, e.clickEffects[0].values);
+        if (e.subtitleStyles[0]) Object.assign(s.subtitles, e.subtitleStyles[0].values);
+        project.styleName = e.id;
+      }
+      markDirty();
+      drawPanel();
+    };
+    const swatch = (e) => {
+      const b = e?.backgrounds[0];
+      const bg = !b ? 'linear-gradient(135deg, #8b5cf6, #ec4899)' : b.kind === 'gradient' ? `linear-gradient(${b.angle}deg, ${b.stops.join(', ')})`
+        : b.kind === 'blobs' ? `${b.blobs.map(([x, y, r, c]) => `radial-gradient(circle at ${x * 100}% ${y * 100}%, ${c}, transparent ${r * 100}%)`).join(', ')}, ${b.base}` : '#333';
+      const key = e?.keyThemes[0]?.custom;
+      return h('span', { class: 'style-swatch', style: { background: bg } },
+        h('span', { class: 'style-key', style: key ? { background: key.face, color: key.text, borderColor: key.borderColor } : {} }, 'Ctrl'));
+    };
+    return h('div', { class: 'styles' },
+      h('div', { class: 'field-label' }, T('추천 스타일')),
+      h('div', { class: 'style-row' },
+        h('button', { class: `style-card${!project.styleName ? ' on' : ''}`, title: T('처음 모양으로'), onclick: () => apply(null) }, swatch(null), h('span', {}, T('기본'))),
+        packs.map((e) => h('button', { class: `style-card${project.styleName === e.id ? ' on' : ''}`, title: e.description || e.name, onclick: () => apply(e) }, swatch(e), h('span', {}, e.name)))),
+      h('div', { class: 'small muted' }, T('배경·키·커서·클릭 효과·자막 모양을 한 번에 바꿉니다. 하나씩은 아래와 다른 탭에서 고칠 수 있습니다.')));
+  }
+
   function drawPanel() {
     const s = project.settings;
     const panels = {
@@ -407,6 +469,7 @@ export async function openEditor(id, preloaded) {
         const cropField = (label, key) => rangeField(label, Math.round(edges[key] * 100), 0, 45, 1, (v) => { edges[key] = v / 100; setCrop(); }, (v) => `${v}%`);
         return [
           h('h3', {}, T('화면 꾸미기')),
+          styleStrip(),
           segField(T('영상 비율'), f.aspect, [{ id: '16:9', name: '16:9' }, { id: '9:16', name: '9:16' }, { id: '1:1', name: '1:1' }, { id: '4:3', name: '4:3' }, { id: 'source', name: T('원본') }],
             (v) => { f.aspect = v; sizePreview(); markDirty(); }),
           h('div', { class: 'field' }, h('label', {}, T('배경 색')),
@@ -431,10 +494,12 @@ export async function openEditor(id, preloaded) {
                 const picked = await platform.importAsset(project.id, 'image', 'bg');
                 if (picked) setBg('image', picked.name);
               } }, ownImage ? null : '＋', h('small', {}, T('내 그림')))),
-            isDesktop ? h('div', { class: 'row', style: { marginTop: '4px' } },
+          ),
+          more('frame', [
+            isDesktop ? h('div', { class: 'row', style: { marginBottom: '4px' } },
               h('button', { class: 'btn small', onclick: () => platform.openWallpapers() }, T('📁 배경 그림 폴더')),
               h('button', { class: 'btn small ghost', title: T('폴더에 넣은 그림 다시 읽기'), onclick: loadWallpapers }, '↻')) : null,
-            isDesktop ? h('div', { class: 'small muted' }, T('이 폴더에 그림을 넣으면 여기에 나타납니다.')) : null),
+            isDesktop ? h('div', { class: 'small muted', style: { marginBottom: '12px' } }, T('이 폴더에 그림을 넣으면 여기에 나타납니다.')) : null,
           isPicture ? rangeField(T('배경 흐림'), f.blur || 0, 0, 40, 1, (v) => { f.blur = v; markDirty(); }, (v) => (v ? `${v}px` : T('없음'))) : null,
           f.background === 'none' ? h('div', { class: 'hint' }, T('배경 없음: 녹화 화면을 꽉 채웁니다.')) : [
             rangeField(T('여백'), f.padding, 0, 20, 0.5, (v) => { f.padding = v; markDirty(); }, (v) => `${v}%`),
@@ -447,6 +512,7 @@ export async function openEditor(id, preloaded) {
             h('div', { class: 'small muted', style: { marginBottom: '10px' } }, T('녹화된 화면의 가장자리를 잘라 필요한 부분만 남깁니다.')),
             cropField(T('왼쪽'), 'l'), cropField(T('오른쪽'), 'r'), cropField(T('위'), 't'), cropField(T('아래'), 'b'),
             h('button', { class: 'btn small', onclick: () => { f.crop = { x: 0, y: 0, w: 1, h: 1 }; sizePreview(); markDirty(); drawPanel(); } }, T('잘라내기 취소'))),
+          ]),
         ];
       },
       clip: () => {
@@ -492,9 +558,6 @@ export async function openEditor(id, preloaded) {
             ? T('창을 녹화하면 클릭 위치를 알 수 없어 자동 확대가 만들어지지 않습니다. 타임라인 줌 줄을 더블클릭해 직접 넣을 수 있어요.')
             : T('이 녹화에는 마우스 위치 기록이 없습니다. 줌 줄을 더블클릭해 직접 넣을 수 있어요.')) : null,
           inlineSwitch(T('줌 효과 사용'), s.zoom.enabled, (v) => { s.zoom.enabled = v; markDirty(); }),
-          inlineSwitch(T('확대 중 커서 따라가기'), s.zoom.follow, (v) => { s.zoom.follow = v; markDirty(); }),
-          rangeField(T('확대 배율 (새로 만들 때)'), s.zoom.scale, 1.2, 3, 0.1, (v) => { s.zoom.scale = v; markDirty(); }, (v) => `${v.toFixed(1)}×`),
-          rangeField(T('확대 속도'), s.zoom.ramp, 0.2, 1.2, 0.05, (v) => { s.zoom.ramp = v; markDirty(); }, (v) => T('{0}초', v.toFixed(2))),
           h('button', { class: 'btn wide', disabled: noCursor, onclick: () => {
             project.zooms = [...project.zooms.filter((z) => !z.auto), ...autoZoomRegions(project.events, project.durationMs / 1000, s.zoom.scale)].sort((a, b) => a.start - b.start);
             ed.selected = null;
@@ -503,6 +566,11 @@ export async function openEditor(id, preloaded) {
             toast(T('클릭 기준 줌 {0}개', project.zooms.length));
           } }, T('↻ 클릭 기준으로 다시 만들기')),
           h('div', { class: 'small muted', style: { marginTop: '8px' } }, T('줌 구간 {0}개 · 줌 줄을 더블클릭하면 추가, 끌어서 옮기기·늘리기, 선택 후 Delete로 삭제', project.zooms.length)),
+          more('zoom', [
+            inlineSwitch(T('확대 중 커서 따라가기'), s.zoom.follow, (v) => { s.zoom.follow = v; markDirty(); }),
+            rangeField(T('확대 배율 (새로 만들 때)'), s.zoom.scale, 1.2, 3, 0.1, (v) => { s.zoom.scale = v; markDirty(); }, (v) => `${v.toFixed(1)}×`),
+            rangeField(T('확대 속도'), s.zoom.ramp, 0.2, 1.2, 0.05, (v) => { s.zoom.ramp = v; markDirty(); }, (v) => T('{0}초', v.toFixed(2))),
+          ]),
           sel ? h('div', { class: 'section' },
             h('h3', {}, T('선택한 줌 ({0} ~ {1})', fmt(sel.start, true), fmt(sel.end, true))),
             rangeField(T('배율'), sel.scale, 1.1, 4, 0.1, (v) => { sel.scale = v; sel.auto = false; markDirty(); }, (v) => `${v.toFixed(1)}×`),
@@ -593,14 +661,16 @@ export async function openEditor(id, preloaded) {
           inlineSwitch(T('클릭할 때 효과'), c.clicks, (v) => { c.clicks = v; markDirty(); drawPanel(); }),
           c.clicks ? [
             segField(T('효과 모양'), c.effect || 'ripple', CLICK_EFFECTS.filter((x) => x.id !== 'none'), (v) => { c.effect = v; markDirty(); }, 4),
-            rangeField(T('효과 크기'), c.clickSize ?? 1, 0.5, 2.5, 0.05, (v) => { c.clickSize = v; markDirty(); }, (v) => `${Math.round(v * 100)}%`),
-            rangeField(T('효과 길이'), c.clickDur ?? 0.65, 0.3, 1.5, 0.05, (v) => { c.clickDur = v; markDirty(); }, (v) => T('{0}초', v.toFixed(2))),
-            rangeField(T('효과 진하기'), c.clickOpacity ?? 1, 0.1, 1, 0.05, (v) => { c.clickOpacity = v; markDirty(); }, (v) => `${Math.round(v * 100)}%`),
+            colorField(T('효과 색'), c.color, (v) => { c.color = v; markDirty(); }),
           ] : null,
-          extRow(T('확장 클릭 효과'), extensionItems('clickEffects'), (it) => { Object.assign(c, it.values); c.clicks = true; }),
-          inlineSwitch(T('커서 주변 강조'), c.highlight, (v) => { c.highlight = v; markDirty(); }),
-          inlineSwitch(T('휠을 굴릴 때 표시'), c.scrolls !== false, (v) => { c.scrolls = v; markDirty(); }),
-          colorField(T('효과 색'), c.color, (v) => { c.color = v; markDirty(); }),
+          more('clicks', [
+            c.clicks ? [rangeField(T('효과 크기'), c.clickSize ?? 1, 0.5, 2.5, 0.05, (v) => { c.clickSize = v; markDirty(); }, (v) => `${Math.round(v * 100)}%`),
+            rangeField(T('효과 길이'), c.clickDur ?? 0.65, 0.3, 1.5, 0.05, (v) => { c.clickDur = v; markDirty(); }, (v) => T('{0}초', v.toFixed(2))),
+            rangeField(T('효과 진하기'), c.clickOpacity ?? 1, 0.1, 1, 0.05, (v) => { c.clickOpacity = v; markDirty(); }, (v) => `${Math.round(v * 100)}%`)] : null,
+            extRow(T('확장 클릭 효과'), extensionItems('clickEffects'), (it) => { Object.assign(c, it.values); c.clicks = true; }),
+            inlineSwitch(T('커서 주변 강조'), c.highlight, (v) => { c.highlight = v; markDirty(); }),
+            inlineSwitch(T('휠을 굴릴 때 표시'), c.scrolls !== false, (v) => { c.scrolls = v; markDirty(); }),
+          ]),
           h('div', { class: 'section' },
             h('h3', {}, T('커서 다시 그리기')),
             project.cursorHidden ? h('div', { class: 'hint' }, T('이 녹화는 실제 커서 없이 찍었습니다. 여기서 끄면 영상에 커서가 보이지 않습니다.')) : null,
@@ -613,6 +683,7 @@ export async function openEditor(id, preloaded) {
               c.style === 'custom' || CURSOR_STYLES.find((x) => x.id === (c.style || 'arrow'))?.pack ? inlineSwitch(T('녹화된 커서 종류 따라가기'), c.followKind !== false, (v) => { c.followKind = v; markDirty(); }, kindNote()) : null,
               rangeField(T('크기'), c.size, 0.8, 4, 0.1, (v) => { c.size = v; markDirty(); }, (v) => `${v.toFixed(1)}×`),
               segField(T('움직임'), c.motion || 'legacy', [...(c.motion ? [] : [{ id: 'legacy', name: T('예전 방식') }]), ...MOTION_PRESETS], (v) => { c.motion = v === 'legacy' ? null : v; markDirty(); drawPanel(); }, 3),
+              more('pointer', [
               !c.motion ? rangeField(T('부드럽게'), c.smoothing, 0, 1, 0.05, (v) => { c.smoothing = v; markDirty(); }, (v) => `${Math.round(v * 100)}%`) : null,
               c.motion === 'custom' ? [
                 rangeField(T('스프링 세기'), c.springStiffness ?? 1, 0.2, 4, 0.05, (v) => { c.springStiffness = v; markDirty(); }, (v) => `${v.toFixed(2)}×`),
@@ -626,6 +697,7 @@ export async function openEditor(id, preloaded) {
               rangeField(T('멈춰 있으면 숨기기'), c.idleHide || 0, 0, 5, 0.5, (v) => { c.idleHide = v; markDirty(); }, (v) => (v ? T('{0}초 뒤', v) : T('안 숨김'))),
               inlineSwitch(T('실제 커서가 숨으면 같이 숨기기'), c.hideWhenHidden !== false, (v) => { c.hideWhenHidden = v; markDirty(); }, T('글자를 칠 때나 동영상을 볼 때처럼 Windows가 커서를 감출 때')),
               inlineSwitch(T('끝날 때 처음 위치로 돌아가기'), c.loop, (v) => { c.loop = v; markDirty(); }, T('반복 재생하는 영상·GIF가 매끄럽게 이어집니다')),
+              ]),
             ] : null),
         ];
       },
@@ -648,7 +720,6 @@ export async function openEditor(id, preloaded) {
             webcam ? h('button', { class: 'btn small danger', onclick: () => { if (confirm(T('웹캠 영상을 이 녹화에서 뺄까요?'))) swap(null); } }, T('빼기')) : null),
           webcam ? [
             inlineSwitch(T('웹캠 보이기'), w.enabled, (v) => { w.enabled = v; markDirty(); }),
-            inlineSwitch(T('좌우 뒤집기 (거울처럼)'), w.mirror !== false, (v) => { w.mirror = v; markDirty(); }),
             positionField(T('위치'), w.position, ['top-left', 'top-right', 'bottom-left', 'bottom-right'], (v) => { w.position = v; markDirty(); drawPanel(); }),
             inlineSwitch(T('위치 직접 정하기'), w.position === 'custom', (v) => { w.position = v ? 'custom' : 'bottom-left'; markDirty(); drawPanel(); }),
             w.position === 'custom' ? [
@@ -656,10 +727,13 @@ export async function openEditor(id, preloaded) {
               rangeField(T('세로 위치'), w.y ?? 0.9, 0, 1, 0.01, (v) => { w.y = v; markDirty(); }, (v) => `${Math.round(v * 100)}%`),
             ] : null,
             rangeField(T('크기'), w.size, 8, 50, 1, (v) => { w.size = v; markDirty(); }, (v) => `${v}%`),
+            more('webcam', [
+            inlineSwitch(T('좌우 뒤집기 (거울처럼)'), w.mirror !== false, (v) => { w.mirror = v; markDirty(); }),
             rangeField(T('가장자리 여백'), w.margin ?? 28, 0, 140, 2, (v) => { w.margin = v; markDirty(); }, (v) => `${v}px`),
             rangeField(T('둥글기'), w.roundness ?? 100, 0, 100, 5, (v) => { w.roundness = v; markDirty(); }, (v) => (v === 100 ? T('원') : `${v}%`)),
             rangeField(T('그림자'), w.shadow ?? 0.45, 0, 1, 0.05, (v) => { w.shadow = v; markDirty(); }, (v) => (v ? `${Math.round(v * 100)}%` : T('없음'))),
             inlineSwitch(T('화면이 확대되면 작아지기'), !!w.reactToZoom, (v) => { w.reactToZoom = v; markDirty(); }),
+            ]),
           ] : null,
         ];
       },
@@ -764,25 +838,29 @@ export async function openEditor(id, preloaded) {
     return [
       h('h3', {}, T('음성 자막')),
       !project.files.voice ? h('div', { class: 'hint' }, T('마이크를 따로 녹음하지 않아 영상의 소리 전체로 자막을 만듭니다.')) : null,
-      selectField(T('정확도'), prefs.model, MODELS, (v) => { prefs.model = v; store.set('asr', prefs); }),
       selectField(T('말한 언어'), prefs.language, LANGUAGES, (v) => { prefs.language = v; store.set('asr', prefs); }),
-      inlineSwitch(T('그래픽카드로 빠르게'), prefs.gpu, (v) => { prefs.gpu = v; store.set('asr', prefs); }, T('안 되면 자동으로 CPU를 씁니다')),
       runBtn,
       progressBar,
       progressText,
       h('div', { class: 'small muted', style: { marginTop: '8px' } }, T('음성은 이 컴퓨터 안에서만 처리됩니다. 모델은 처음에 한 번 내려받습니다.')),
+      more('asr', [
+        selectField(T('정확도'), prefs.model, MODELS, (v) => { prefs.model = v; store.set('asr', prefs); }),
+        inlineSwitch(T('그래픽카드로 빠르게'), prefs.gpu, (v) => { prefs.gpu = v; store.set('asr', prefs); }, T('안 되면 자동으로 CPU를 씁니다')),
+      ]),
       h('div', { class: 'section' },
         h('h3', {}, T('자막 모양')),
         inlineSwitch(T('영상에 자막 넣기'), s.subtitles.enabled, (v) => { s.subtitles.enabled = v; markDirty(); }),
-        extRow(T('확장 자막 스타일'), extensionItems('subtitleStyles'), (it) => { Object.assign(s.subtitles, it.values); }),
         segField(T('스타일'), s.subtitles.style, SUBTITLE_STYLES, (v) => { s.subtitles.style = v; markDirty(); drawPanel(); }, 4),
         ['karaoke', 'pop'].includes(s.subtitles.style) ? h('div', { class: 'hint' }, T('말하는 낱말을 강조합니다. 낱말 시간은 문장 길이로 나눠 어림합니다.')) : null,
         segField(T('위치'), s.subtitles.position, [{ id: 'bottom', name: T('아래') }, { id: 'middle', name: T('가운데') }, { id: 'top', name: T('위') }], (v) => { s.subtitles.position = v; markDirty(); }),
+        more('subs', [
+        extRow(T('확장 자막 스타일'), extensionItems('subtitleStyles'), (it) => { Object.assign(s.subtitles, it.values); }),
         segField(T('나타나기'), s.subtitles.anim || 'fade', [{ id: 'none', name: T('없음') }, { id: 'fade', name: T('서서히') }, { id: 'rise', name: T('올라오기') }, { id: 'pop', name: T('튀어나오기') }], (v) => { s.subtitles.anim = v; markDirty(); }),
         rangeField(T('글자 크기'), s.subtitles.size, 0.6, 1.8, 0.05, (v) => { s.subtitles.size = v; markDirty(); }, (v) => `${Math.round(v * 100)}%`),
         ['box', 'outline', 'karaoke', 'pop', 'minimal'].includes(s.subtitles.style) ? colorField(T('글자 색'), s.subtitles.textColor || '#ffffff', (v) => { s.subtitles.textColor = v; markDirty(); }) : null,
         ['karaoke', 'pop'].includes(s.subtitles.style) ? colorField(T('강조 색'), s.subtitles.highlight || '#ffd33d', (v) => { s.subtitles.highlight = v; markDirty(); }) : null,
-        ['box', 'paper'].includes(s.subtitles.style) ? rangeField(T('바탕 진하기'), s.subtitles.bgOpacity ?? 0.68, 0, 1, 0.05, (v) => { s.subtitles.bgOpacity = v; markDirty(); }, (v) => `${Math.round(v * 100)}%`) : null),
+        ['box', 'paper'].includes(s.subtitles.style) ? rangeField(T('바탕 진하기'), s.subtitles.bgOpacity ?? 0.68, 0, 1, 0.05, (v) => { s.subtitles.bgOpacity = v; markDirty(); }, (v) => `${Math.round(v * 100)}%`) : null,
+        ])),
       h('div', { class: 'section' },
         h('div', { class: 'row', style: { marginBottom: '10px' } },
           h('h3', { class: 'grow', style: { margin: 0 } }, T('자막 {0}개', project.subtitles.length)),
@@ -919,7 +997,7 @@ export async function openEditor(id, preloaded) {
           sizeLabel),
         h('div', { class: 'timeline-wrap' }, timelineCanvas,
           h('div', { class: 'timeline-help' }, T('클릭해서 이동 · 줄을 더블클릭하면 그 줄에 추가 · 블록을 끌어 옮기고 끝을 끌어 늘리기 · 선택 후 Delete로 삭제 · Space 재생 · Ctrl+Z 되돌리기')))),
-      h('aside', { class: 'side' }, sideTabs, sideBody)));
+      h('aside', { class: 'side' }, sideTabs, sideSub, sideBody)));
 
   drawTabs();
   drawPanel();

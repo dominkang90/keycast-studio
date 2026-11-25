@@ -565,4 +565,12 @@ export default {
   "단축키·부드러운 커서": "Sneltoetsen, vloeiende aanwijzer",
   "그냥 녹화": "Gewoon opnemen",
   "화면과 소리만": "Alleen scherm en geluid",
+  "자세히": "Meer",
+  "꾸미기": "Uiterlijk",
+  "편집": "Bewerken",
+  "소리·자막": "Geluid & ondertitels",
+  "추천 스타일": "Voorgestelde stijlen",
+  "처음 모양으로": "Terug naar het standaarduiterlijk",
+  "기본": "Standaard",
+  "배경·키·커서·클릭 효과·자막 모양을 한 번에 바꿉니다. 하나씩은 아래와 다른 탭에서 고칠 수 있습니다.": "Wijzigt achtergrond, toetsen, aanwijzer, klikeffect en ondertitelstijl in één keer. Stel elk onderdeel hieronder en in de andere secties bij.",
 };

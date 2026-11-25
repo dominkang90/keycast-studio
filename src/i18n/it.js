@@ -565,4 +565,12 @@ export default {
   "단축키·부드러운 커서": "Scorciatoie, puntatore fluido",
   "그냥 녹화": "Registra e basta",
   "화면과 소리만": "Solo schermo e audio",
+  "자세히": "Altro",
+  "꾸미기": "Aspetto",
+  "편집": "Modifica",
+  "소리·자막": "Audio e sottotitoli",
+  "추천 스타일": "Stili consigliati",
+  "처음 모양으로": "Torna all'aspetto predefinito",
+  "기본": "Predefinito",
+  "배경·키·커서·클릭 효과·자막 모양을 한 번에 바꿉니다. 하나씩은 아래와 다른 탭에서 고칠 수 있습니다.": "Cambia insieme sfondo, tasti, puntatore, effetto clic e stile dei sottotitoli. Regola ognuno qui sotto e nelle altre sezioni.",
 };

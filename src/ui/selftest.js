@@ -173,16 +173,26 @@ export async function selfTest() {
       p.audios = [];
       const picks = { [T('자르기')]: [{ kind: 'cut', id: 'c1' }, { kind: 'speed', id: 'v1' }], [T('주석')]: ['n1', 'n2', 'n3', 'n4'].map((id) => ({ kind: 'note', id })), [T('줌')]: [{ kind: 'zoom', id: p.zooms[0]?.id }] };
       const drawn = [];
-      for (const btn of [...document.querySelectorAll('.side-tabs button')]) {
-        const name = btn.textContent.replace(/[^\p{L} ]/gu, '').trim();
-        for (const sel of [null, ...(picks[name] || [])]) {
-          ed.selected = sel;
-          btn.click();
-          await sleep(30);
-          if (sel === (picks[name] || [null]).slice(-1)[0]) await api.selftestShot(`panel-${drawn.length}`);
-          drawn.push(`${name}:${document.querySelector('.side-body').children.length}`);
+      // every group tab, then every section pill inside it (the pills are redrawn on each click)
+      const groupCount = document.querySelectorAll('.side-tabs button').length;
+      for (let g = 0; g < groupCount; g++) {
+        document.querySelectorAll('.side-tabs button')[g].click();
+        await sleep(30);
+        const pillCount = document.querySelectorAll('.side-sub button').length;
+        for (let i = 0; i < pillCount; i++) {
+          const name = document.querySelectorAll('.side-sub button')[i].textContent.replace(/[^\p{L} ]/gu, '').trim();
+          for (const sel of [null, ...(picks[name] || [])]) {
+            ed.selected = sel;
+            document.querySelectorAll('.side-sub button')[i].click();
+            await sleep(30);
+            // open every "More" fold so the folded controls are drawn too
+            document.querySelectorAll('.side-body details.more').forEach((d) => { d.open = true; });
+            if (sel === (picks[name] || [null]).slice(-1)[0]) await api.selftestShot(`panel-${drawn.length}`);
+            drawn.push(`${name}:${document.querySelector('.side-body').children.length}`);
+          }
         }
       }
+      ok('editor groups and sections', groupCount === 3 && drawn.length >= 9, `${groupCount} groups, ${drawn.length} panels`);
       ed.selected = null;
       ok('all panels draw', !errors.length && drawn.every((d) => Number(d.split(':')[1]) > 1), errors.length ? errors.join(' | ') : drawn.join(' '));
       openKeyStyle();

@@ -54,7 +54,17 @@ export class Timeline {
   get width() { return this.canvas.clientWidth; }
   x(t) { return GUTTER + (t / this.duration) * (this.width - GUTTER - 10); }
   t(x) { return Math.min(this.duration, Math.max(0, ((x - GUTTER) / (this.width - GUTTER - 10)) * this.duration)); }
-  rowY(name) { return RULER + TRACKS.indexOf(name) * TRACK; }
+  rowY(name) { return RULER + this.tracks.indexOf(name) * TRACK; }
+
+  /** The rows shown: the recording, rows with something in them, and the row the open panel works on. */
+  get tracks() {
+    const p = this.project;
+    if (!p) return TRACKS;
+    const used = { speed: p.speeds?.length, zoom: p.zooms?.length, notes: p.annotations?.length, audio: p.audios?.length, keys: this.derived?.groups?.length, subs: p.subtitles?.length };
+    return TRACKS.filter((n) => n === 'clip' || used[n] || n === this.focus);
+  }
+
+  setFocus(row) { if (this.focus !== row) { this.focus = row; this.render(); } }
 
   setData(project, derived) { this.project = project; this.derived = derived; this.render(); }
   setTime(t) { this.time = t; this.render(); }
@@ -64,7 +74,7 @@ export class Timeline {
     const r = this.canvas.getBoundingClientRect();
     const x = e.clientX - r.left;
     const y = e.clientY - r.top;
-    const row = y < RULER ? 'ruler' : TRACKS[Math.floor((y - RULER) / TRACK)] || null;
+    const row = y < RULER ? 'ruler' : this.tracks[Math.floor((y - RULER) / TRACK)] || null;
     const res = { x, y, row, t: this.t(x) };
     const p = this.project;
     if (!p) return res;
@@ -211,7 +221,8 @@ export class Timeline {
     const c = this.canvas;
     const dpr = window.devicePixelRatio || 1;
     const W = c.clientWidth;
-    const H = RULER + TRACKS.length * TRACK + 6;
+    const tracks = this.tracks;
+    const H = RULER + tracks.length * TRACK + 6;
     if (c.width !== Math.round(W * dpr) || c.height !== Math.round(H * dpr)) {
       c.width = Math.round(W * dpr);
       c.height = Math.round(H * dpr);
@@ -243,7 +254,7 @@ export class Timeline {
     }
     ctx.font = UI_FONT;
 
-    for (const name of TRACKS) {
+    for (const name of tracks) {
       const y = this.rowY(name);
       ctx.fillStyle = INK.row;
       roundRect(ctx, GUTTER, y + 2, W - GUTTER - 10, TRACK - 4, 4);

@@ -3,7 +3,7 @@
 import { platform, keyNameOf } from '../lib/platform.js';
 import { KEY_DEFAULTS } from '../lib/keys.js';
 import { KEY_THEMES } from '../lib/compositor.js';
-import { h, toast, inlineSwitch, rangeField, segField, colorField, ALL_POSITIONS, positionField } from './dom.js';
+import { h, toast, inlineSwitch, rangeField, segField, colorField, ALL_POSITIONS, positionField, more } from './dom.js';
 import { T } from '../lib/i18n.js';
 import { extensionItems } from './state.js';
 /**
@@ -42,10 +42,6 @@ export function keyPanel(k, change, redraw) {
       chips,
       h('div', { class: 'row', style: { flexWrap: 'wrap' } }, addKey,
         ['Click', 'Drag', 'Wheel'].filter((n) => !k.allowed.includes(n)).map((n) => h('button', { class: 'btn small', onclick: () => { k.allowed.push(n); change(true); redraw(); } }, `+ ${names[n]}`)))) : null,
-    inlineSwitch(T('마우스 클릭·드래그·휠도 표시'), k.showMouse, (v) => { k.showMouse = v; change(true); }),
-    positionField(T('위치'), k.position, ALL_POSITIONS, (v) => { k.position = v; change(); }),
-    rangeField(T('가장자리 여백 (가로)'), k.marginX ?? 36, 0, 300, 2, (v) => { k.marginX = v; change(); }, (v) => `${v}px`),
-    rangeField(T('가장자리 여백 (세로)'), k.marginY ?? 36, 0, 300, 2, (v) => { k.marginY = v; change(); }, (v) => `${v}px`),
     h('div', { class: 'field' }, h('label', {}, T('모양')),
       h('div', { class: 'swatches' },
         Object.entries(KEY_THEMES).map(([id, th]) => h('div', {
@@ -76,11 +72,16 @@ export function keyPanel(k, change, redraw) {
       c.panel ? [colorField(T('바탕 색'), c.panelColor, (v) => { c.panelColor = v; change(); }),
         rangeField(T('바탕 진하기'), c.panelOpacity, 0.1, 1, 0.05, (v) => { c.panelOpacity = v; change(); }, (v) => `${Math.round(v * 100)}%`)] : null,
     ] : null,
+    positionField(T('위치'), k.position, ALL_POSITIONS, (v) => { k.position = v; change(); }),
+    rangeField(T('크기'), k.size, 0.6, 1.8, 0.05, (v) => { k.size = v; change(); }, (v) => `${Math.round(v * 100)}%`),
+    more('keys', [
+    inlineSwitch(T('마우스 클릭·드래그·휠도 표시'), k.showMouse, (v) => { k.showMouse = v; change(true); }),
+    rangeField(T('가장자리 여백 (가로)'), k.marginX ?? 36, 0, 300, 2, (v) => { k.marginX = v; change(); }, (v) => `${v}px`),
+    rangeField(T('가장자리 여백 (세로)'), k.marginY ?? 36, 0, 300, 2, (v) => { k.marginY = v; change(); }, (v) => `${v}px`),
     segField(T('키 이름'), k.keyNames || 'windows', [{ id: 'windows', name: 'Windows · Linux' }, { id: 'mac', name: 'Mac (⌘ ⌥)' }], (v) => { k.keyNames = v; change(); }),
     segField(T('조합키 표기'), k.modLabel || 'text', [{ id: 'text', name: 'Ctrl' }, { id: 'symbol', name: T('⌃ 기호') }, { id: 'both', name: '⌃ Ctrl' }], (v) => { k.modLabel = v; change(); }),
     segField(T('글자'), k.caps || 'upper', [{ id: 'upper', name: T('대문자 A') }, { id: 'lower', name: T('소문자 a') }], (v) => { k.caps = v; change(); }),
     inlineSwitch(T('여러 번 누르면 ×3 처럼 세기'), k.showCount !== false, (v) => { k.showCount = v; change(); }),
-    rangeField(T('크기'), k.size, 0.6, 1.8, 0.05, (v) => { k.size = v; change(); }, (v) => `${Math.round(v * 100)}%`),
     segField(T('나타나고 사라지는 방식'), k.anim || 'fade', [{ id: 'none', name: T('없음') }, { id: 'fade', name: T('흐리게') }, { id: 'zoom', name: T('커지며') }, { id: 'float', name: T('떠오르며') }, { id: 'slide', name: T('옆에서') }], (v) => { k.anim = v; change(); }),
     rangeField(T('움직임 길이'), k.animDur ?? 0.25, 0.1, 0.8, 0.05, (v) => { k.animDur = v; change(); }, (v) => T('{0}초', v.toFixed(2))),
     rangeField(T('사라지기까지'), k.hold, 0.5, 5, 0.1, (v) => { k.hold = v; change(); }, (v) => T('{0}초', v.toFixed(1))),
@@ -107,6 +108,7 @@ export function keyPanel(k, change, redraw) {
         } });
         input.click();
       } }, T('⤒ 모양 불러오기'))),
+    ]),
   ];
 }
 

@@ -158,3 +158,15 @@ export function safeFileName(name) {
   return String(name).replace(/[\\/:*?"<>|]+/g, '_').trim() || 'keycast';
 }
 
+
+// Folded settings ("More ▾") stay open or closed across redraws of a panel.
+const openMore = new Set();
+/** Less-used settings behind a "More" fold, so a panel starts with only what most people change. */
+export function more(id, ...children) {
+  const items = children.flat(Infinity).filter(Boolean);
+  if (!items.length) return null;
+  const box = h('details', { class: 'more', open: openMore.has(id) },
+    h('summary', {}, T('자세히')), h('div', { class: 'more-body' }, items));
+  box.addEventListener('toggle', () => { if (box.open) openMore.add(id); else openMore.delete(id); });
+  return box;
+}

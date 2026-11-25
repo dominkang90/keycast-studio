@@ -612,4 +612,12 @@ export default {
   "단축키·부드러운 커서": "Shortcuts, smooth pointer",
   "그냥 녹화": "Just record",
   "화면과 소리만": "Screen and sound only",
+  "자세히": "More",
+  "꾸미기": "Look",
+  "편집": "Edit",
+  "소리·자막": "Sound & subtitles",
+  "추천 스타일": "Suggested styles",
+  "처음 모양으로": "Back to the default look",
+  "기본": "Default",
+  "배경·키·커서·클릭 효과·자막 모양을 한 번에 바꿉니다. 하나씩은 아래와 다른 탭에서 고칠 수 있습니다.": "Changes the background, keys, pointer, click effect and subtitle style at once. Fine-tune each one below and in the other sections.",
 };
