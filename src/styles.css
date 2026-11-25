@@ -388,3 +388,20 @@ details.more > summary:hover { color: var(--text); }
 .style-card > span:last-child { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .style-swatch { align-self: stretch; width: 100%; height: 36px; border-radius: 5px; display: grid; place-items: center; }
 .style-key { font: 600 10px/1 var(--mono); padding: 4px 6px; border-radius: 4px; background: #fff; color: #111; border: 1px solid #222; }
+
+/* v2.5: the small start window and portable mode */
+.home.compact-home { gap: var(--s3); padding: var(--s4) var(--s4) var(--s5); }
+.compact-home > * { flex-shrink: 0; }
+.compact-home h2 { margin: 0; font-size: 16px; }
+.compact-home .presets { gap: 6px; }
+.compact-home .preset { align-items: center; text-align: center; padding: var(--s2) 4px; }
+.compact-home .preset b { font-size: var(--t-small); }
+.compact-home .preset-note { display: none; }
+.compact-home .btn.rec.hero-rec { height: 52px; margin-top: var(--s1); }
+.compact-home .keys-line { justify-content: center; }
+.sources-pick label { display: block; margin-bottom: 6px; font-size: var(--t-meta); color: var(--text-2); }
+.compact-foot { display: flex; gap: var(--s2); margin-top: var(--s1); }
+.compact-foot .btn { flex: 1; min-width: 0; }
+body.compact .topbar { height: 48px; padding: 0 var(--s3); }
+.portable-note { display: flex; flex-wrap: wrap; align-items: center; gap: 4px var(--s2); margin: var(--s2) 0; line-height: 1.5; }
+.compact-home .portable-note { margin: 0; justify-content: center; text-align: center; }

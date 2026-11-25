@@ -5,7 +5,7 @@ import { fmt } from '../lib/timeline.js';
 import { setLabel, withIcon } from '../lib/icons.js';
 import { autoZoomRegions } from '../lib/zoom.js';
 import { h, toast, mount, topbar, selectField, langMenu } from './dom.js';
-import { state, shortcuts, savedLook, saveOptions, liveOverlaySettings, loadExtensions } from './state.js';
+import { state, store, shortcuts, savedLook, saveOptions, liveOverlaySettings, loadExtensions } from './state.js';
 import { openKeyStyle, openShortcuts, openExtensions } from './dialogs.js';
 import { startRecording } from './recording.js';
 import { PRESETS, presetOf } from './presets.js';
@@ -169,6 +169,7 @@ export function renderHome(projects) {
     h('div', { class: 'recent-head' },
       h('h2', { style: { fontSize: '16px' } }, T('최근 녹화')),
       isDesktop ? h('button', { class: 'btn small ghost', onclick: () => platform.openRecordingsFolder() }, T('📁 녹화 폴더 열기')) : null),
+    portableNote(),
     projects.length
       ? h('div', { class: 'recent-list' }, projects.map((p) => h('div', { class: 'recent-item' },
         h('b', {}, p.name),
@@ -199,16 +200,23 @@ export function renderHome(projects) {
   if (isDesktop && !renderHome.focusHooked) {
     renderHome.focusHooked = true;
     window.addEventListener('focus', async () => {
-      if (!document.querySelector('.sources')) return;
+      if (!document.querySelector('.sources, .sources-pick')) return;
       await refreshSources();
       renderHome.redrawSources?.();
     });
   }
   renderHome.redrawSources = drawSources;
 
+  if (isCompact()) {
+    renderCompact({ presetRow, presetNote, chipRow, chipDetail, warnings, projects });
+    return;
+  }
+  document.body.classList.remove('compact');
+  platform.setCompact(false);
   mount(
     topbar(
       h('button', { class: 'btn small', title: T('다른 프로그램으로 만든 영상을 불러와 편집합니다'), onclick: importVideo }, T('📂 영상 파일 열기')),
+      isDesktop ? h('button', { class: 'btn small', title: T('녹화 버튼만 있는 작은 창으로 바꿉니다'), onclick: () => setCompactPref(true) }, T('▭ 작은 창')) : null,
       settingsMenu()),
     !isDesktop ? h('div', { class: 'banner' }, T('브라우저 미리보기 모드: 녹화·편집·자막·내보내기를 모두 쓸 수 있지만, 키는 이 탭 안에서만 잡히고 녹화는 탭을 닫으면 사라집니다.')) : null,
     h('main', { class: 'home' },
@@ -250,12 +258,13 @@ export function drawKeysBtn() {
   keysBtn.classList.toggle('on', keysOn);
   keysBtn.setAttribute('aria-pressed', String(keysOn));
 }
+export async function toggleKeysOnly() {
+  keysOn = await platform.toggleKeys({ overlay: liveOverlaySettings(), shortcut: shortcuts().keys });
+  drawKeysBtn();
+  if (keysOn) toast(T('키 표시를 켰습니다. 끄려면 {0} 또는 이 버튼.', shortcuts().keys));
+}
 export function keysOnlyBtn() {
-  keysBtn = h('button', { class: 'btn grow', onclick: async () => {
-    keysOn = await platform.toggleKeys({ overlay: liveOverlaySettings(), shortcut: shortcuts().keys });
-    drawKeysBtn();
-    if (keysOn) toast(T('키 표시를 켰습니다. 끄려면 {0} 또는 이 버튼.', shortcuts().keys));
-  } });
+  keysBtn = h('button', { class: 'btn grow', onclick: toggleKeysOnly });
   drawKeysBtn();
   platform.keysState().then((on) => { keysOn = on; drawKeysBtn(); });
   return keysBtn;
@@ -310,3 +319,78 @@ export function feature(mark, _tint, title, text) {
   return h('div', { class: 'feature' }, h('div', { class: 'feature-icon' }, mark), h('div', {}, h('b', {}, title), h('p', {}, text)));
 }
 
+
+// ------------------------------------------------------------------ small start window (desktop)
+/** The home screen as a small window: purpose, where, options and the record button only. */
+export function isCompact() { return isDesktop && !!store.get('compact', false); }
+export function setCompactPref(on) {
+  store.set('compact', !!on);
+  if (document.querySelector('.home')) showHome();
+}
+
+function renderCompact({ presetRow, presetNote, chipRow, chipDetail, warnings, projects }) {
+  document.body.classList.add('compact');
+  platform.setCompact(true);
+  // Where to record, as one list instead of thumbnails.
+  const where = h('div', { class: 'sources-pick' });
+  const drawWhere = () => {
+    const screens = state.sources.filter((s) => s.kind === 'screen');
+    const name = (s) => (s.kind === 'screen' ? (screens.length > 1 ? T('화면 {0}', screens.indexOf(s) + 1) : T('전체 화면')) : `${T('창')} · ${s.name.length > 34 ? `${s.name.slice(0, 33)}…` : s.name}`);
+    const pick = h('select', { 'aria-label': T('어디를 녹화할까요?'), onchange: (e) => {
+      state.sourceId = e.target.value;
+      state.sourceKind = state.sources.find((s) => s.id === state.sourceId)?.kind || 'screen';
+    } }, state.sources.map((s) => h('option', { value: s.id, selected: s.id === state.sourceId }, name(s))));
+    where.replaceChildren(h('label', {}, T('어디를 녹화할까요?')), pick);
+  };
+  drawWhere();
+  renderHome.redrawSources = drawWhere;
+  const sc = shortcuts();
+  mount(
+    h('header', { class: 'topbar' },
+      h('div', { class: 'brand' }, h('div', { class: 'brand-mark' }), h('span', {}, 'KeyCast')),
+      h('div', { class: 'grow' }),
+      h('button', { class: 'btn small', title: T('최근 녹화와 모든 설정이 있는 큰 창으로 바꿉니다'), onclick: () => setCompactPref(false) }, T('⤢ 큰 창'))),
+    h('main', { class: 'home compact-home' },
+      h('div', { class: 'row' }, h('h2', { class: 'grow' }, T('무엇을 녹화하나요?')), presetNote),
+      presetRow,
+      where,
+      chipRow,
+      chipDetail,
+      ...warnings,
+      h('button', { class: 'btn rec hero-rec', onclick: startRecording }, h('span', { class: 'recdot', style: { animation: 'none', background: '#fff' } }), T('녹화 시작')),
+      h('div', { class: 'keys-line' }, [[T('멈추기'), sc.stop], [T('일시정지'), sc.pause]].map(([label, key]) => h('span', {}, label, ' ', h('code', {}, key.replace('Super', 'Win'))))),
+      h('div', { class: 'compact-foot' },
+        keysOnlyBtn(),
+        projects.length ? h('button', { class: 'btn ghost', title: T('최근 녹화'), onclick: () => setCompactPref(false) }, T('🎬 최근 녹화 {0}', projects.length)) : null),
+      portableNote()));
+}
+
+/** Portable copies say where everything is kept, and where the recordings made before are. */
+function portableNote() {
+  const p = state.info?.portable;
+  if (!p) return null;
+  return h('div', { class: 'portable-note small muted' },
+    h('span', { title: p.root }, T('💾 포터블: 설정·녹화·저장한 영상이 프로그램 옆 \'KeyCast Data\' 폴더에 있습니다.')),
+    p.oldRecordings ? h('button', { class: 'btn small ghost', title: p.oldRecordings, onclick: () => platform.openOldRecordings() }, T('📁 이전 녹화 폴더')) : null);
+}
+
+// ------------------------------------------------------------------ tray menu
+platform.trayWords({ open: T('KeyCast Studio 열기'), record: T('녹화 시작'), keysOn: T('키 표시 켜기'), keysOff: T('키 표시 끄기'), small: T('작은 창'), quit: T('종료') });
+platform.onTray(async (action) => {
+  if (action === 'small' || action === 'big') {
+    store.set('compact', action === 'small');
+    if (document.querySelector('.home')) showHome();
+    else if (action === 'small') toast(T('처음 화면으로 돌아가면 작은 창이 됩니다.'));
+    return;
+  }
+  if (action === 'keys') { toggleKeysOnly(); return; }
+  if (action === 'record' && !state.recorder) {
+    // From the editor: keep its changes, then start from the home screen.
+    if (!document.querySelector('.home .hero-rec')) {
+      const ed = state.editor;
+      if (ed?.dirty) { ed.dirty = false; await platform.saveProject(ed.project).catch(() => {}); }
+      await showHome();
+    }
+    startRecording();
+  }
+});

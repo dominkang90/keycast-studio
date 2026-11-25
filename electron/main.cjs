@@ -2,7 +2,7 @@
 // Owns windows, screen-source selection, the global keyboard/mouse hook and file storage.
 const {
   app, BrowserWindow, ipcMain, desktopCapturer, screen, session, protocol,
-  dialog, shell, globalShortcut, Menu, systemPreferences,
+  dialog, shell, globalShortcut, Menu, systemPreferences, Tray, nativeImage,
 } = require('electron');
 
 const MAC = process.platform === 'darwin';
@@ -41,6 +41,51 @@ protocol.registerSchemesAsPrivileged([
 const UI_ROOT = path.join(__dirname, '..', 'dist');
 const UI_ORIGIN = 'app://local';
 let MEDIA_ROOT = '';
+
+// ---------------------------------------------------------------- portable mode
+// The portable exe (and any copy with a "KeyCast Data" folder beside it) keeps its settings,
+// recordings and saved videos in that folder, so the app can live on a USB stick.
+const PORTABLE_FOLDER = 'KeyCast Data';
+const DEFAULT_USER_DATA = app.getPath('userData');
+const PORTABLE = (() => {
+  if (process.env.KEYCAST_MEDIA_ROOT && !process.env.KEYCAST_PORTABLE_DIR) return null; // test runs keep their own folder
+  const base = process.env.KEYCAST_PORTABLE_DIR || process.env.PORTABLE_EXECUTABLE_DIR
+    || (process.env.APPIMAGE ? path.dirname(process.env.APPIMAGE) : (MAC || !app.isPackaged ? null : path.dirname(process.execPath)));
+  if (!base) return null;
+  const root = path.join(base, PORTABLE_FOLDER);
+  const made = !fs.existsSync(root);
+  // Only the portable exe makes the folder; other builds use it when someone put it there.
+  if (made && !process.env.PORTABLE_EXECUTABLE_DIR && !process.env.KEYCAST_PORTABLE_DIR) return null;
+  try {
+    fs.mkdirSync(path.join(root, 'Settings'), { recursive: true });
+    fs.accessSync(root, fs.constants.W_OK);
+  } catch {
+    return null; // a read-only place (a CD, a locked folder): fall back to the usual folders
+  }
+  return { root, made, settings: path.join(root, 'Settings'), recordings: path.join(root, 'Recordings'), exports: path.join(root, 'Exports') };
+})();
+if (PORTABLE) {
+  // First start of a new portable folder: bring over the settings made before (before the page opens them).
+  if (PORTABLE.made) {
+    try { fs.cpSync(path.join(DEFAULT_USER_DATA, 'Local Storage'), path.join(PORTABLE.settings, 'Local Storage'), { recursive: true }); } catch { /* none yet */ }
+  }
+  app.setPath('userData', PORTABLE.settings);
+  app.setPath('sessionData', PORTABLE.settings);
+}
+
+/** Recordings made before, in the usual folder, when this copy keeps its own elsewhere. */
+function oldRecordingsDir() {
+  if (!PORTABLE) return null;
+  const dir = path.join(app.getPath('videos'), 'KeyCast Studio');
+  try {
+    return fs.readdirSync(dir, { withFileTypes: true }).some((e) => e.isDirectory() && !e.name.startsWith('_') && fs.existsSync(path.join(dir, e.name, 'project.json'))) ? dir : null;
+  } catch { return null; }
+}
+
+/** Where videos are saved: the portable folder, else the system's Videos folder. */
+function exportsDir() {
+  return PORTABLE ? PORTABLE.exports : app.getPath('videos');
+}
 
 let studio = null;
 let toolbar = null;
@@ -141,6 +186,78 @@ function createStudio() {
     stopKeysOnly();
     closeRecordingWindows();
   });
+}
+
+// ---------------------------------------------------------------- small start window
+// The home screen can shrink to a small window that holds only "what to record" and the record
+// button. The editor always opens full size; going home shrinks it again.
+const COMPACT = { width: 380, height: 660 };
+let compact = false;
+let bigBounds = null;
+function setCompact(on) {
+  if (!studio || studio.isDestroyed() || on === compact) return compact;
+  if (on) {
+    if (studio.isMaximized()) studio.unmaximize();
+    if (studio.isFullScreen()) studio.setFullScreen(false);
+    bigBounds = studio.getBounds();
+    studio.setMinimumSize(340, 480);
+    const area = screen.getDisplayMatching(bigBounds).workArea;
+    // Near the right edge of the screen it is on, like a small tool window.
+    studio.setBounds({ x: area.x + area.width - COMPACT.width - 24, y: area.y + Math.max(24, Math.round((area.height - COMPACT.height) / 2)), ...COMPACT });
+  } else {
+    const b = bigBounds || { width: 1360, height: 860 };
+    studio.setMinimumSize(1024, 640);
+    if (bigBounds) studio.setBounds(b);
+    else { studio.setSize(b.width, b.height); studio.center(); }
+  }
+  compact = on;
+  drawTray();
+  return compact;
+}
+
+// ---------------------------------------------------------------- tray icon
+// Start a recording or show keys without finding the window first. Closing the window still quits.
+let tray = null;
+function createTray() {
+  if (process.env.KEYCAST_SMOKE) return;
+  try {
+    let icon = nativeImage.createFromPath(path.join(__dirname, '..', 'build', 'icon.png'));
+    icon = icon.resize(MAC ? { width: 18, height: 18 } : { width: 16, height: 16 });
+    tray = new Tray(icon);
+    tray.setToolTip('KeyCast Studio');
+    tray.on('click', () => { if (!MAC) showStudio(); });
+    drawTray();
+  } catch (err) {
+    console.error('Tray unavailable:', err);
+    tray = null;
+  }
+}
+function showStudio() {
+  if (!studio || studio.isDestroyed()) return;
+  if (studio.isMinimized()) studio.restore();
+  studio.show();
+  studio.focus();
+}
+function trayCommand(action) {
+  showStudio();
+  studio?.webContents.send('tray:command', action);
+}
+function drawTray() {
+  if (!tray || tray.isDestroyed()) return;
+  const t = trayText();
+  tray.setContextMenu(Menu.buildFromTemplate([
+    { label: t.open, click: showStudio },
+    { label: t.record, enabled: !input.running, click: () => trayCommand('record') },
+    { label: keysOnly ? t.keysOff : t.keysOn, enabled: keysOnly || !input.running, click: () => trayCommand('keys') },
+    { label: t.small, type: 'checkbox', checked: compact, click: () => trayCommand(compact ? 'big' : 'small') },
+    { type: 'separator' },
+    { label: t.quit, role: 'quit' },
+  ]));
+}
+// The page sends its words for the menu (in the language picked there).
+let trayWords = null;
+function trayText() {
+  return trayWords || { open: 'Open KeyCast Studio', record: 'Start recording', keysOn: 'Show keys on screen', keysOff: 'Hide keys', small: 'Small window', quit: 'Quit' };
 }
 
 function displayFor(displayId) {
@@ -361,6 +478,7 @@ function stopKeysOnly() {
   if (overlay && !overlay.isDestroyed()) overlay.close();
   overlay = null;
   if (studio && !studio.isDestroyed()) studio.webContents.send('keys:state', false);
+  drawTray();
 }
 
 const ACCEL_NAMES = { Control: 'Ctrl', CommandOrControl: 'Ctrl', CmdOrCtrl: 'Ctrl', Super: 'Win', Meta: 'Win', Command: 'Win' };
@@ -459,6 +577,8 @@ function registerIpc() {
     // Linux under Wayland: keys and pointer come only from apps running through XWayland.
     wayland: process.platform === 'linux' && process.env.XDG_SESSION_TYPE === 'wayland',
     access: macAccess(),
+    portable: PORTABLE ? { root: PORTABLE.root, oldRecordings: oldRecordingsDir() } : null,
+    tray: !!tray && !tray.isDestroyed(),
   }));
 
   // Screen capture through ffmpeg, which can leave the mouse pointer out of the picture.
@@ -513,6 +633,7 @@ function registerIpc() {
     openToolbar(display);
     liveKeys = { display, settings: opts.overlay, visible: !!opts.liveOverlay, accel: opts.shortcuts?.keys || 'Alt+Shift+K' };
     if (opts.liveOverlay) openOverlay(display, opts.overlay);
+    drawTray();
     return { hooked, shortcuts, display: { width: display.bounds.width, height: display.bounds.height, scaleFactor: display.scaleFactor } };
   });
 
@@ -525,6 +646,7 @@ function registerIpc() {
       studio.show();
       studio.focus();
     }
+    drawTray();
     return events;
   });
 
@@ -642,6 +764,7 @@ function registerIpc() {
     if (!startInput(display, true)) { input.running = false; return false; }
     keysOnly = true;
     openOverlay(display, opts.overlay, false);
+    drawTray();
     if (opts.shortcut) {
       try { if (globalShortcut.register(opts.shortcut, stopKeysOnly)) keysOnlyAccel = opts.shortcut; } catch { /* taken */ }
     }
@@ -724,7 +847,7 @@ function registerIpc() {
     // scripted runs (KEYCAST_SAVE_DIR) save without the window
     if (process.env.KEYCAST_SAVE_DIR) return path.join(process.env.KEYCAST_SAVE_DIR, defaultName);
     const result = await dialog.showSaveDialog(studio, {
-      defaultPath: path.join(app.getPath('videos'), defaultName),
+      defaultPath: path.join(exportsDir(), defaultName),
       filters,
     });
     return result.canceled ? null : result.filePath;
@@ -733,7 +856,7 @@ function registerIpc() {
   // One-click export: no dialog, the next free name in the Videos folder (a test run's own folder
   // when KEYCAST_SAVE_DIR or KEYCAST_MEDIA_ROOT is set).
   ipcMain.handle('export:quickPath', async (_e, defaultName) => {
-    const dir = process.env.KEYCAST_SAVE_DIR || (process.env.KEYCAST_MEDIA_ROOT ? path.join(MEDIA_ROOT, '_exports') : app.getPath('videos'));
+    const dir = process.env.KEYCAST_SAVE_DIR || (process.env.KEYCAST_MEDIA_ROOT && !PORTABLE ? path.join(MEDIA_ROOT, '_exports') : exportsDir());
     await fsp.mkdir(dir, { recursive: true });
     const safe = path.basename(String(defaultName || 'KeyCast.mp4'));
     const ext = path.extname(safe);
@@ -754,6 +877,12 @@ function registerIpc() {
   });
 
   ipcMain.handle('shell:openFolder', () => shell.openPath(MEDIA_ROOT));
+  ipcMain.handle('shell:openOldRecordings', () => { const dir = oldRecordingsDir(); return dir ? shell.openPath(dir) : ''; });
+  ipcMain.handle('window:compact', (_e, on) => setCompact(!!on));
+  ipcMain.on('tray:words', (_e, words) => {
+    const keys = ['open', 'record', 'keysOn', 'keysOff', 'small', 'quit'];
+    if (words && keys.every((k) => typeof words[k] === 'string' && words[k].length < 60)) { trayWords = Object.fromEntries(keys.map((k) => [k, words[k]])); drawTray(); }
+  });
   // macOS: show the permission prompts, then open the matching page of System Settings.
   ipcMain.handle('access:ask', async () => {
     if (!MAC) return macAccess();
@@ -804,24 +933,21 @@ const single = app.requestSingleInstanceLock();
 if (!single) {
   app.quit();
 } else {
-  app.on('second-instance', () => {
-    if (studio) {
-      if (studio.isMinimized()) studio.restore();
-      studio.show();
-      studio.focus();
-    }
-  });
+  app.on('second-instance', showStudio);
 
   app.whenReady().then(async () => {
     // KEYCAST_MEDIA_ROOT points a test or demo run at its own folder instead of the user's recordings.
-    MEDIA_ROOT = process.env.KEYCAST_MEDIA_ROOT || path.join(app.getPath('videos'), 'KeyCast Studio');
+    const usual = path.join(app.getPath('videos'), 'KeyCast Studio');
+    MEDIA_ROOT = PORTABLE ? PORTABLE.recordings : (process.env.KEYCAST_MEDIA_ROOT || usual);
     await fsp.mkdir(MEDIA_ROOT, { recursive: true });
+    if (PORTABLE?.made) await fsp.cp(path.join(usual, '_extensions'), path.join(MEDIA_ROOT, '_extensions'), { recursive: true }).catch(() => {});
     // macOS needs the standard menus for Cmd+C, Cmd+V and Cmd+Q; elsewhere the window has none.
     Menu.setApplicationMenu(MAC ? Menu.buildFromTemplate([{ role: 'appMenu' }, { role: 'editMenu' }, { role: 'windowMenu' }]) : null);
     registerProtocol();
     setupDisplayMedia();
     registerIpc();
     createStudio();
+    createTray();
   });
 
   app.on('will-quit', () => {

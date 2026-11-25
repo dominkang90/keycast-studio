@@ -100,8 +100,8 @@
 
 | 파일 | 용도 |
 |---|---|
-| **KeyCast-Studio-Setup-x.y.z.exe** | 추천. FFmpeg까지 모두 설치하고 시작 메뉴·바탕화면 바로가기와 제거 프로그램을 만듭니다 |
-| KeyCast-Studio-Portable-x.y.z.exe | 파일 하나, 설치 없이 바로 실행. FFmpeg 포함. 실행할 때마다 먼저 풀어서 몇 초 늦게 열립니다 |
+| **KeyCast-Studio-Portable-x.y.z.exe** | 가장 간단. 파일 하나를 아무 폴더(또는 USB)에 두고 실행하면 끝. 설정·녹화·저장한 영상은 그 옆 **KeyCast Data** 폴더에 모여서 폴더째 옮기면 그대로 씁니다. FFmpeg 포함. 실행할 때마다 먼저 풀어서 몇 초 늦게 열립니다 |
+| KeyCast-Studio-Setup-x.y.z.exe | 설치형. 시작 메뉴·바탕화면 바로가기와 제거 프로그램을 만듭니다. 녹화는 동영상\KeyCast Studio에 저장됩니다 |
 
 > 처음 실행할 때 **Windows의 PC 보호** 창이 뜨면 **추가 정보 → 실행**을 누르세요. 아직 코드 서명 인증서가 없어서 나오는 안내입니다. 릴리즈 페이지의 SHA-256 값과 VirusTotal 결과로 파일을 확인할 수 있습니다.
 

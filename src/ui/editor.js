@@ -65,6 +65,9 @@ export function stopEditor() {
 
 export async function openEditor(id, preloaded) {
   stopEditor();
+  // The small start window is for the home screen only: editing always gets the full window.
+  document.body.classList.remove('compact');
+  platform.setCompact(false);
   let project;
   try {
     project = migrate(preloaded || await platform.loadProject(id));

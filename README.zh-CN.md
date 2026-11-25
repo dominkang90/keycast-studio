@@ -99,8 +99,8 @@
 
 | 文件 | 用途 |
 |---|---|
-| **KeyCast-Studio-Setup-x.y.z.exe** | 推荐。安装全部内容（含 FFmpeg），创建开始菜单和桌面快捷方式以及卸载程序 |
-| KeyCast-Studio-Portable-x.y.z.exe | 单个文件，免安装直接运行，包含 FFmpeg。每次启动先自解压，所以会慢几秒 |
+| **KeyCast-Studio-Portable-x.y.z.exe** | 最简单。把这个文件放到任意文件夹（或 U 盘）直接运行。设置、录制和保存的视频都放在旁边的 **KeyCast Data** 文件夹里，整个文件夹带走即可继续用。包含 FFmpeg。每次启动先自解压，所以会慢几秒 |
+| KeyCast-Studio-Setup-x.y.z.exe | 安装版。创建开始菜单和桌面快捷方式以及卸载程序。录制保存在 视频\KeyCast Studio |
 
 > 首次运行时如果出现 **Windows 已保护你的电脑**，请点 **更多信息 → 仍要运行**。这是因为软件还没有代码签名。可以用发布页上的 SHA-256 和 VirusTotal 结果核对文件。
 

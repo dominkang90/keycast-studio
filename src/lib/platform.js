@@ -248,4 +248,9 @@ export const platform = {
 
   reveal(file) { if (isDesktop && file) api.reveal(file); },
   openRecordingsFolder() { if (isDesktop) api.openRecordingsFolder(); },
+  openOldRecordings() { if (isDesktop) api.openOldRecordings(); },
+  /** Desktop: shrink the window to the small start window (true) or back to full size. */
+  async setCompact(on) { return isDesktop && api.setCompact ? api.setCompact(on) : false; },
+  trayWords(words) { if (isDesktop) api.trayWords?.(words); },
+  onTray(fn) { if (isDesktop) api.onTray?.(fn); },
 };
