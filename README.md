@@ -34,7 +34,7 @@ KeyCast Studio has to see the keys you press to show them in the video, so pleas
 - **When:** keys and clicks are recorded only while a recording is running. The optional "show keys without recording" mode draws them on screen and saves nothing.
 - **What:** by default letters, digits and symbols typed on their own are dropped before anything is saved, so text such as passwords never reaches the recording. Shortcuts (Ctrl / Alt / Win combinations, F-keys, Esc) and keys like Enter or the arrows are kept. Turn on **타이핑한 글자도 기록** (also record typing) if you want typing in the video.
 - **Pause:** the 🔒 button in the recording bar (or Alt+Shift+L) stops recording keys until you press it again, for typing a password mid-recording. The bar always says what is being kept: shortcuts, keys and typing, or nothing.
-- **Where:** everything stays in `Videos\KeyCast Studio` on your computer. Nothing is sent anywhere. The internet is used only once, to download the speech model when you first make subtitles.
+- **Where:** everything stays in `Videos\KeyCast Studio` on your computer. Nothing is sent anywhere. The internet is used to download the speech model when you first make subtitles, and at most once a day to ask GitHub for the latest version number (switch it off in ⚙ Settings).
 - **Check it yourself:** the source code is all here, and each release lists its SHA-256 checksums and a VirusTotal scan. Details in [SECURITY.md](SECURITY.md).
 
 ## Features
@@ -134,7 +134,7 @@ On a Mac, `Alt` is the `Option` key and `Ctrl` + `Z` / `Y` is `Cmd` + `Z` / `Y`.
 
 This is a beta.
 
-- **Windows:** checked by hand on one computer (Windows 11, Intel Arc graphics, a 2880×1800 screen, one monitor), including the installer, the portable exe and the built-in self-test of 28 checks.
+- **Windows:** checked by hand on one computer (Windows 11, Intel Arc graphics, a 2880×1800 screen, one monitor), including the installer, the portable exe and the built-in self-test of 29 checks.
 - **macOS and Linux:** built on GitHub's machines for every release and started once in a smoke test (the window opens, the home screen draws, the key hook loads). Nobody has recorded on a real Mac or Linux desktop yet.
 
 Not yet checked: Windows 10, NVIDIA and AMD graphics, more than one monitor, a real microphone and webcam together with the hidden-pointer recording, and anything on a real Mac or Linux computer. If you try it, a [test report](https://github.com/dominkang90/keycast-studio/issues/new?template=test_report.yml) takes two minutes and helps a lot.

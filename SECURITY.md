@@ -21,7 +21,8 @@ Deleting a recording in the app deletes that whole folder. Uninstalling the app 
 
 ## What it sends over the internet
 
-- **Only the speech model download.** The first time you make subtitles, the Whisper model is downloaded from Hugging Face (`huggingface.co`) by Transformers.js. Your voice is processed on your computer and is never uploaded.
+- **The speech model download.** The first time you make subtitles, the Whisper model is downloaded from Hugging Face (`huggingface.co`) by Transformers.js. Your voice is processed on your computer and is never uploaded.
+- **The new version notice** (since 2.6.0). At most once a day the desktop app asks `api.github.com` for this project's latest release number (`electron/main.cjs`, `update:check`). Nothing about you or your recordings is sent; GitHub sees an ordinary request from your IP address. Nothing is downloaded or installed: the app only shows a line with a button that opens the release page. Switch it off in ⚙ Settings → New version notice.
 - No accounts, analytics, crash reports or automatic updates.
 - The browser version (`KeyCast-Studio-web.zip`) may load the speech runtime from `cdn.jsdelivr.net` as well.
 

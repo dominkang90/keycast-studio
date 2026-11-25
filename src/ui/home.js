@@ -218,6 +218,7 @@ export function renderHome(projects) {
       h('button', { class: 'btn small', title: T('다른 프로그램으로 만든 영상을 불러와 편집합니다'), onclick: importVideo }, T('📂 영상 파일 열기')),
       isDesktop ? h('button', { class: 'btn small', title: T('녹화 버튼만 있는 작은 창으로 바꿉니다'), onclick: () => setCompactPref(true) }, T('▭ 작은 창')) : null,
       settingsMenu()),
+    updateSlot(),
     !isDesktop ? h('div', { class: 'banner' }, T('브라우저 미리보기 모드: 녹화·편집·자막·내보내기를 모두 쓸 수 있지만, 키는 이 탭 안에서만 잡히고 녹화는 탭을 닫으면 사라집니다.')) : null,
     h('main', { class: 'home' },
       h('section', { class: 'card hero' },
@@ -238,6 +239,7 @@ function settingsMenu() {
   pop.append(
     isDesktop ? item(T('⌨ 단축키'), openShortcuts) : '',
     isDesktop ? item(T('🧩 확장 기능'), openExtensions) : '',
+    isDesktop ? item(store.get('updateCheck', true) ? T('🔔 새 버전 알림: 켬') : T('🔕 새 버전 알림: 끔'), () => { store.set('updateCheck', !store.get('updateCheck', true)); showHome(); }) : '',
     h('div', { class: 'menu-lang' }, h('span', {}, T('언어')), langMenu()));
   const btn = h('button', { class: 'btn small', 'aria-haspopup': 'menu', 'aria-expanded': 'false', onclick: () => {
     if (!pop.hidden) { close(); return; }
@@ -350,6 +352,7 @@ function renderCompact({ presetRow, presetNote, chipRow, chipDetail, warnings, p
       h('div', { class: 'brand' }, h('div', { class: 'brand-mark' }), h('span', {}, 'KeyCast')),
       h('div', { class: 'grow' }),
       h('button', { class: 'btn small', title: T('최근 녹화와 모든 설정이 있는 큰 창으로 바꿉니다'), onclick: () => setCompactPref(false) }, T('⤢ 큰 창'))),
+    updateSlot(true),
     h('main', { class: 'home compact-home' },
       h('div', { class: 'row' }, h('h2', { class: 'grow' }, T('무엇을 녹화하나요?')), presetNote),
       presetRow,
@@ -394,3 +397,34 @@ platform.onTray(async (action) => {
     startRecording();
   }
 });
+
+// ------------------------------------------------------------------ new version notice
+// Once a day at most, the app asks GitHub for the latest version number and only says so here.
+let updateInfo;
+async function latestUpdate() {
+  if (!isDesktop || store.get('updateCheck', true) === false) return null;
+  if (updateInfo !== undefined) return updateInfo;
+  const now = state.info?.version || '';
+  const seen = store.get('updateSeen', null);
+  if (seen && seen.from === now && Date.now() - seen.at < 24 * 3600 * 1000) {
+    updateInfo = seen.version ? { version: seen.version } : null;
+  } else {
+    updateInfo = await platform.checkUpdate().catch(() => null);
+    store.set('updateSeen', { at: Date.now(), from: now, version: updateInfo?.version || null });
+  }
+  return updateInfo;
+}
+
+/** A place for the notice; filled when the answer comes, so the screen never waits for it. */
+function updateSlot(short = false) {
+  const slot = h('div', { class: 'update-slot' });
+  latestUpdate().then((u) => {
+    if (!u || store.get('updateSkip', '') === u.version) return;
+    slot.replaceChildren(h('div', { class: 'banner update', role: 'status' },
+      h('span', { class: 'grow' }, T('🎉 새 버전 {0}이 나왔습니다.', u.version),
+        !short && state.info?.portable ? ` ${T('포터블은 새 exe로 바꾸기만 하면 KeyCast Data가 그대로 이어집니다.')}` : ''),
+      h('button', { class: 'btn small primary', onclick: () => platform.openUpdate() }, T('받으러 가기')),
+      h('button', { class: 'btn small ghost', title: T('이 버전은 다시 알리지 않습니다'), onclick: () => { store.set('updateSkip', u.version); slot.replaceChildren(); } }, short ? '✕' : T('건너뛰기'))));
+  });
+  return slot;
+}

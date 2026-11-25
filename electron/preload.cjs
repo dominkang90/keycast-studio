@@ -35,6 +35,8 @@ contextBridge.exposeInMainWorld('keycast', {
   openRecordingsFolder: () => ipcRenderer.invoke('shell:openFolder'),
   openOldRecordings: () => ipcRenderer.invoke('shell:openOldRecordings'),
   setCompact: (on) => ipcRenderer.invoke('window:compact', on),
+  checkUpdate: () => ipcRenderer.invoke('update:check'),
+  openUpdate: () => ipcRenderer.invoke('update:open'),
   trayWords: (words) => ipcRenderer.send('tray:words', words),
   onTray: (fn) => on('tray:command', fn),
   openHelp: () => ipcRenderer.invoke('shell:openHelp'),

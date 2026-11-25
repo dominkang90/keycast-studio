@@ -2,7 +2,7 @@
 // Owns windows, screen-source selection, the global keyboard/mouse hook and file storage.
 const {
   app, BrowserWindow, ipcMain, desktopCapturer, screen, session, protocol,
-  dialog, shell, globalShortcut, Menu, systemPreferences, Tray, nativeImage,
+  dialog, shell, globalShortcut, Menu, systemPreferences, Tray, nativeImage, net,
 } = require('electron');
 
 const MAC = process.platform === 'darwin';
@@ -879,6 +879,22 @@ function registerIpc() {
   ipcMain.handle('shell:openFolder', () => shell.openPath(MEDIA_ROOT));
   ipcMain.handle('shell:openOldRecordings', () => { const dir = oldRecordingsDir(); return dir ? shell.openPath(dir) : ''; });
   ipcMain.handle('window:compact', (_e, on) => setCompact(!!on));
+  // New version notice: asks GitHub for the latest release (nothing about the user is sent) and
+  // only tells; the person downloads it from the release page themself.
+  ipcMain.handle('update:check', async () => {
+    let latest = process.env.KEYCAST_FAKE_LATEST || '';
+    if (!latest && (SELFTEST || process.env.KEYCAST_SMOKE)) return null;
+    if (!latest) {
+      try {
+        const res = await net.fetch(RELEASES_API, { headers: { Accept: 'application/vnd.github+json', 'User-Agent': 'KeyCast-Studio' }, signal: AbortSignal.timeout(8000) });
+        if (!res.ok) return null;
+        latest = String((await res.json()).tag_name || '');
+      } catch { return null; }
+    }
+    latest = latest.replace(/^v/, '');
+    return newerThan(latest, app.getVersion()) ? { version: latest } : null;
+  });
+  ipcMain.handle('update:open', () => shell.openExternal(RELEASES_PAGE));
   ipcMain.on('tray:words', (_e, words) => {
     const keys = ['open', 'record', 'keysOn', 'keysOff', 'small', 'quit'];
     if (words && keys.every((k) => typeof words[k] === 'string' && words[k].length < 60)) { trayWords = Object.fromEntries(keys.map((k) => [k, words[k]])); drawTray(); }
@@ -897,6 +913,22 @@ function registerIpc() {
   });
   // The English user guide is the README on GitHub; the address is fixed here, not passed in.
   ipcMain.handle('shell:openHelp', () => shell.openExternal('https://github.com/dominkang90/keycast-studio#readme'));
+}
+
+// ---------------------------------------------------------------- new version notice
+const RELEASES_API = 'https://api.github.com/repos/dominkang90/keycast-studio/releases/latest';
+const RELEASES_PAGE = 'https://github.com/dominkang90/keycast-studio/releases/latest';
+/** True when version a (like 2.6.1) is later than b. */
+function newerThan(a, b) {
+  const pa = String(a).split(/[.-]/).map((x) => parseInt(x, 10));
+  const pb = String(b).split(/[.-]/).map((x) => parseInt(x, 10));
+  if (pa.slice(0, 3).some((x) => !Number.isFinite(x))) return false;
+  for (let i = 0; i < 3; i++) {
+    const x = pa[i] || 0;
+    const y = pb[i] || 0;
+    if (x !== y) return x > y;
+  }
+  return false;
 }
 
 // ---------------------------------------------------------------- self-test

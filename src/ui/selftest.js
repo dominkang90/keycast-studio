@@ -3,7 +3,8 @@
 import { platform } from '../lib/platform.js';
 import { autoZoomRegions } from '../lib/zoom.js';
 import { newNote } from '../lib/compositor.js';
-import { transcribe } from '../lib/transcribe.js';
+import { transcribe, decodeAudio } from '../lib/transcribe.js';
+import { findSilences } from '../lib/silence.js';
 import { toSRT } from '../lib/subtitles.js';
 import { exportVideo, exportFormats } from '../lib/exporter.js';
 import { segments, outDuration } from '../lib/timemap.js';
@@ -33,6 +34,22 @@ export function silentToneWav(seconds = 2, rate = 16000) {
   v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true); v.setUint32(24, rate, true);
   v.setUint32(28, rate * 2, true); v.setUint16(32, 2, true); v.setUint16(34, 16, true); str(36, 'data'); v.setUint32(40, n * 2, true);
   for (let i = 0; i < n; i++) v.setInt16(44 + i * 2, Math.round(Math.sin(i / 8) * 600), true);
+  return URL.createObjectURL(new Blob([buf], { type: 'audio/wav' }));
+}
+
+/** A WAV that alternates a tone and quiet: seconds of [tone, quiet, tone, ...]. */
+function talkPauseWav(parts, rate = 16000) {
+  const n = Math.round(parts.reduce((a, b) => a + b, 0) * rate);
+  const buf = new ArrayBuffer(44 + n * 2);
+  const v = new DataView(buf);
+  const str = (o, s) => [...s].forEach((c, i) => v.setUint8(o + i, c.charCodeAt(0)));
+  str(0, 'RIFF'); v.setUint32(4, 36 + n * 2, true); str(8, 'WAVE'); str(12, 'fmt ');
+  v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true); v.setUint32(24, rate, true);
+  v.setUint32(28, rate * 2, true); v.setUint16(32, 2, true); v.setUint16(34, 16, true); str(36, 'data'); v.setUint32(40, n * 2, true);
+  let i = 0;
+  parts.forEach((sec, k) => {
+    for (let j = 0; j < Math.round(sec * rate); j++, i++) v.setInt16(44 + i * 2, k % 2 ? Math.round((Math.random() - 0.5) * 60) : Math.round(Math.sin((2 * Math.PI * 440 * j) / rate) * 9000), true);
+  });
   return URL.createObjectURL(new Blob([buf], { type: 'audio/wav' }));
 }
 
@@ -244,6 +261,9 @@ export async function selfTest() {
       onProgress: (s) => { if (s.stage !== 'downloading') console.log(`asr ${s.stage} ${s.device || ''} ${s.message || ''}`); },
     });
     ok('speech model runs', Array.isArray(subs), JSON.stringify(subs).slice(0, 200));
+    // v2.6: quiet parts found in sound decoded by the browser (1 s tone, 2 s quiet, 1 s tone).
+    const quiet = findSilences(await decodeAudio(talkPauseWav([1, 2, 1])), 16000, { minGap: 1, pad: 0.25 });
+    ok('quiet parts found', quiet.cuts.length === 1 && Math.abs(quiet.cuts[0].start - 1.25) < 0.1 && Math.abs(quiet.cuts[0].end - 2.75) < 0.1, quiet.cuts);
   } catch (err) {
     ok('no exceptions', false, err?.stack || String(err));
   }

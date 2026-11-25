@@ -11,6 +11,7 @@ import { shapeSubtitles, toSRT, wrapLines, cueWords, SUBTITLE_STYLES } from '../
 import { drawSubtitle, drawClicks, CLICK_EFFECTS } from '../src/lib/compositor.js';
 import { HangulComposer, hangulText, jamoForKey } from '../src/lib/hangul.js';
 import { readExtension, applyBackground, EXAMPLE_EXTENSION } from '../src/lib/extensions.js';
+import { findSilences, busyTimes } from '../src/lib/silence.js';
 
 const require = createRequire(import.meta.url);
 const { patchWebmDuration, locateInfo } = require('../electron/webm.cjs');
@@ -314,6 +315,46 @@ test('extensions keep only valid data and copy their values into the project', (
   ext.backgrounds[0].stops.push('#ffffff');
   assert.equal(frame.custom.stops.length, 2, 'the project gets its own copy');
   assert.equal(readExtension('ex', EXAMPLE_EXTENSION).count, 11);
+});
+
+// Talk, pause, talk: a 1 kHz tone at speech level with faint noise in between.
+function talkAndPause(parts, rate = 16000) {
+  const total = parts.reduce((s, [d]) => s + d, 0);
+  const out = new Float32Array(Math.round(total * rate));
+  let i = 0;
+  let seed = 7;
+  const noise = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647 - 0.5; };
+  for (const [d, talk] of parts) {
+    for (let n = 0; n < Math.round(d * rate); n++, i++) out[i] = talk ? 0.3 * Math.sin((2 * Math.PI * 1000 * n) / rate) : 0.002 * noise();
+  }
+  return out;
+}
+
+test('quiet parts are found, padded, and short pauses stay', () => {
+  const s = talkAndPause([[1, true], [2, false], [1, true], [0.5, false], [1, true], [1.5, false]]);
+  const { cuts, clear } = findSilences(s, 16000, { minGap: 1, pad: 0.25 });
+  assert.ok(clear);
+  // the 2 s pause (padded on both sides) and the quiet end (no pad at the very end); the 0.5 s pause stays
+  assert.equal(cuts.length, 2, JSON.stringify(cuts));
+  assert.ok(Math.abs(cuts[0].start - 1.25) < 0.05 && Math.abs(cuts[0].end - 2.75) < 0.05, JSON.stringify(cuts[0]));
+  assert.ok(Math.abs(cuts[1].start - 5.75) < 0.05 && Math.abs(cuts[1].end - 7) < 0.05, JSON.stringify(cuts[1]));
+  // the microphone starting 0.5 s after the picture moves everything
+  const late = findSilences(s, 16000, { minGap: 1, pad: 0.25, offset: 0.5 }).cuts;
+  assert.ok(Math.abs(late[0].start - 1.75) < 0.05);
+});
+
+test('quiet parts with typing or clicks are kept', () => {
+  const s = talkAndPause([[1, true], [4, false], [1, true]]);
+  const busy = busyTimes([{ t: 3, type: 'kd', name: 'A' }, { t: 3.2, type: 'ku', name: 'A' }, { t: 3.3, type: 'md', button: 1 }], 0.5);
+  assert.deepEqual(busy.map(([a, b]) => [+a.toFixed(2), +b.toFixed(2)]), [[2.5, 3.8]]);
+  const { cuts } = findSilences(s, 16000, { minGap: 1, pad: 0.25, busy });
+  assert.equal(cuts.length, 2, JSON.stringify(cuts));
+  assert.ok(cuts[0].end <= 2.5 && cuts[1].start >= 3.8, JSON.stringify(cuts));
+});
+
+test('a recording without clear talk gets no cuts', () => {
+  assert.equal(findSilences(new Float32Array(16000 * 3), 16000).cuts.length, 0);
+  assert.equal(findSilences(talkAndPause([[3, true]]), 16000).cuts.length, 0);
 });
 
 test('every interface text has an English translation', async () => {

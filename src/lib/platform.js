@@ -251,6 +251,8 @@ export const platform = {
   openOldRecordings() { if (isDesktop) api.openOldRecordings(); },
   /** Desktop: shrink the window to the small start window (true) or back to full size. */
   async setCompact(on) { return isDesktop && api.setCompact ? api.setCompact(on) : false; },
+  async checkUpdate() { return isDesktop && api.checkUpdate ? api.checkUpdate() : null; },
+  openUpdate() { if (isDesktop) api.openUpdate?.(); },
   trayWords(words) { if (isDesktop) api.trayWords?.(words); },
   onTray(fn) { if (isDesktop) api.onTray?.(fn); },
 };

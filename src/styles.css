@@ -405,3 +405,8 @@ details.more > summary:hover { color: var(--text); }
 body.compact .topbar { height: 48px; padding: 0 var(--s3); }
 .portable-note { display: flex; flex-wrap: wrap; align-items: center; gap: 4px var(--s2); margin: var(--s2) 0; line-height: 1.5; }
 .compact-home .portable-note { margin: 0; justify-content: center; text-align: center; }
+
+/* v2.6: new version notice */
+.banner.update { display: flex; align-items: center; gap: var(--s2); background: var(--accent-soft); color: var(--text); border-bottom-color: rgba(91, 157, 255, 0.35); }
+.banner.update .grow { min-width: 0; }
+body.compact .banner.update { padding: var(--s2) var(--s3); font-size: var(--t-meta); }

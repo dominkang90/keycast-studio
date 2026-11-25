@@ -5,7 +5,8 @@ import { buildKeyGroups, KEY_DEFAULTS } from '../lib/keys.js';
 import { clicksOf, CursorTrack, autoZoomRegions, newId } from '../lib/zoom.js';
 import { renderFrame, projectOutputSize, BACKGROUNDS, WALLPAPERS, CURSOR_STYLES, CLICK_EFFECTS, MOTION_PRESETS, NOTE_TYPES, defaultSettings, newNote, noteRect } from '../lib/compositor.js';
 import { Timeline, fmt, listOfKind } from '../lib/timeline.js';
-import { transcribe, MODELS, LANGUAGES } from '../lib/transcribe.js';
+import { transcribe, decodeAudio, MODELS, LANGUAGES } from '../lib/transcribe.js';
+import { findSilences, busyTimes } from '../lib/silence.js';
 import { toSRT, SUBTITLE_STYLES } from '../lib/subtitles.js';
 import { exportVideo, exportFormats } from '../lib/exporter.js';
 import { setLabel } from '../lib/icons.js';
@@ -542,6 +543,7 @@ export async function openEditor(id, preloaded) {
             cut ? h('div', { style: { marginTop: '12px' } },
               h('div', { class: 'field-label', style: { marginBottom: '6px' } }, T('선택한 구간 {0} ~ {1}', fmt(cut.start, true), fmt(cut.end, true))),
               h('div', { class: 'row' }, edge(cut, 'start'), edge(cut, 'end'), h('button', { class: 'btn small danger', onclick: removeSelected }, T('되살리기')))) : null),
+          silenceSection(),
           h('div', { class: 'section' },
             h('h3', {}, T('속도 바꾸기')),
             h('button', { class: 'btn wide', onclick: () => addItem('speed', now()) }, T('⏩ 여기에 속도 구간 넣기')),
@@ -760,6 +762,54 @@ export async function openEditor(id, preloaded) {
       subs: () => drawSubtitlePanel(),
     };
     sideBody.replaceChildren(...[panels[ed.tab]()].flat(Infinity).filter(Boolean));
+  }
+
+  // ---- cutting the quiet parts in one go
+  /** The sound to listen to: the microphone if it was recorded apart, else the computer's sound or the video's. */
+  function talkFile() {
+    return project.files.voice || project.files.audio || project.files.screen;
+  }
+  function silenceSection() {
+    const pref = store.get('silence', { minGap: 1, keepBusy: true });
+    const auto = project.cuts.filter((c) => c.silence);
+    return h('div', { class: 'section' },
+      h('h3', {}, T('말 없는 구간 자르기')),
+      h('div', { class: 'small muted', style: { marginBottom: '10px' } }, T('말이 멈춘 곳을 찾아 한 번에 잘라냅니다. 말소리 앞뒤는 조금씩 남깁니다.')),
+      segField(T('이만큼 조용하면 자르기'), String(pref.minGap), [0.7, 1, 2, 3].map((v) => ({ id: String(v), name: T('{0}초', v) })), (v) => { pref.minGap = Number(v); store.set('silence', pref); }),
+      inlineSwitch(T('타이핑·클릭·마우스가 움직이는 곳은 남기기'), pref.keepBusy, (v) => { pref.keepBusy = v; store.set('silence', pref); }),
+      h('button', { class: 'btn wide', disabled: !talkFile() || ed.silenceBusy, onclick: cutSilences }, ed.silenceBusy ? T('조용한 곳을 찾는 중…') : T('🔇 말 없는 구간 찾아 자르기')),
+      auto.length ? h('div', { class: 'row', style: { marginTop: '8px' } },
+        h('span', { class: 'small muted grow' }, T('자동으로 자른 구간 {0}개', auto.length)),
+        h('button', { class: 'btn small', onclick: () => { project.cuts = project.cuts.filter((c) => !c.silence); ed.selected = null; markDirty(); drawPanel(); } }, T('모두 되살리기'))) : null);
+  }
+  async function cutSilences() {
+    const pref = store.get('silence', { minGap: 1, keepBusy: true });
+    const file = talkFile();
+    ed.silenceBusy = true;
+    drawPanel();
+    try {
+      const samples = await decodeAudio(platform.mediaUrl(project.id, file));
+      const { cuts, clear } = findSilences(samples, 16000, {
+        minGap: pref.minGap,
+        pad: 0.25,
+        offset: file === project.files.voice ? (project.offsets?.voice || 0) : 0,
+        busy: pref.keepBusy ? busyTimes(project.events) : [],
+      });
+      if (!clear) { toast(T('말소리와 조용한 곳의 차이가 뚜렷하지 않아 자를 곳을 찾지 못했습니다.'), true); return; }
+      const before = outDuration(segments({ ...project, cuts: project.cuts.filter((c) => !c.silence) }));
+      const end = duration();
+      project.cuts = [...project.cuts.filter((c) => !c.silence),
+        ...cuts.filter((c) => c.start < end).map((c) => ({ id: newId('c'), start: c.start, end: Math.min(c.end, end), silence: true }))];
+      ed.selected = null;
+      markDirty();
+      toast(cuts.length ? T('말 없는 구간 {0}개를 잘라 {1} 줄였습니다', cuts.length, fmt(Math.max(0, before - outDuration(ed.segs)), true)) : T('자를 만큼 긴 조용한 곳이 없습니다.'));
+    } catch (err) {
+      console.error(err);
+      toast(T('소리를 읽지 못했습니다: {0}', err.message), true);
+    } finally {
+      ed.silenceBusy = false;
+      if (state.editor === ed) drawPanel();
+    }
   }
 
   function drawSubtitlePanel() {
