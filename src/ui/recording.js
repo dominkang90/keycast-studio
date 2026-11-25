@@ -7,6 +7,7 @@ import { h, toast, mount, topbar } from './dom.js';
 import { state, shortcuts, savedLook, liveOverlaySettings } from './state.js';
 import { showHome } from './home.js';
 import { openEditor } from './editor.js';
+import { applyPresetLook } from './presets.js';
 import { T } from '../lib/i18n.js';
 // ------------------------------------------------------------------ recording
 export async function countdown() {
@@ -34,7 +35,7 @@ export async function startRecording() {
     hideCursor: o.hideCursor !== false && !!state.info?.ffmpeg,
     overlaySettings: liveOverlaySettings(),
     shortcuts: shortcuts(),
-    settings: savedLook(),
+    settings: applyPresetLook(savedLook(), o),
     onStatus: (s) => updateRecBar(s),
     onEnded: (project) => finishRecording(project),
   });

@@ -112,9 +112,9 @@ The first time you make subtitles, the speech model (about 40 MB to 600 MB, depe
 
 ## Use
 
-1. Under **What do you want to record?** choose the whole screen or a window, set the options on the right and press **Start recording**. The language menu is at the top right.
+1. Choose the whole screen or a window, pick what you are recording (**Tutorial**, **Product demo** or **Just record**) and press **Start recording**. Each option is a chip you can tap to change; shortcuts, extensions and the language are under **⚙ Settings**.
 2. Work as usual. Stop with the recording bar at the top of the screen or the shortcut; the editor opens.
-3. Polish it in the tabs on the right (Screen, Cut, Zoom, Notes, Keys, Pointer, Webcam, Sound, Subtitles) and press **Export**.
+3. Polish it in the tabs on the right (Screen, Cut, Zoom, Notes, Keys, Pointer, Webcam, Sound, Subtitles) and press **Save as MP4**: it saves straight to your Videos folder. **Export settings…** chooses the format, quality and place.
 
 | Shortcut | Does |
 |---|---|

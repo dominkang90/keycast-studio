@@ -807,16 +807,19 @@ export async function openEditor(id, preloaded) {
   }
 
   // ---------------- export
-  function openExport() {
+  /** quick: save at once with the last settings (MP4 first) into the Videos folder, no questions. */
+  function openExport(quick = false) {
     togglePlay(false);
     const formats = exportFormats();
     if (!formats.length) { toast(T('이 컴퓨터에서는 영상을 저장할 수 없습니다.'), true); return; }
     const prefs = { gifFps: 15, gifSide: 800, gifLoop: true, ...store.get('export', { format: formats[0].id, longSide: 1920, fps: 60, burn: true, srt: true }) };
     if (!formats.find((f) => f.id === prefs.format)) prefs.format = formats[0].id;
+    // The one-click button always makes a video file (MP4 when it can), never a GIF.
+    if (quick && prefs.format === 'gif') prefs.format = formats[0].id;
     const len = outDuration(ed.segs);
     if (!(len > 0)) { toast(T('내보낼 구간이 없습니다. 잘라낸 부분을 확인하세요.'), true); return; }
     const body = h('div');
-    const bg = h('div', { class: 'modal-bg' }, h('div', { class: 'modal' }, h('h2', {}, T('영상 내보내기')), body));
+    const bg = h('div', { class: 'modal-bg' }, h('div', { class: 'modal' }, h('h2', {}, quick ? T('영상 저장') : T('영상 내보내기')), body));
     document.body.append(bg);
     const close = () => bg.remove();
 
@@ -848,8 +851,8 @@ export async function openEditor(id, preloaded) {
       const gif = format.ext === 'gif';
       const srtText = toSRT(mapCues(project.subtitles, ed.segs));
       const name = `${safeFileName(project.name)}.${format.ext}`;
-      const writer = await platform.exportWriter(name, format.ext, format.mime);
-      if (!writer) return;
+      const writer = await platform.exportWriter(name, format.ext, format.mime, quick);
+      if (!writer) { if (quick) close(); return; }
       const bar = h('div', { class: 'progress' }, h('div'));
       const label = h('div', { class: 'small muted', style: { marginTop: '8px' } }, T('준비 중…'));
       ed.abort = new AbortController();
@@ -877,9 +880,12 @@ export async function openEditor(id, preloaded) {
           h('div', { class: 'done' },
             h('span', {}, '✅'),
             h('b', {}, T('영상을 저장했습니다{0}', srtNote)),
-            h('span', { class: 'small muted', style: { wordBreak: 'break-all' } }, writer.path || '')),
+            // The file name, and only the folder it is in: the whole path is in the tooltip.
+            writer.path ? h('span', { class: 'small muted', title: writer.path, style: { wordBreak: 'break-all' } },
+              writer.path.split(/[\\/]/).slice(-2).join(' › ')) : null),
           h('div', { class: 'actions' },
-            isDesktop ? h('button', { class: 'btn', onclick: () => platform.reveal(writer.path) }, T('폴더에서 보기')) : null,
+            quick ? h('button', { class: 'btn ghost', onclick: () => { close(); openExport(false); } }, T('다른 설정으로 저장…')) : null,
+            isDesktop ? h('button', { class: 'btn', onclick: () => platform.reveal(writer.path) }, T('📁 폴더에서 보기')) : null,
             h('button', { class: 'btn primary', onclick: close }, T('닫기'))));
       } catch (err) {
         console.error(err);
@@ -888,7 +894,7 @@ export async function openEditor(id, preloaded) {
         toast(T('내보내지 못했습니다: {0}', err.message || err), true);
       }
     }
-    drawForm();
+    if (quick) run(); else drawForm();
   }
 
   // ---------------- layout
@@ -900,7 +906,8 @@ export async function openEditor(id, preloaded) {
       h('button', { class: 'btn small ghost', title: T('되돌리기 (Ctrl+Z)'), onclick: () => timeTravel(ed.history, ed.future) }, '↶'),
       h('button', { class: 'btn small ghost', title: T('다시 하기 (Ctrl+Y)'), onclick: () => timeTravel(ed.future, ed.history) }, '↷'),
       h('button', { class: 'btn small ghost', title: T('단축키'), onclick: openShortcuts }, '⌨'),
-      h('button', { class: 'btn primary', onclick: openExport }, T('⤓ 내보내기'))),
+      h('button', { class: 'btn small ghost', title: T('형식·화질·저장할 곳을 골라 내보내기'), onclick: () => openExport(false) }, T('내보내기 설정…')),
+      h('button', { class: 'btn primary', title: T('지난번 설정으로 동영상 폴더에 바로 저장합니다'), onclick: () => openExport(true) }, exportFormats()[0]?.id === 'mp4' ? T('⤓ MP4로 저장') : T('⤓ 영상 저장'))),
     h('div', { class: 'editor' },
       h('div', { class: 'stage' },
         h('div', { class: 'preview-wrap' }, preview),

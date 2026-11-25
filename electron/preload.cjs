@@ -30,6 +30,7 @@ contextBridge.exposeInMainWorld('keycast', {
   abortFile: (handle) => ipcRenderer.invoke('file:abort', handle),
   writeText: (file, text) => ipcRenderer.invoke('file:writeText', file, text),
   saveDialog: (opts) => ipcRenderer.invoke('dialog:save', opts),
+  quickExportPath: (name) => ipcRenderer.invoke('export:quickPath', name),
   reveal: (file) => ipcRenderer.invoke('shell:reveal', file),
   openRecordingsFolder: () => ipcRenderer.invoke('shell:openFolder'),
   openHelp: () => ipcRenderer.invoke('shell:openHelp'),

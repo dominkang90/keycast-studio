@@ -2,12 +2,13 @@
 
 import { platform, isDesktop } from '../lib/platform.js';
 import { fmt } from '../lib/timeline.js';
-import { setLabel } from '../lib/icons.js';
+import { setLabel, withIcon } from '../lib/icons.js';
 import { autoZoomRegions } from '../lib/zoom.js';
-import { h, toast, mount, topbar, inlineSwitch, selectField, kbdLabel, langMenu } from './dom.js';
+import { h, toast, mount, topbar, selectField, langMenu } from './dom.js';
 import { state, shortcuts, savedLook, saveOptions, liveOverlaySettings, loadExtensions } from './state.js';
 import { openKeyStyle, openShortcuts, openExtensions } from './dialogs.js';
 import { startRecording } from './recording.js';
+import { PRESETS, presetOf } from './presets.js';
 import { stopEditor, openEditor } from './editor.js';
 import { T } from '../lib/i18n.js';
 // ------------------------------------------------------------------ home
@@ -90,9 +91,49 @@ export function renderHome(projects) {
   const camOptions = [{ id: '', name: T('사용 안 함') },
     ...state.cams.map((c, i) => ({ id: c.deviceId, name: c.label || T('카메라 {0}', i + 1) }))];
 
-  const recordCard = h('div', { class: 'card' },
-    h('h2', {}, T('녹화 옵션')),
-    h('div', { class: 'sub' }, T('누른 키와 클릭은 항상 함께 기록됩니다. 편집 화면에서 켜고 끌 수 있어요.')),
+  // ---- how to record: a purpose, then one line of chips (each one setting) instead of a long form
+  const presetRow = h('div', { class: 'presets', role: 'radiogroup', 'aria-label': T('무엇을 녹화하나요?') });
+  const chipRow = h('div', { class: 'opts' });
+  const chipDetail = h('div', { class: 'opt-detail' });
+  let openChip = null;
+  const changed = () => { saveOptions(); drawPresets(); drawChips(); };
+  function drawPresets() {
+    const cur = presetOf(o);
+    presetRow.replaceChildren(...PRESETS.map((p) => h('button', {
+      class: `preset${cur?.id === p.id ? ' on' : ''}`, role: 'radio', 'aria-checked': String(cur?.id === p.id),
+      onclick: () => { Object.assign(o, p.options); openChip = null; changed(); },
+    }, h('span', { class: 'preset-icon' }, ...withIcon(p.icon)), h('b', {}, p.name), h('span', { class: 'preset-note' }, p.note))));
+  }
+  function drawChips() {
+    const micName = (micOptions.find((m) => m.id === (o.micId || '')) || micOptions[1] || micOptions[0]).name;
+    const camName = (camOptions.find((c) => c.id === (o.webcamId || '')) || camOptions[0]).name;
+    const toggle = (key, on, label, title, invertDefault = false) => h('button', {
+      class: `opt${on ? ' on' : ''}`, 'aria-pressed': String(on), title,
+      onclick: () => { o[key] = invertDefault ? !(o[key] !== false) : !o[key]; openChip = null; changed(); },
+    }, label);
+    const picker = (id, on, label, title) => h('button', {
+      class: `opt pick${on ? ' on' : ''}${openChip === id ? ' open' : ''}`, 'aria-expanded': String(openChip === id), title,
+      onclick: () => { openChip = openChip === id ? null : id; drawChips(); },
+    }, label, ' ▾');
+    chipRow.replaceChildren(...[
+      picker('mic', !!o.micId, `🎙 ${o.micId ? micName : T('마이크 끔')}`, T('마이크 (자막을 만들 목소리)')),
+      state.info?.systemAudio === false ? null : toggle('systemAudio', !!o.systemAudio, o.systemAudio ? T('🔊 컴퓨터 소리') : T('🔇 컴퓨터 소리 끔'), T('컴퓨터 소리 함께 녹음')),
+      state.cams.length ? picker('cam', !!o.webcamId, `📷 ${o.webcamId ? camName : T('웹캠 끔')}`, T('웹캠 (얼굴 말풍선)')) : null,
+      toggle('recordTyping', !!o.recordTyping, o.recordTyping ? T('⌨ 타이핑까지 기록') : T('⌨ 단축키만 기록'), T('끄면 단축키만 저장합니다. 비밀번호 같은 입력이 녹화 파일에 남지 않습니다')),
+      isDesktop ? toggle('liveOverlay', !!o.liveOverlay, o.liveOverlay ? T('👁 녹화 중 키 보기') : T('👁 녹화 중 키 숨김'), T('나에게만 보이고 녹화 파일에는 들어가지 않습니다')) : null,
+      isDesktop && state.info?.ffmpeg ? toggle('hideCursor', o.hideCursor !== false, o.hideCursor !== false ? T('🖱 부드러운 커서') : T('🖱 실제 커서'), T('전체 화면 녹화에서만. 편집 화면에서 크고 부드러운 커서를 대신 그려 넣습니다'), true) : null,
+      toggle('countdown', !!o.countdown, o.countdown ? T('⏱ 3초 뒤 시작') : T('⏱ 바로 시작'), T('3초 카운트다운')),
+    ].filter(Boolean));
+    chipDetail.replaceChildren(
+      openChip === 'mic' ? selectField(T('마이크 (자막을 만들 목소리)'), o.micId, micOptions, (v) => { o.micId = v; openChip = null; changed(); }) : '',
+      openChip === 'cam' ? selectField(T('웹캠 (얼굴 말풍선)'), o.webcamId, camOptions, (v) => { o.webcamId = v; openChip = null; changed(); }) : '',
+    );
+    chipDetail.hidden = !openChip;
+    presetNote.textContent = presetOf(o) ? '' : T('직접 고른 설정');
+  }
+  const presetNote = h('span', { class: 'small muted' });
+
+  const warnings = [
     !state.info?.inputHook && isDesktop ? h('div', { class: 'hint warn' }, T('키보드 기록 모듈을 불러오지 못했습니다. 키 표시 없이 녹화됩니다.')) : null,
     !isDesktop ? h('div', { class: 'hint warn' }, T('브라우저에서는 이 탭에 초점이 있을 때 누른 키만 기록됩니다. 모든 프로그램의 키를 표시하려면 데스크톱 앱을 실행하세요.')) : null,
     // macOS asks for Accessibility (keys) and Screen Recording before they work.
@@ -101,38 +142,33 @@ export function renderHome(projects) {
         h('div', { style: { marginTop: '8px' } }, h('button', { class: 'btn small', onclick: async () => { await platform.askAccess(); state.info = await platform.info(); showHome(); } }, T('권한 설정 열기'))))
       : null,
     state.info?.wayland ? h('div', { class: 'hint warn' }, T('Wayland 세션에서는 다른 프로그램의 키와 클릭을 기록하지 못하고 커서를 숨길 수 없습니다. 로그인 화면에서 X11(Xorg) 세션을 고르면 모두 쓸 수 있습니다.')) : null,
-    selectField(T('마이크 (자막을 만들 목소리)'), o.micId, micOptions, (v) => { o.micId = v; saveOptions(); }),
-    state.info?.systemAudio === false
-      ? h('div', { class: 'small muted', style: { marginBottom: '12px' } }, T('컴퓨터 소리 녹음은 Windows에서만 됩니다.'))
-      : inlineSwitch(T('컴퓨터 소리 함께 녹음'), o.systemAudio, (v) => { o.systemAudio = v; saveOptions(); }),
-    selectField(T('웹캠 (얼굴 말풍선)'), o.webcamId, camOptions, (v) => { o.webcamId = v; saveOptions(); }),
-    inlineSwitch(T('타이핑한 글자도 기록'), !!o.recordTyping, (v) => { o.recordTyping = v; saveOptions(); }, T('끄면 단축키만 저장합니다. 비밀번호 같은 입력이 녹화 파일에 남지 않습니다')),
-    isDesktop ? inlineSwitch(T('녹화 중 화면에 키 보여주기'), o.liveOverlay, (v) => { o.liveOverlay = v; saveOptions(); }, T('나에게만 보이고 녹화 파일에는 들어가지 않습니다')) : null,
-    isDesktop && state.info?.ffmpeg ? inlineSwitch(T('실제 마우스 커서 숨기고 녹화'), o.hideCursor !== false, (v) => { o.hideCursor = v; saveOptions(); }, T('전체 화면 녹화에서만. 편집 화면에서 크고 부드러운 커서를 대신 그려 넣습니다')) : null,
-    isDesktop && state.info && !state.info.ffmpeg && !state.info.wayland ? h('div', { class: 'small muted', style: { marginBottom: '12px' } }, T('ffmpeg를 설치하면 실제 마우스 커서를 숨기고 녹화할 수 있습니다.')) : null,
-    inlineSwitch(T('3초 카운트다운'), o.countdown, (v) => { o.countdown = v; saveOptions(); }),
-    h('button', { class: 'btn rec wide', onclick: startRecording }, h('span', { class: 'recdot', style: { animation: 'none', background: '#fff' } }), T('녹화 시작')),
-    isDesktop ? h('div', { class: 'keys-ref' },
-      h('span', {}, T('멈추기')), h('span', {}, kbdLabel(shortcuts().stop)),
-      h('span', {}, T('일시정지')), h('span', {}, kbdLabel(shortcuts().pause))) : null,
-    isDesktop ? h('div', { class: 'section' },
-      h('h2', {}, T('녹화 없이 키만 보여주기')),
-      h('div', { class: 'sub' }, T('발표·화상 회의·다른 녹화 프로그램을 쓸 때, 누른 키와 클릭을 화면 위에 띄웁니다.')),
-      h('div', { class: 'row' },
-        keysOnlyBtn(),
-        h('button', { class: 'btn', title: T('키 표시 모양과 보여줄 키 고르기'), onclick: openKeyStyle }, T('🎨 꾸미기'))),
-      h('div', { class: 'small muted', style: { marginTop: '8px' } }, T('끄기 '), kbdLabel(shortcuts().keys))) : null);
+    isDesktop && state.info && !state.info.ffmpeg && !state.info.wayland ? h('div', { class: 'small muted' }, T('ffmpeg를 설치하면 실제 마우스 커서를 숨기고 녹화할 수 있습니다.')) : null,
+  ].filter(Boolean);
 
-  const features = h('div', { class: 'features' },
-    feature('⌨️', '#6d5efc33', T('모든 키 표시'), T('어떤 프로그램에서 누른 키든 단축키와 타이핑을 말풍선으로')),
-    feature('🔍', '#a371f733', T('클릭하면 자동 확대'), T('클릭한 곳으로 부드럽게 줌, 커서를 따라 이동')),
-    feature('💬', '#3fb95033', T('목소리로 자막'), T('내 컴퓨터에서 음성을 받아 적고 문장 단위로 자막 정리')),
-    feature('🎬', '#f7797d33', T('완성된 영상 저장'), T('배경·키·자막을 입혀 MP4로, 자막은 SRT로도')));
+  const sc = shortcuts();
+  const startPanel = h('div', { class: 'start' },
+    h('div', { class: 'row' }, h('h2', { class: 'grow' }, T('무엇을 녹화하나요?')), presetNote),
+    presetRow,
+    chipRow,
+    chipDetail,
+    ...warnings,
+    h('button', { class: 'btn rec hero-rec', onclick: startRecording }, h('span', { class: 'recdot', style: { animation: 'none', background: '#fff' } }), T('녹화 시작')),
+    isDesktop ? h('div', { class: 'keys-line' },
+      [[T('멈추기'), sc.stop], [T('일시정지'), sc.pause], [T('키 기록 멈춤'), sc.keyRec]].map(([label, key]) => h('span', {}, label, ' ', h('code', {}, key.replace('Super', 'Win'))))) : null);
+  drawPresets();
+  drawChips();
+
+  const keysOnlyCard = isDesktop ? h('div', { class: 'card keys-only' },
+    h('b', {}, T('녹화 없이 키만 보여주기')),
+    h('div', { class: 'small muted' }, T('발표·화상 회의·다른 녹화 프로그램을 쓸 때, 누른 키와 클릭을 화면 위에 띄웁니다.')),
+    h('div', { class: 'row' },
+      keysOnlyBtn(),
+      h('button', { class: 'btn', title: T('키 표시 모양과 보여줄 키 고르기'), onclick: openKeyStyle }, T('🎨 꾸미기')))) : null;
 
   const recent = h('div', { class: 'recent' },
     h('div', { class: 'recent-head' },
       h('h2', { style: { fontSize: '16px' } }, T('최근 녹화')),
-      isDesktop ? h('button', { class: 'btn small', onclick: () => platform.openRecordingsFolder() }, T('📁 녹화 폴더 열기')) : null),
+      isDesktop ? h('button', { class: 'btn small ghost', onclick: () => platform.openRecordingsFolder() }, T('📁 녹화 폴더 열기')) : null),
     projects.length
       ? h('div', { class: 'recent-list' }, projects.map((p) => h('div', { class: 'recent-item' },
         h('b', {}, p.name),
@@ -153,27 +189,56 @@ export function renderHome(projects) {
             }
             showHome();
           } }, T('삭제'))))))
-      : h('div', { class: 'empty' }, T('아직 녹화한 영상이 없습니다. 위에서 화면을 고르고 녹화를 시작하세요.')));
+      : h('div', { class: 'features' },
+        feature('⌨️', '', T('모든 키 표시'), T('어떤 프로그램에서 누른 키든 단축키와 타이핑을 말풍선으로')),
+        feature('🔍', '', T('클릭하면 자동 확대'), T('클릭한 곳으로 부드럽게 줌, 커서를 따라 이동')),
+        feature('💬', '', T('목소리로 자막'), T('내 컴퓨터에서 음성을 받아 적고 문장 단위로 자막 정리')),
+        feature('🎬', '', T('완성된 영상 저장'), T('배경·키·자막을 입혀 MP4로, 자막은 SRT로도'))));
+
+  // The screen list follows what is open: it is read again whenever the window comes back to front.
+  if (isDesktop && !renderHome.focusHooked) {
+    renderHome.focusHooked = true;
+    window.addEventListener('focus', async () => {
+      if (!document.querySelector('.sources')) return;
+      await refreshSources();
+      renderHome.redrawSources?.();
+    });
+  }
+  renderHome.redrawSources = drawSources;
 
   mount(
     topbar(
       h('button', { class: 'btn small', title: T('다른 프로그램으로 만든 영상을 불러와 편집합니다'), onclick: importVideo }, T('📂 영상 파일 열기')),
-      isDesktop ? h('button', { class: 'btn small', onclick: openShortcuts }, T('⌨ 단축키')) : null,
-      isDesktop ? h('button', { class: 'btn small', onclick: async () => { await refreshSources(); drawSources(); } }, T('↻ 새로 고침')) : null,
-      isDesktop ? h('button', { class: 'btn small', onclick: openExtensions }, T('🧩 확장 기능')) : null,
-      langMenu()),
+      settingsMenu()),
     !isDesktop ? h('div', { class: 'banner' }, T('브라우저 미리보기 모드: 녹화·편집·자막·내보내기를 모두 쓸 수 있지만, 키는 이 탭 안에서만 잡히고 녹화는 탭을 닫으면 사라집니다.')) : null,
     h('main', { class: 'home' },
-      h('div', { class: 'home-grid' },
-        // left: what to record and what was recorded before; right: how to record, always in view
-        h('div', { class: 'home-main' },
-          h('section', { class: 'card' },
-            h('div', { class: 'row', style: { marginBottom: '4px' } }, h('h2', { class: 'grow' }, T('어디를 녹화할까요?')), isDesktop ? kindTabs : null),
-            h('div', { class: 'sub' }, isDesktop ? T('전체 화면을 고르면 클릭 위치에 맞춘 자동 확대와 클릭 효과도 쓸 수 있습니다') : T('녹화 시작을 누르면 브라우저가 녹화할 화면을 물어봅니다')),
-            sourcesGrid),
-          recent),
-        h('aside', { class: 'home-side' }, recordCard)),
-      features));
+      h('section', { class: 'card hero' },
+        h('div', { class: 'hero-where' },
+          h('div', { class: 'row', style: { marginBottom: '4px' } }, h('h2', { class: 'grow' }, T('어디를 녹화할까요?')), isDesktop ? kindTabs : null),
+          h('div', { class: 'sub' }, isDesktop ? T('전체 화면을 고르면 클릭 위치에 맞춘 자동 확대와 클릭 효과도 쓸 수 있습니다') : T('녹화 시작을 누르면 브라우저가 녹화할 화면을 물어봅니다')),
+          sourcesGrid),
+        startPanel),
+      h('div', { class: 'home-below' }, recent, keysOnlyCard)));
+}
+
+/** ⚙ in the top bar: the things set once (shortcuts, extensions, language, the recordings folder). */
+function settingsMenu() {
+  const pop = h('div', { class: 'menu-pop', hidden: true, role: 'menu' });
+  const close = () => { pop.hidden = true; btn.setAttribute('aria-expanded', 'false'); document.removeEventListener('pointerdown', outside, true); };
+  const outside = (e) => { if (!wrap.contains(e.target)) close(); };
+  const item = (label, fn) => h('button', { class: 'menu-item', role: 'menuitem', onclick: () => { close(); fn(); } }, label);
+  pop.append(
+    isDesktop ? item(T('⌨ 단축키'), openShortcuts) : '',
+    isDesktop ? item(T('🧩 확장 기능'), openExtensions) : '',
+    h('div', { class: 'menu-lang' }, h('span', {}, T('언어')), langMenu()));
+  const btn = h('button', { class: 'btn small', 'aria-haspopup': 'menu', 'aria-expanded': 'false', onclick: () => {
+    if (!pop.hidden) { close(); return; }
+    pop.hidden = false;
+    btn.setAttribute('aria-expanded', 'true');
+    document.addEventListener('pointerdown', outside, true);
+  } }, T('⚙ 설정'));
+  const wrap = h('div', { class: 'menu-wrap' }, btn, pop);
+  return wrap;
 }
 
 // ---- keys on screen without recording

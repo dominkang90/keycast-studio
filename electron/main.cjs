@@ -730,6 +730,19 @@ function registerIpc() {
     return result.canceled ? null : result.filePath;
   });
 
+  // One-click export: no dialog, the next free name in the Videos folder (a test run's own folder
+  // when KEYCAST_SAVE_DIR or KEYCAST_MEDIA_ROOT is set).
+  ipcMain.handle('export:quickPath', async (_e, defaultName) => {
+    const dir = process.env.KEYCAST_SAVE_DIR || (process.env.KEYCAST_MEDIA_ROOT ? path.join(MEDIA_ROOT, '_exports') : app.getPath('videos'));
+    await fsp.mkdir(dir, { recursive: true });
+    const safe = path.basename(String(defaultName || 'KeyCast.mp4'));
+    const ext = path.extname(safe);
+    const stem = safe.slice(0, safe.length - ext.length);
+    let file = path.join(dir, safe);
+    for (let n = 2; fs.existsSync(file); n++) file = path.join(dir, `${stem} (${n})${ext}`);
+    return file;
+  });
+
   ipcMain.handle('file:writeText', async (_e, file, text) => {
     await fsp.writeFile(file, text, 'utf8');
     return file;

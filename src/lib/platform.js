@@ -203,10 +203,11 @@ export const platform = {
   },
 
   /** Ask where to save; returns a writer or null when cancelled. */
-  async exportWriter(defaultName, ext, type) {
+  /** quick: save to the Videos folder under the next free name, without asking. */
+  async exportWriter(defaultName, ext, type, quick = false) {
     if (isDesktop) {
       const filters = [{ name: ext.toUpperCase(), extensions: [ext] }];
-      const file = await api.saveDialog({ defaultName, filters });
+      const file = quick ? await api.quickExportPath(defaultName) : await api.saveDialog({ defaultName, filters });
       if (!file) return null;
       const writer = new FileWriter(await api.openFile({ absolutePath: file }));
       writer.path = file;

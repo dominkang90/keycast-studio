@@ -31,6 +31,14 @@ const PATHS = {
   download: '<path d="M12 4v11M7.5 11l4.5 4.5 4.5-4.5M5 20h14"/>',
   upload: '<path d="M12 16V5M7.5 9L12 4.5 16.5 9M5 20h14"/>',
   x: '<path d="M6 6l12 12M18 6L6 18"/>',
+  book: '<path d="M4 5.5A1.5 1.5 0 0 1 5.5 4H11v15H5.5A1.5 1.5 0 0 0 4 20.5z"/><path d="M20 5.5A1.5 1.5 0 0 0 18.5 4H13v15h5.5a1.5 1.5 0 0 1 1.5 1.5z"/>',
+  spark: '<path d="M12 3l1.9 5.6L19.5 10l-5.6 1.9L12 17.5l-1.9-5.6L4.5 10l5.6-1.4z"/><path d="M18.5 16.5l.7 2 2 .7-2 .7-.7 2-.7-2-2-.7 2-.7z"/>',
+  record: '<circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4" fill="currentColor" stroke="none"/>',
+  eye: '<path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="2.8"/>',
+  mute: '<path d="M4 9.5v5h3.5L12 18.5v-13L7.5 9.5z"/><path d="M16 9.5l5 5M21 9.5l-5 5"/>',
+  camera: '<rect x="3" y="6.5" width="13" height="11" rx="2"/><path d="M16 10.5l5-3v9l-5-3z"/>',
+  puzzle: '<path d="M9 4.5a2 2 0 0 1 4 0V6h4.5v4.5H19a2 2 0 0 1 0 4h-1.5V19H13v-1.5a2 2 0 0 0-4 0V19H4.5v-4.5H6a2 2 0 0 0 0-4H4.5V6H9z"/>',
+  gear: '<circle cx="12" cy="12" r="3"/><path d="M12 2.8v2.4M12 18.8v2.4M21.2 12h-2.4M5.2 12H2.8M18.5 5.5l-1.7 1.7M7.2 16.8l-1.7 1.7M18.5 18.5l-1.7-1.7M7.2 7.2L5.5 5.5"/>',
 };
 
 // The marks that used to stand in for icons, and the icon each one becomes.
@@ -39,6 +47,7 @@ const MARKS = {
   '🎬': 'film', '📁': 'folder', '📂': 'folder', '⏱': 'clock', '↻': 'refresh', '■': 'stop', '▶': 'play', '❚❚': 'pause',
   '🖼': 'image', '✂': 'scissors', '✏': 'pen', '🙂': 'user', '🔊': 'volume', '⏩': 'fast', '♪': 'music', '🎙': 'mic',
   '✅': 'check', '←': 'back', '↶': 'undo', '↷': 'redo', '⤓': 'download', '⤒': 'upload', '✕': 'x',
+  '🎓': 'book', '🚀': 'spark', '⏺': 'record', '👁': 'eye', '🔇': 'mute', '📷': 'camera', '⚙': 'gear', '🧩': 'puzzle',
 };
 const MARK_RE = new RegExp(`^(${Object.keys(MARKS).sort((a, b) => b.length - a.length).join('|')})\\uFE0F?(?: +(.+))?$`, 's');
 
