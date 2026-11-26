@@ -12,9 +12,13 @@ export function clicksOf(events) {
   return events.filter((e) => e.type === 'md' && e.x !== null && e.x !== undefined && e.x >= 0 && e.x <= 1 && e.y >= 0 && e.y <= 1);
 }
 
-/** Build zoom regions around clicks: nearby clicks share one region. */
-export function autoZoomRegions(events, duration, scale = ZOOM_DEFAULTS.scale) {
-  const clicks = clicksOf(events);
+/**
+ * Build zoom regions around clicks: nearby clicks share one region. `work` (normalised) is the part
+ * of the screen apps use; clicks outside it (taskbar, menu bar, dock) switch apps and do not zoom.
+ */
+export function autoZoomRegions(events, duration, scale = ZOOM_DEFAULTS.scale, work = null) {
+  const inWork = (c) => !work || (c.x >= work.x - 0.002 && c.x <= work.x + work.w + 0.002 && c.y >= work.y - 0.002 && c.y <= work.y + work.h + 0.002);
+  const clicks = clicksOf(events).filter(inWork);
   const regions = [];
   const lead = 0.7;
   const tail = 2.2;

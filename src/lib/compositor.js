@@ -271,8 +271,10 @@ function drawCameraTrail(ctx, video, rect, views, frame, scaleUnit, strength) {
   ctx.save();
   roundRect(ctx, rect.x, rect.y, rect.w, rect.h, radius);
   ctx.clip();
+  // Copy k drawn at 1/(k+1) over what is there makes an even average of all of them; strength
+  // blends that average with the sharp picture. Close copies read as blur, not as ghosts.
   views.forEach((v, i) => {
-    ctx.globalAlpha = strength * (0.45 - i * 0.1);
+    ctx.globalAlpha = strength / (i + 2);
     ctx.drawImage(video, v.x * vw, v.y * vh, v.w * vw, v.h * vh, rect.x, rect.y, rect.w, rect.h);
   });
   ctx.restore();
@@ -1071,13 +1073,16 @@ export function renderFrame(ctx, f) {
   // Motion blur while the camera zooms or pans quickly (not across a cut: that is a jump).
   const blurAmount = s.zoom.motionBlur ?? 0;
   if (blurAmount > 0 && s.zoom.enabled && project.zooms?.length && cut.k === 0) {
-    const dt = 1 / 30;
+    // Where the camera was half a frame (at 30 fps) ago: a short, film-like smear.
+    const dt = 1 / 60;
     const back = viewOf(cameraAt(t - dt, project.zooms, derived.cursor, s.zoom, crop));
     const move = (Math.abs(back.x - view.x) + Math.abs(back.y - view.y) + Math.abs(back.w - view.w)) / view.w;
-    const strength = Math.min(1, Math.max(0, (move - 0.004) * 25)) * blurAmount;
+    const strength = Math.min(1, Math.max(0, (move - 0.002) * 50)) * blurAmount;
     if (strength > 0.02) {
       const mix = (a) => ({ x: view.x + (back.x - view.x) * a, y: view.y + (back.y - view.y) * a, w: view.w + (back.w - view.w) * a, h: view.h + (back.h - view.h) * a });
-      drawCameraTrail(ctx, f.screen, rect, [mix(0.33), mix(0.66), mix(1)], s.frame, unit, strength);
+      // One copy every 8 pixels the picture moved on screen (2 to 8), so they blend into a blur.
+      const n = Math.min(8, Math.max(2, Math.ceil((move * rect.w) / 8)));
+      drawCameraTrail(ctx, f.screen, rect, Array.from({ length: n }, (_v, i) => mix((i + 1) / n)), s.frame, unit, strength);
     }
   }
 

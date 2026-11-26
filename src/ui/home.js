@@ -4,7 +4,7 @@ import { platform, isDesktop } from '../lib/platform.js';
 import { fmt } from '../lib/timeline.js';
 import { setLabel, withIcon } from '../lib/icons.js';
 import { autoZoomRegions } from '../lib/zoom.js';
-import { h, toast, mount, topbar, selectField, langMenu } from './dom.js';
+import { h, toast, mount, topbar, selectField, langMenu, askConfirm } from './dom.js';
 import { state, store, shortcuts, savedLook, saveOptions, liveOverlaySettings, loadExtensions } from './state.js';
 import { openKeyStyle, openShortcuts, openExtensions } from './dialogs.js';
 import { startRecording } from './recording.js';
@@ -66,6 +66,8 @@ export function renderHome(projects) {
       const screens = all.filter((x) => x.kind === 'screen');
       return screens.length > 1 ? T('화면 {0}', screens.indexOf(s) + 1) : T('전체 화면');
     };
+    // One screen: show it large instead of a small card in an empty area.
+    sourcesGrid.classList.toggle('single', list.length === 1);
     sourcesGrid.replaceChildren(...list.map((s) => h('button', {
       class: `source${s.id === state.sourceId ? ' on' : ''}`,
       onclick: () => { state.sourceId = s.id; drawSources(); },
@@ -108,7 +110,7 @@ export function renderHome(projects) {
     const micName = (micOptions.find((m) => m.id === (o.micId || '')) || micOptions[1] || micOptions[0]).name;
     const camName = (camOptions.find((c) => c.id === (o.webcamId || '')) || camOptions[0]).name;
     const toggle = (key, on, label, title, invertDefault = false) => h('button', {
-      class: `opt${on ? ' on' : ''}`, 'aria-pressed': String(on), title,
+      class: `opt tog${on ? ' on' : ''}`, 'aria-pressed': String(on), title,
       onclick: () => { o[key] = invertDefault ? !(o[key] !== false) : !o[key]; openChip = null; changed(); },
     }, label);
     const picker = (id, on, label, title) => h('button', {
@@ -182,7 +184,7 @@ export function renderHome(projects) {
           h('button', { class: 'btn small', onclick: () => openEditor(p.id) }, T('편집하기')),
           h('div', { class: 'grow' }),
           h('button', { class: 'btn small ghost danger', title: T('삭제'), onclick: async () => {
-            if (!confirm(T('\'{0}\' 녹화를 지울까요? 되돌릴 수 없습니다.', p.name))) return;
+            if (!(await askConfirm(T('\'{0}\' 녹화를 지울까요? 되돌릴 수 없습니다.', p.name), T('삭제')))) return;
             try {
               await platform.deleteProject(p.id);
             } catch (err) {
@@ -423,7 +425,7 @@ function startUpdate() {
   if (updateJob) return;
   updateJob = { stage: 'downloading', pct: 0 };
   redrawUpdate();
-  platform.downloadUpdate().then(() => { updateJob = { stage: 'ready' }; redrawUpdate(); }, (err) => {
+  platform.downloadUpdate().then((version) => { updateJob = { stage: 'ready', version: typeof version === 'string' ? version : null }; redrawUpdate(); }, (err) => {
     console.error(err);
     updateJob = null;
     toast(T('새 버전을 받지 못했습니다. 내려받는 페이지를 엽니다.'), true);
@@ -451,7 +453,7 @@ function updateSlot(short = false) {
         action = h('button', { class: 'btn small primary', onclick: () => platform.openUpdate() }, T('받으러 가기'));
       }
       slot.replaceChildren(h('div', { class: 'banner update', role: 'status' },
-        h('span', { class: 'grow' }, updateJob?.stage === 'ready' ? T('새 버전 {0}을 받았습니다. 다시 시작하면 설치됩니다.', u.version) : T('🎉 새 버전 {0}이 나왔습니다.', u.version),
+        h('span', { class: 'grow' }, updateJob?.stage === 'ready' ? T('새 버전 {0}을 받았습니다. 다시 시작하면 설치됩니다.', updateJob.version || u.version) : T('🎉 새 버전 {0}이 나왔습니다.', u.version),
           !short && !inPlace && state.info?.portable ? ` ${T('포터블은 새 exe로 바꾸기만 하면 KeyCast Data가 그대로 이어집니다.')}` : ''),
         action,
         updateJob ? null : h('button', { class: 'btn small ghost', title: T('이 버전은 다시 알리지 않습니다'), onclick: () => { store.set('updateSkip', u.version); slot.replaceChildren(); } }, short ? '✕' : T('건너뛰기'))));

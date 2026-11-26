@@ -278,6 +278,36 @@ test('sound dips to zero at each cut and nowhere else', () => {
   assert.ok(cutFade({ ...p, settings: { cut: { transition: 'fade', duration: 0.3 } } }, segments(p)).len > 0.1);
 });
 
+test('clicks on the taskbar do not make a zoom', () => {
+  const ev = [{ t: 2, type: 'md', x: 0.43, y: 0.985 }, { t: 8, type: 'md', x: 0.5, y: 0.5 }];
+  // Taskbar 48 px at the bottom of a 1800 px screen.
+  const work = { x: 0, y: 0, w: 1, h: 1752 / 1800 };
+  const z = autoZoomRegions(ev, 20, 1.8, work);
+  assert.equal(z.length, 1);
+  assert.ok(z[0].start > 7 && Math.abs(z[0].y - 0.5) < 1e-9);
+  // Without the work area (older recordings) both clicks still zoom.
+  assert.equal(autoZoomRegions(ev, 20, 1.8).length, 2);
+});
+
+test('timeline rows stay put when the open panel adds an empty row', async () => {
+  const { Timeline } = await import('../src/lib/timeline.js');
+  const tl = Object.create(Timeline.prototype);
+  tl.project = { speeds: [], zooms: [{}], annotations: [], audios: [], subtitles: [] };
+  tl.derived = { groups: [{}] };
+  tl.focus = null;
+  assert.deepEqual(tl.tracks, ['clip', 'zoom', 'keys']);
+  tl.focus = 'speed';
+  assert.deepEqual(tl.tracks, ['clip', 'zoom', 'keys', 'speed']);
+  tl.focus = 'zoom';
+  assert.deepEqual(tl.tracks, ['clip', 'zoom', 'keys']);
+});
+
+test('recording names use this computer\'s time', async () => {
+  const { localStamp } = await import('../src/lib/timeline.js');
+  assert.equal(localStamp(new Date(2026, 10, 27, 0, 54, 13)), '2026-11-27 00:54');
+  assert.equal(localStamp(new Date(2026, 0, 5, 9, 7)), '2026-01-05 09:07');
+});
+
 test('classic camera is still there', () => {
   const regions = [{ start: 1, end: 4, scale: 2, x: 0.2, y: 0.2 }];
   assert.ok(Math.abs(cameraAt(2.5, regions, null, { enabled: true, feel: 'classic' }).x - 0.2) < 1e-9);

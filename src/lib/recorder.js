@@ -6,6 +6,7 @@ import { defaultSettings } from './compositor.js';
 import { autoZoomRegions } from './zoom.js';
 import { keepWithoutTyping } from './keys.js';
 import { T } from './i18n.js';
+import { localStamp } from './timeline.js';
 
 function pickMime(candidates) {
   for (const m of candidates) if (window.MediaRecorder && MediaRecorder.isTypeSupported(m)) return m;
@@ -176,6 +177,7 @@ export class Recorder {
       shortcuts: this.opts.shortcuts,
     });
     this.hooked = !!meta?.hooked;
+    this.work = source.kind === 'screen' ? meta?.display?.work || null : null;
     this.shortcutsOk = meta?.shortcuts || null;
     await sleep(platform.isDesktop ? 450 : 50); // let this window get out of the way
 
@@ -343,9 +345,9 @@ export class Recorder {
       const project = {
         version: 1,
         id: this.projectId,
-        name: T('녹화 {0}', createdAt.slice(0, 16).replace('T', ' ')),
+        name: T('녹화 {0}', localStamp()),
         createdAt,
-        source: { name: this.opts.source.name, kind: this.opts.source.kind, width: this.size.width, height: this.size.height },
+        source: { name: this.opts.source.name, kind: this.opts.source.kind, width: this.size.width, height: this.size.height, ...(this.work ? { work: this.work } : {}) },
         files: this.files,
         offsets,
         cursorHidden: !!this.ff,
@@ -354,7 +356,7 @@ export class Recorder {
         typingRecorded: recordTyping,
         events,
         settings,
-        zooms: autoZoomRegions(events, duration, settings.zoom.scale),
+        zooms: autoZoomRegions(events, duration, settings.zoom.scale, this.work),
         subtitles: [],
         cuts: [],
         speeds: [],

@@ -666,4 +666,5 @@ export default {
   "다시 시작해서 설치": "Restart to install",
   "새 버전 {0}을 받았습니다. 다시 시작하면 설치됩니다.": "Version {0} is downloaded. Restart to install it.",
   "새 버전을 받지 못했습니다. 내려받는 페이지를 엽니다.": "Couldn't download the new version. Opening the download page.",
+  "바꾸기": "Replace",
 };

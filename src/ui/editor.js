@@ -11,7 +11,7 @@ import { toSRT, SUBTITLE_STYLES } from '../lib/subtitles.js';
 import { exportVideo, exportFormats } from '../lib/exporter.js';
 import { setLabel } from '../lib/icons.js';
 import { segments, outDuration, srcToOut, segIndexAt, mapCues, syncAudios } from '../lib/timemap.js';
-import { h, toast, app, mount, topbar, inlineSwitch, rangeField, selectField, segField, colorField, positionField, formatBytes, safeFileName, more } from './dom.js';
+import { h, toast, app, mount, topbar, inlineSwitch, rangeField, selectField, segField, colorField, positionField, formatBytes, safeFileName, more, askConfirm } from './dom.js';
 import { store, state, loadExtensions, extensionItems } from './state.js';
 import { applyBackground, readExtension } from '../lib/extensions.js';
 import { keyPanel } from './key-panel.js';
@@ -571,7 +571,7 @@ export async function openEditor(id, preloaded) {
           segField(T('움직임 느낌'), s.zoom.feel || 'smooth', [{ id: 'smooth', name: T('부드럽게') }, { id: 'quick', name: T('빠르게') }, { id: 'spring', name: T('탄력 있게') }, { id: 'classic', name: T('예전 방식') }], (v) => { s.zoom.feel = v; markDirty(); }),
           rangeField(T('움직임 잔상'), s.zoom.motionBlur ?? 0.5, 0, 1, 0.05, (v) => { s.zoom.motionBlur = v; markDirty(); }, (v) => (v ? `${Math.round(v * 100)}%` : T('끔'))),
           h('button', { class: 'btn wide', disabled: noCursor, onclick: () => {
-            project.zooms = [...project.zooms.filter((z) => !z.auto), ...autoZoomRegions(project.events, project.durationMs / 1000, s.zoom.scale)].sort((a, b) => a.start - b.start);
+            project.zooms = [...project.zooms.filter((z) => !z.auto), ...autoZoomRegions(project.events, project.durationMs / 1000, s.zoom.scale, project.source?.work)].sort((a, b) => a.start - b.start);
             ed.selected = null;
             timeline.select(null);
             markDirty();
@@ -730,7 +730,7 @@ export async function openEditor(id, preloaded) {
               const picked = await platform.importAsset(project.id, 'video', 'webcam');
               if (picked) swap(picked.name);
             } }, webcam ? T('📂 다른 영상으로 바꾸기') : T('📂 웹캠 영상 넣기')),
-            webcam ? h('button', { class: 'btn small danger', onclick: () => { if (confirm(T('웹캠 영상을 이 녹화에서 뺄까요?'))) swap(null); } }, T('빼기')) : null),
+            webcam ? h('button', { class: 'btn small danger', onclick: async () => { if (await askConfirm(T('웹캠 영상을 이 녹화에서 뺄까요?'), T('빼기'))) swap(null); } }, T('빼기')) : null),
           webcam ? [
             inlineSwitch(T('웹캠 보이기'), w.enabled, (v) => { w.enabled = v; markDirty(); }),
             positionField(T('위치'), w.position, ['top-left', 'top-right', 'bottom-left', 'bottom-right'], (v) => { w.position = v; markDirty(); drawPanel(); }),
@@ -831,7 +831,7 @@ export async function openEditor(id, preloaded) {
     const progressBar = h('div', { class: 'progress hidden' }, h('div'));
     const progressText = h('div', { class: 'small muted', style: { marginTop: '6px' } });
     const runBtn = h('button', { class: 'btn primary wide', disabled: !hasAudio || ed.transcribing, onclick: async () => {
-      if (project.subtitles.length && !confirm(T('지금 있는 자막을 새로 만든 자막으로 바꿀까요?'))) return;
+      if (project.subtitles.length && !(await askConfirm(T('지금 있는 자막을 새로 만든 자막으로 바꿀까요?'), T('바꾸기')))) return;
       ed.transcribing = true;
       runBtn.disabled = true;
       runBtn.textContent = T('자막 만드는 중…');

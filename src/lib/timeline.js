@@ -61,7 +61,10 @@ export class Timeline {
     const p = this.project;
     if (!p) return TRACKS;
     const used = { speed: p.speeds?.length, zoom: p.zooms?.length, notes: p.annotations?.length, audio: p.audios?.length, keys: this.derived?.groups?.length, subs: p.subtitles?.length };
-    return TRACKS.filter((n) => n === 'clip' || used[n] || n === this.focus);
+    const rows = TRACKS.filter((n) => n === 'clip' || used[n]);
+    // An empty row the open panel works on goes last, so the other rows do not move when tabs change.
+    if (this.focus && TRACKS.includes(this.focus) && !rows.includes(this.focus)) rows.push(this.focus);
+    return rows;
   }
 
   setFocus(row) { if (this.focus !== row) { this.focus = row; this.render(); } }
@@ -355,6 +358,12 @@ function roundRect(ctx, x, y, w, h, r) {
 }
 
 function truncate(s, n) { return s.length > n ? `${s.slice(0, n - 1)}…` : s; }
+
+/** "2026-11-27 00:54" in this computer's time (toISOString would give UTC, hours off). */
+export function localStamp(d = new Date()) {
+  const p = (n) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
+}
 
 export function fmt(sec, withMs = false) {
   const s = Math.max(0, sec);

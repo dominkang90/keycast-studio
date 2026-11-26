@@ -654,7 +654,11 @@ function registerIpc() {
     liveKeys = { display, settings: opts.overlay, visible: !!opts.liveOverlay, accel: opts.shortcuts?.keys || 'Alt+Shift+K' };
     if (opts.liveOverlay) openOverlay(display, opts.overlay);
     drawTray();
-    return { hooked, shortcuts, display: { width: display.bounds.width, height: display.bounds.height, scaleFactor: display.scaleFactor } };
+    const b = display.bounds;
+    const wa = display.workArea || b;
+    // The part of the screen apps use (without the taskbar, menu bar or dock): clicks outside it do not zoom.
+    const work = { x: (wa.x - b.x) / b.width, y: (wa.y - b.y) / b.height, w: wa.width / b.width, h: wa.height / b.height };
+    return { hooked, shortcuts, display: { width: b.width, height: b.height, scaleFactor: display.scaleFactor, work } };
   });
 
   ipcMain.handle('recording:end', () => {
@@ -946,9 +950,10 @@ function registerIpc() {
   ipcMain.handle('update:download', async () => {
     if (!canUpdateInPlace()) throw new Error('This copy cannot update itself');
     const u = updater();
-    await u.checkForUpdates();
+    const found = await u.checkForUpdates();
     await u.downloadUpdate();
-    return true;
+    // The version actually downloaded (a newer one may have come out since the notice was shown).
+    return found?.updateInfo?.version || true;
   });
   ipcMain.handle('update:install', () => {
     if (!canUpdateInPlace()) return false;

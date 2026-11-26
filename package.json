@@ -1,7 +1,7 @@
 {
   "name": "keycast-studio",
   "productName": "KeyCast Studio",
-  "version": "2.9.0",
+  "version": "2.9.1",
   "description": "Screen recorder that shows every key you press, polishes clicks with auto-zoom and turns your voice into subtitles.",
   "license": "MIT",
   "author": "dominkang90",

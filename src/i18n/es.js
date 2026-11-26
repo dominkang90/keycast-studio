@@ -619,4 +619,5 @@ export default {
   "다시 시작해서 설치": "Reiniciar e instalar",
   "새 버전 {0}을 받았습니다. 다시 시작하면 설치됩니다.": "La versión {0} está descargada. Reinicia para instalarla.",
   "새 버전을 받지 못했습니다. 내려받는 페이지를 엽니다.": "No se pudo descargar la nueva versión. Abriendo la página de descarga.",
+  "바꾸기": "Reemplazar",
 };

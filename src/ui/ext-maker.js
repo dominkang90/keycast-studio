@@ -1,7 +1,7 @@
 // Extension maker: build an extension pack (backgrounds, key themes, cursor packs, click effects,
 // subtitle styles) with a live preview drawn by the real renderer, then add it to the app or save
 // the extension.json to share. Format: docs/EXTENSIONS.md.
-import { h, toast, rangeField, segField, colorField, inlineSwitch } from './dom.js';
+import { h, toast, rangeField, segField, colorField, inlineSwitch, askConfirm } from './dom.js';
 import { platform, isDesktop } from '../lib/platform.js';
 import { readExtension, applyBackground } from '../lib/extensions.js';
 import { renderFrame, defaultSettings, CLICK_EFFECTS } from '../lib/compositor.js';
@@ -258,7 +258,7 @@ export function openExtensionMaker(initial, base = null) {
         if (!ext.count) { toast(T('쓸 수 있는 항목이 하나도 없습니다.'), true); return; }
         const folder = folderOf();
         const list = await loadExtensions(true);
-        if (list.some((e) => e.id === folder) && !confirm(T('"{0}" 확장이 이미 있습니다. 바꿀까요?', folder))) return;
+        if (list.some((e) => e.id === folder) && !(await askConfirm(T('"{0}" 확장이 이미 있습니다. 바꿀까요?', folder), T('바꾸기')))) return;
         await platform.installExtension(folder, json());
         await loadExtensions(true);
         toast(T('"{0}" 확장을 넣었습니다.', pack.name));

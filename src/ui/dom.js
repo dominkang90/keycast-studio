@@ -40,6 +40,22 @@ export function h(tag, attrs = {}, ...children) {
   return el;
 }
 
+/**
+ * A yes/no question in the app's own window (the system confirm() box looks foreign and freezes
+ * the whole app while it is open). Esc and "취소" answer no. Resolves true or false.
+ */
+export function askConfirm(message, okLabel, danger = true) {
+  return new Promise((resolve) => {
+    const done = (yes) => { bg.remove(); resolve(yes); };
+    const bg = h('div', { class: 'modal-bg' }, h('div', { class: 'modal', role: 'alertdialog', 'aria-modal': 'true' },
+      h('p', { style: { margin: '0 0 4px', lineHeight: '1.6' } }, message),
+      h('div', { class: 'actions' },
+        h('button', { class: 'btn', onclick: () => done(false) }, T('취소')),
+        h('button', { class: `btn ${danger ? 'danger' : 'primary'}`, onclick: () => done(true) }, okLabel))));
+    document.body.append(bg);
+  });
+}
+
 export function toast(msg, error = false) {
   const el = h('div', { class: `toast${error ? ' error' : ''}`, role: error ? 'alert' : 'status' }, msg);
   document.body.append(el);
