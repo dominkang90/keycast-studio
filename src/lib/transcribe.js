@@ -2,6 +2,7 @@ import { shapeSubtitles } from './subtitles.js';
 // Inlined so the browser version also works when opened straight from a file.
 import TranscribeWorker from './transcribe.worker.js?worker&inline';
 import { T } from './i18n.js';
+import { Input, UrlSource, ALL_FORMATS, AudioBufferSink } from 'mediabunny';
 
 export const MODELS = [
   { id: 'onnx-community/whisper-tiny', name: T('빠름 (tiny, 약 40MB)') },
@@ -25,6 +26,16 @@ const SAMPLE_RATE = 16000;
 
 /** Decode any audio/video file to 16 kHz mono samples. */
 export async function decodeAudio(url) {
+  // Files of the app (recordings, imported videos) are read a piece at a time: an imported
+  // video can be several GB, far too big to load whole.
+  if (/^app:/i.test(url)) {
+    try {
+      const out = await streamAudio(url);
+      if (out) return out;
+    } catch (err) {
+      console.warn('reading the sound in pieces failed, reading the whole file:', err);
+    }
+  }
   const res = await fetch(url);
   if (!res.ok) throw new Error(T('오디오를 읽지 못했습니다 ({0})', res.status));
   const data = await res.arrayBuffer();
@@ -40,6 +51,61 @@ export async function decodeAudio(url) {
     return out;
   } finally {
     ctx.close();
+  }
+}
+
+/** Reads only the sound track, in pieces, mixed to mono and resampled to 16 kHz. Null if there is none. */
+async function streamAudio(url) {
+  const input = new Input({ source: new UrlSource(url), formats: ALL_FORMATS });
+  try {
+    const track = await input.getPrimaryAudioTrack();
+    if (!track || !(await track.canDecode())) return null;
+    const parts = [];
+    let outLen = 0;
+    let block = [];
+    let blockLen = 0;
+    let rate = 0;
+    // About 10 s at a time is resampled in one go, so the seams are few and far apart.
+    const flush = async () => {
+      if (!blockLen) return;
+      const joined = new Float32Array(blockLen);
+      let at = 0;
+      for (const b of block) { joined.set(b, at); at += b.length; }
+      block = [];
+      blockLen = 0;
+      const ctx = new OfflineAudioContext(1, Math.max(1, Math.round((joined.length * SAMPLE_RATE) / rate)), SAMPLE_RATE);
+      const buf = ctx.createBuffer(1, joined.length, rate);
+      buf.copyToChannel(joined, 0);
+      const node = ctx.createBufferSource();
+      node.buffer = buf;
+      node.connect(ctx.destination);
+      node.start(0);
+      const done = (await ctx.startRendering()).getChannelData(0);
+      parts.push(done);
+      outLen += done.length;
+    };
+    let first = true;
+    for await (const { buffer, timestamp } of new AudioBufferSink(track).buffers()) {
+      if (buffer.sampleRate !== rate) { await flush(); rate = buffer.sampleRate; }
+      // Sound that starts after the picture keeps its place.
+      if (first && timestamp > 0.001) { parts.push(new Float32Array(Math.round(timestamp * SAMPLE_RATE))); outLen += parts[0].length; }
+      first = false;
+      const mono = new Float32Array(buffer.length);
+      for (let c = 0; c < buffer.numberOfChannels; c++) {
+        const ch = buffer.getChannelData(c);
+        for (let i = 0; i < ch.length; i++) mono[i] += ch[i] / buffer.numberOfChannels;
+      }
+      block.push(mono);
+      blockLen += mono.length;
+      if (blockLen >= rate * 10) await flush();
+    }
+    await flush();
+    const out = new Float32Array(outLen);
+    let at = 0;
+    for (const p of parts) { out.set(p, at); at += p.length; }
+    return out;
+  } finally {
+    input.dispose?.();
   }
 }
 

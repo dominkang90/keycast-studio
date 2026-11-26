@@ -183,6 +183,7 @@ function createStudio() {
   if (SELFTEST) setupSelfTest(studio);
   studio.on('closed', () => {
     studio = null;
+    dropUnfinishedExports();
     stopKeysOnly();
     closeRecordingWindows();
   });
@@ -244,6 +245,15 @@ let recordingActive = false;
 let quitAfterRecording = false;
 function quitWhenSaved() {
   if (quitAfterRecording && !recordingActive) setTimeout(() => app.quit(), 300);
+}
+/** Deletes exports that were still being written: a half-written video must not keep the final name. */
+function dropUnfinishedExports() {
+  for (const [handle, w] of writers) {
+    if (!w.export) continue;
+    writers.delete(handle);
+    w.stream.destroy();
+    try { fs.rmSync(w.file, { force: true }); } catch { /* already gone */ }
+  }
 }
 function trayCommand(action) {
   showStudio();
@@ -345,7 +355,8 @@ function closeRecordingWindows() {
 let pendingCapture = { sourceId: null, systemAudio: false };
 
 function setupDisplayMedia() {
-  session.defaultSession.setPermissionRequestHandler((_wc, _perm, cb) => cb(true));
+  // Camera, microphone and screen access only for the app's own pages.
+  session.defaultSession.setPermissionRequestHandler((wc, _perm, cb) => cb(String(wc?.getURL() || '').startsWith(UI_ORIGIN)));
   session.defaultSession.setDisplayMediaRequestHandler(async (_request, callback) => {
     try {
       const sources = await desktopCapturer.getSources({ types: ['screen', 'window'] });
@@ -788,7 +799,8 @@ function registerIpc() {
     const stream = fs.createWriteStream(file);
     await new Promise((resolve, reject) => { stream.once('open', resolve); stream.once('error', reject); });
     const handle = writerSeq++;
-    const w = { stream, file, error: null };
+    // An export (saved where the user chose) that is still open when the app closes is unfinished.
+    const w = { stream, file, error: null, export: !!absolutePath };
     // A failed write (a full disk, a removed drive) must reach the page, not leave it waiting.
     stream.on('error', (err) => { w.error = err; });
     writers.set(handle, w);
@@ -830,14 +842,23 @@ function registerIpc() {
     await fsp.rm(w.file, { force: true });
   });
 
-  ipcMain.handle('project:save', async (_e, project) => {
+  // Saves of one project run one after another: two at once shared the temporary file, and one
+  // of them could fail or leave a broken project.json.
+  const saving = new Map();
+  ipcMain.handle('project:save', (_e, project) => {
     const dir = projectDir(project.id);
-    await fsp.mkdir(dir, { recursive: true });
-    const tmp = path.join(dir, 'project.json.tmp');
-    await fsp.writeFile(tmp, JSON.stringify(project));
-    await fsp.rename(tmp, path.join(dir, 'project.json'));
-    quitWhenSaved();
-    return true;
+    const text = JSON.stringify(project);
+    const run = (saving.get(dir) || Promise.resolve()).catch(() => {}).then(async () => {
+      await fsp.mkdir(dir, { recursive: true });
+      const tmp = path.join(dir, 'project.json.tmp');
+      await fsp.writeFile(tmp, text);
+      await fsp.rename(tmp, path.join(dir, 'project.json'));
+      quitWhenSaved();
+      return true;
+    });
+    saving.set(dir, run);
+    run.finally(() => { if (saving.get(dir) === run) saving.delete(dir); }).catch(() => {});
+    return run;
   });
 
   ipcMain.handle('project:load', async (_e, id) => {
@@ -1007,6 +1028,22 @@ if (!single) {
     createTray();
   });
 
+  // Pages never leave the app: a file dropped on a window would otherwise replace the app with
+  // that file, and a dropped web page would get the app's file and recording functions.
+  app.on('web-contents-created', (_e, wc) => {
+    wc.on('will-navigate', (e, url) => { if (!url.startsWith(UI_ORIGIN)) e.preventDefault(); });
+    wc.setWindowOpenHandler(({ url }) => {
+      if (/^https?:\/\//i.test(url)) shell.openExternal(url);
+      else if (url.startsWith(`${UI_ORIGIN}/manual.html`)) {
+        // The manual opens without the app's functions (no preload).
+        const help = new BrowserWindow({ width: 980, height: 900, title: 'KeyCast Studio', icon: path.join(__dirname, '..', 'build', 'icon.png'), webPreferences: { sandbox: true } });
+        help.setMenu(null);
+        help.loadURL(url);
+      }
+      return { action: 'deny' };
+    });
+  });
+
   app.on('before-quit', (e) => {
     if (!recordingActive || !studio || studio.isDestroyed()) return;
     e.preventDefault();
@@ -1017,6 +1054,7 @@ if (!single) {
   });
 
   app.on('will-quit', () => {
+    dropUnfinishedExports();
     globalShortcut.unregisterAll();
     capture.abort();
     stopInput();

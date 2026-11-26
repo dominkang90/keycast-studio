@@ -573,6 +573,7 @@ export async function openEditor(id, preloaded) {
           h('button', { class: 'btn wide', disabled: noCursor, onclick: () => {
             project.zooms = [...project.zooms.filter((z) => !z.auto), ...autoZoomRegions(project.events, project.durationMs / 1000, s.zoom.scale)].sort((a, b) => a.start - b.start);
             ed.selected = null;
+            timeline.select(null);
             markDirty();
             drawPanel();
             toast(T('클릭 기준 줌 {0}개', project.zooms.length));
@@ -787,7 +788,7 @@ export async function openEditor(id, preloaded) {
       h('button', { class: 'btn wide', disabled: !talkFile() || ed.silenceBusy, onclick: cutSilences }, ed.silenceBusy ? T('조용한 곳을 찾는 중…') : T('🔇 말 없는 구간 찾아 자르기')),
       auto.length ? h('div', { class: 'row', style: { marginTop: '8px' } },
         h('span', { class: 'small muted grow' }, T('자동으로 자른 구간 {0}개', auto.length)),
-        h('button', { class: 'btn small', onclick: () => { project.cuts = project.cuts.filter((c) => !c.silence); ed.selected = null; markDirty(); drawPanel(); } }, T('모두 되살리기'))) : null);
+        h('button', { class: 'btn small', onclick: () => { project.cuts = project.cuts.filter((c) => !c.silence); ed.selected = null; timeline.select(null); markDirty(); drawPanel(); } }, T('모두 되살리기'))) : null);
   }
   async function cutSilences() {
     const pref = store.get('silence', { minGap: 1, keepBusy: true });
@@ -810,6 +811,7 @@ export async function openEditor(id, preloaded) {
       project.cuts = [...project.cuts.filter((c) => !c.silence),
         ...cuts.filter((c) => c.start < end).map((c) => ({ id: newId('c'), start: c.start, end: Math.min(c.end, end), silence: true }))];
       ed.selected = null;
+      timeline.select(null);
       markDirty();
       toast(cuts.length ? T('말 없는 구간 {0}개를 잘라 {1} 줄였습니다', cuts.length, fmt(Math.max(0, before - outDuration(ed.segs)), true)) : T('자를 만큼 긴 조용한 곳이 없습니다.'));
     } catch (err) {

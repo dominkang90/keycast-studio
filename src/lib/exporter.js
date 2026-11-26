@@ -146,7 +146,7 @@ async function exportExact(o, { screen, webcam, W, H, audioCtx, plan }) {
     if (position !== written) { failure = failure || new Error(T('영상 파일을 순서대로 쓰지 못했습니다.')); return; }
     written += data.byteLength;
     const copy = data.slice();
-    pending = pending.then(() => o.writer.write(copy));
+    pending = pending.then(() => o.writer.write(copy)).catch((err) => { failure = failure || err; }); // a full disk stops the export at once
   };
   const muxer = plan.mp4
     ? new Mp4Muxer({
@@ -360,6 +360,7 @@ async function exportExact(o, { screen, webcam, W, H, audioCtx, plan }) {
       muxer.finalize();
       if (failure) throw failure;
       await pending;
+      if (failure) throw failure;
     }
   } catch (err) {
     await pending.catch(() => {});
@@ -409,58 +410,80 @@ async function openFast(o) {
   return { src: screen, cam: webcam };
 }
 
-/** Mixes the recording's sound and added sound files for the finished video, offline. */
-async function mixAudio(o, segs, total, rate, src) {
+/**
+ * Mixes the recording's sound and added sound files for the finished video, offline, one piece
+ * (30 s) at a time, so a long recording never needs its whole sound in memory at once.
+ * Yields { start (sample on the finished video), buffer }.
+ */
+async function* mixAudio(o, segs, total, rate, src, piece = 30) {
   const { project } = o;
-  const ctx = new OfflineAudioContext(CHANNELS, Math.max(1, Math.ceil(total * rate)), rate);
   const volume = project.settings.audio?.volume ?? 1;
-  if (src.audio && volume > 0) {
-    const gain = ctx.createGain();
-    gain.gain.value = volume;
-    // Only the recording jumps at a cut (added sounds play straight through): dip it there.
-    const { times, len } = cutFade(project, segs);
-    for (const c of times) {
-      gain.gain.setValueAtTime(volume, Math.max(0, c - len));
-      gain.gain.linearRampToValueAtTime(0, c);
-      gain.gain.linearRampToValueAtTime(volume, c + len);
-    }
-    gain.connect(ctx.destination);
-    const sink = new AudioBufferSink(src.audio);
-    for (const g of segs) {
-      for await (const { buffer, timestamp, duration } of sink.buffers(g.s0, g.s1)) {
-        // Only the part of this piece that falls inside the segment.
-        const from = Math.max(timestamp, g.s0);
-        const to = Math.min(timestamp + duration, g.s1);
-        if (to <= from) continue;
-        const node = ctx.createBufferSource();
-        node.buffer = buffer;
-        node.connect(gain);
-        node.start(g.o0 + (from - g.s0), from - timestamp, to - from);
-      }
-    }
-  }
+  const { times, len: fadeLen } = cutFade(project, segs);
+  const sink = src.audio && volume > 0 ? new AudioBufferSink(src.audio) : null;
   // Added sound files play continuously from where they start on the finished video's timeline.
+  const added = [];
+  const decoder = new OfflineAudioContext(1, 1, rate);
   for (const a of project.audios || []) {
     try {
-      const data = await (await fetch(o.url(a.file))).arrayBuffer();
-      const buffer = await ctx.decodeAudioData(data);
+      const buffer = await decoder.decodeAudioData(await (await fetch(o.url(a.file))).arrayBuffer());
       const outStart = srcToOut(segs, a.start);
       const outEnd = Math.min(total, srcToOut(segs, a.end));
       const offset = a.offset || 0;
       const len = Math.min(outEnd - outStart, buffer.duration - offset);
-      if (len <= 0) continue;
-      const gain = ctx.createGain();
-      gain.gain.value = Math.min(1, Math.max(0, a.volume ?? 1));
-      gain.connect(ctx.destination);
-      const node = ctx.createBufferSource();
-      node.buffer = buffer;
-      node.connect(gain);
-      node.start(outStart, offset, len);
+      if (len > 0) added.push({ buffer, outStart, offset, len, volume: Math.min(1, Math.max(0, a.volume ?? 1)) });
     } catch (err) {
       console.warn('sound file skipped:', a.file, err);
     }
   }
-  return ctx.startRendering();
+  const totalSamples = Math.max(1, Math.ceil(total * rate));
+  for (let start = 0; start < totalSamples; start += piece * rate) {
+    const n = Math.min(piece * rate, totalSamples - start);
+    const w0 = start / rate;
+    const w1 = (start + n) / rate;
+    const ctx = new OfflineAudioContext(CHANNELS, n, rate);
+    if (sink) {
+      const gain = ctx.createGain();
+      gain.gain.value = volume;
+      // Only the recording jumps at a cut (added sounds play straight through): dip it there.
+      for (const c of times) {
+        if (c + fadeLen <= w0 || c - fadeLen >= w1) continue;
+        const t0 = Math.max(w0, c - fadeLen);
+        gain.gain.setValueAtTime(volume * Math.min(1, Math.abs(t0 - c) / fadeLen), Math.max(0, t0 - w0));
+        if (c > t0) gain.gain.linearRampToValueAtTime(0, c - w0);
+        gain.gain.linearRampToValueAtTime(volume, c + fadeLen - w0);
+      }
+      gain.connect(ctx.destination);
+      for (const g of segs) {
+        if (g.o1 <= w0 || g.o0 >= w1) continue;
+        // The part of this segment (in recording time) that lands inside this piece.
+        const sa = g.s0 + (Math.max(g.o0, w0) - g.o0);
+        const sb = g.s0 + (Math.min(g.o1, w1) - g.o0);
+        for await (const { buffer, timestamp, duration } of sink.buffers(sa, sb)) {
+          const from = Math.max(timestamp, sa);
+          const to = Math.min(timestamp + duration, sb);
+          if (to <= from) continue;
+          const node = ctx.createBufferSource();
+          node.buffer = buffer;
+          node.connect(gain);
+          // max(0): rounding can put a piece that starts exactly at the boundary a hair below zero.
+          node.start(Math.max(0, g.o0 + (from - g.s0) - w0), from - timestamp, to - from);
+        }
+      }
+    }
+    for (const a of added) {
+      const from = Math.max(a.outStart, w0);
+      const to = Math.min(a.outStart + a.len, w1);
+      if (to <= from) continue;
+      const gain = ctx.createGain();
+      gain.gain.value = a.volume;
+      gain.connect(ctx.destination);
+      const node = ctx.createBufferSource();
+      node.buffer = a.buffer;
+      node.connect(gain);
+      node.start(Math.max(0, from - w0), a.offset + (from - a.outStart), to - from);
+    }
+    yield { start, buffer: await ctx.startRendering() };
+  }
 }
 
 /**
@@ -510,7 +533,7 @@ async function exportFast(o, { W, H, plan, src, cam }) {
     if (position !== written) { failure = failure || new Error(T('영상 파일을 순서대로 쓰지 못했습니다.')); return; }
     written += data.byteLength;
     const copy = data.slice();
-    pending = pending.then(() => o.writer.write(copy));
+    pending = pending.then(() => o.writer.write(copy)).catch((err) => { failure = failure || err; }); // a full disk stops the export at once
   };
   const muxer = plan.mp4
     ? new Mp4Muxer({
@@ -538,15 +561,20 @@ async function exportFast(o, { W, H, plan, src, cam }) {
   try {
     // ---- sound first (small), so the encoder can interleave it with the picture
     const rate = plan.audio.config.sampleRate;
-    const mixed = await mixAudio(o, segs, outLen, rate, src);
-    const step = rate; // one second per piece
-    for (let i = 0; i < mixed.length; i += step) {
-      const n = Math.min(step, mixed.length - i);
-      const buf = new Float32Array(n * CHANNELS);
-      for (let c = 0; c < CHANNELS; c++) buf.set(mixed.getChannelData(Math.min(c, mixed.numberOfChannels - 1)).subarray(i, i + n), c * n);
-      const data = new AudioData({ format: 'f32-planar', sampleRate: rate, numberOfFrames: n, numberOfChannels: CHANNELS, timestamp: Math.round((i / rate) * 1e6), data: buf });
-      aenc.encode(data);
-      data.close();
+    for await (const { start, buffer: mixed } of mixAudio(o, segs, outLen, rate, src)) {
+      if (cancelled()) break;
+      if (failure) throw failure;
+      const step = rate; // one second per piece
+      for (let i = 0; i < mixed.length; i += step) {
+        const n = Math.min(step, mixed.length - i);
+        const buf = new Float32Array(n * CHANNELS);
+        for (let c = 0; c < CHANNELS; c++) buf.set(mixed.getChannelData(Math.min(c, mixed.numberOfChannels - 1)).subarray(i, i + n), c * n);
+        const data = new AudioData({ format: 'f32-planar', sampleRate: rate, numberOfFrames: n, numberOfChannels: CHANNELS, timestamp: Math.round(((start + i) / rate) * 1e6), data: buf });
+        aenc.encode(data);
+        data.close();
+      }
+      // Let the encoder keep up instead of holding every piece of sound in memory.
+      while (aenc.encodeQueueSize > 8) await new Promise((r) => setTimeout(r, 1));
     }
 
     // ---- picture: the frame shown at each output time, read in order from the file
@@ -589,6 +617,7 @@ async function exportFast(o, { W, H, plan, src, cam }) {
     muxer.finalize();
     if (failure) throw failure;
     await pending;
+    if (failure) throw failure;
     o.onProgress?.(1);
   } catch (err) {
     await pending.catch(() => {});
