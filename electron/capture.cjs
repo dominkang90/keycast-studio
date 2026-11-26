@@ -223,17 +223,19 @@ async function finish(dir, segments) {
   const lateOf = (s, key) => { const v = (s[`${key}Start`] - s.t0) / 1000; return Number.isFinite(v) ? v : 0; };
   const joined = async (key, out, chain, codec) => {
     const have = segments.filter((s) => s[key]);
-    if (have.length !== segments.length) { have.forEach((s) => temp.push(s[key])); return null; }
+    // Some pieces have no track: nothing can be joined, so the pieces are kept as they are.
+    if (have.length !== segments.length) return null;
     const inputs = [];
     const filters = [];
     segments.forEach((s, i) => {
       inputs.push('-i', path.join(dir, s[key]));
-      temp.push(s[key]);
       filters.push(`[${i}:${chain.stream}]${chain.build(lateOf(s, key), s.duration)}[p${i}]`);
     });
     filters.push(`${segments.map((_s, i) => `[p${i}]`).join('')}concat=n=${segments.length}:${chain.concat}[out]`);
     try {
       await run([...inputs, '-filter_complex', filters.join(';'), '-map', '[out]', ...codec, path.join(dir, out)]);
+      // Only now are the pieces no longer needed; if joining fails they stay, so nothing is lost.
+      segments.forEach((s) => temp.push(s[key]));
       return out;
     } catch (err) {
       console.error(err);

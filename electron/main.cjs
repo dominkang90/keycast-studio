@@ -238,6 +238,13 @@ function showStudio() {
   studio.show();
   studio.focus();
 }
+// Quitting while recording: stop the recording first so its files are finished and saved,
+// then quit once the recording is written (or after a while if that never happens).
+let recordingActive = false;
+let quitAfterRecording = false;
+function quitWhenSaved() {
+  if (quitAfterRecording && !recordingActive) setTimeout(() => app.quit(), 300);
+}
 function trayCommand(action) {
   showStudio();
   studio?.webContents.send('tray:command', action);
@@ -624,6 +631,7 @@ function registerIpc() {
   });
 
   ipcMain.handle('recording:begin', (_e, opts) => {
+    recordingActive = true;
     const display = displayFor(opts.displayId);
     const isScreen = opts.kind === 'screen';
     stopKeysOnly();
@@ -638,6 +646,9 @@ function registerIpc() {
   });
 
   ipcMain.handle('recording:end', () => {
+    recordingActive = false;
+    // The recording failed to save: nothing more will come, so quit soon anyway.
+    if (quitAfterRecording) setTimeout(() => app.quit(), 8000);
     const events = stopInput();
     unregisterShortcuts();
     liveKeys = { display: null, settings: null, visible: false, accel: 'Alt+Shift+K' };
@@ -777,15 +788,25 @@ function registerIpc() {
     const stream = fs.createWriteStream(file);
     await new Promise((resolve, reject) => { stream.once('open', resolve); stream.once('error', reject); });
     const handle = writerSeq++;
-    writers.set(handle, { stream, file });
+    const w = { stream, file, error: null };
+    // A failed write (a full disk, a removed drive) must reach the page, not leave it waiting.
+    stream.on('error', (err) => { w.error = err; });
+    writers.set(handle, w);
     return handle;
   });
 
   ipcMain.handle('file:write', async (_e, handle, data) => {
     const w = writers.get(handle);
     if (!w) throw new Error('Writer closed');
+    if (w.error || w.stream.destroyed) throw w.error || new Error('Writer closed');
     const buf = Buffer.from(data);
-    if (!w.stream.write(buf)) await new Promise((r) => w.stream.once('drain', r));
+    if (!w.stream.write(buf)) {
+      await new Promise((resolve, reject) => {
+        const done = () => { w.stream.off('drain', done); w.stream.off('close', done); w.error ? reject(w.error) : resolve(); };
+        w.stream.on('drain', done);
+        w.stream.on('close', done);
+      });
+    }
     return buf.length;
   });
 
@@ -793,7 +814,8 @@ function registerIpc() {
     const w = writers.get(handle);
     if (!w) return null;
     writers.delete(handle);
-    await new Promise((r) => w.stream.end(r));
+    if (!w.error) await new Promise((r) => w.stream.end(r));
+    if (w.error) throw w.error; // the file is incomplete: do not report it as saved
     if (opts.durationMs && /\.webm$/i.test(w.file)) {
       try { await patchWebmDuration(w.file, opts.durationMs); } catch (err) { console.warn('duration patch failed', err); }
     }
@@ -814,12 +836,15 @@ function registerIpc() {
     const tmp = path.join(dir, 'project.json.tmp');
     await fsp.writeFile(tmp, JSON.stringify(project));
     await fsp.rename(tmp, path.join(dir, 'project.json'));
+    quitWhenSaved();
     return true;
   });
 
   ipcMain.handle('project:load', async (_e, id) => {
     const text = await fsp.readFile(path.join(projectDir(id), 'project.json'), 'utf8');
-    return JSON.parse(text);
+    // The folder is the project: a copied folder keeps the old id inside, and saving or deleting
+    // with that id would touch the original.
+    return { ...JSON.parse(text), id };
   });
 
   ipcMain.handle('project:list', async () => {
@@ -830,7 +855,7 @@ function registerIpc() {
       if (!ent.isDirectory()) continue;
       try {
         const p = JSON.parse(await fsp.readFile(path.join(MEDIA_ROOT, ent.name, 'project.json'), 'utf8'));
-        list.push({ id: p.id, name: p.name, createdAt: p.createdAt, durationMs: p.durationMs, source: p.source?.name, keyCount: (p.events || []).filter((e) => e.type === 'kd' && !e.repeat).length, subtitles: (p.subtitles || []).length });
+        list.push({ id: ent.name, name: p.name, createdAt: p.createdAt, durationMs: p.durationMs, source: p.source?.name, keyCount: (p.events || []).filter((e) => e.type === 'kd' && !e.repeat).length, subtitles: (p.subtitles || []).length });
       } catch { /* not a project */ }
     }
     list.sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
@@ -980,6 +1005,15 @@ if (!single) {
     registerIpc();
     createStudio();
     createTray();
+  });
+
+  app.on('before-quit', (e) => {
+    if (!recordingActive || !studio || studio.isDestroyed()) return;
+    e.preventDefault();
+    if (quitAfterRecording) return;
+    quitAfterRecording = true;
+    studio.webContents.send('recorder:command', 'stop');
+    setTimeout(() => app.exit(0), 60000); // never keep the app from quitting for good
   });
 
   app.on('will-quit', () => {

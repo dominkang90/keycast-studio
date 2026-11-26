@@ -100,3 +100,29 @@ export function syncAudios(els, project, segs, t, playing) {
     if (el.paused) el.play().catch(() => {});
   }
 }
+
+/**
+ * Where the finished video jumps over a cut (times on the finished video), and how long the sound
+ * dips there: a few milliseconds, or longer with the dip-to-black transition.
+ */
+export function cutFade(project, segs) {
+  const times = segs.slice(1).filter((g, i) => Math.abs(g.s0 - segs[i].s1) > 1e-3).map((g) => g.o0);
+  const len = project.settings?.cut?.transition === 'fade' ? Math.min(0.2, (project.settings.cut.duration || 0.3) / 2) : 0.02;
+  return { times, len };
+}
+
+/** Fades the sound out and back in around each cut so the join does not click. planes: one array per channel, starting at sample `start`. */
+export function softenCuts(planes, start, rate, fade) {
+  if (!fade.times.length || !planes.length) return;
+  const n = planes[0].length;
+  for (const c of fade.times) {
+    const a = Math.max(0, Math.floor((c - fade.len) * rate) - start);
+    const b = Math.min(n, Math.ceil((c + fade.len) * rate) - start);
+    for (let i = a; i < b; i++) {
+      const d = Math.abs((start + i) / rate - c);
+      if (d >= fade.len) continue;
+      const g = d / fade.len;
+      for (const ch of planes) ch[i] *= g;
+    }
+  }
+}

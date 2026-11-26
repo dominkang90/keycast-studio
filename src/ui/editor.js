@@ -796,6 +796,8 @@ export async function openEditor(id, preloaded) {
     drawPanel();
     try {
       const samples = await decodeAudio(platform.mediaUrl(project.id, file));
+      // The editor was closed meanwhile: writing now would overwrite edits made after reopening.
+      if (state.editor !== ed) return;
       const { cuts, clear } = findSilences(samples, 16000, {
         minGap: pref.minGap,
         pad: 0.25,
@@ -859,6 +861,7 @@ export async function openEditor(id, preloaded) {
             }
           },
         });
+        if (state.editor !== ed) return; // the editor was closed meanwhile (see cutSilences)
         // The microphone file may begin a moment after the picture: move the lines to match.
         const late = soundFile === project.files.voice ? (project.offsets?.voice || 0) : 0;
         if (late) for (const c of subs) { c.start += late; c.end += late; }

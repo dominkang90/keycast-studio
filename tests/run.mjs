@@ -5,7 +5,7 @@ import { writeFileSync, readFileSync, mkdtempSync, rmSync, readdirSync } from 'n
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { buildKeyGroups, visibleGroups, DRAG_LABEL, keepWithoutTyping } from '../src/lib/keys.js';
-import { segments, outDuration, srcToOut, outToSrc, mapCues } from '../src/lib/timemap.js';
+import { segments, outDuration, srcToOut, outToSrc, mapCues, cutFade, softenCuts } from '../src/lib/timemap.js';
 import { autoZoomRegions, cameraAt, CursorTrack, viewRect, easeIn, zoomRect, between } from '../src/lib/zoom.js';
 import { shapeSubtitles, toSRT, wrapLines, cueWords, SUBTITLE_STYLES } from '../src/lib/subtitles.js';
 import { drawSubtitle, drawClicks, CLICK_EFFECTS, cutPhase } from '../src/lib/compositor.js';
@@ -258,6 +258,24 @@ test('zoom works inside a cropped picture', () => {
   const half = (crop.w / c.scale) / 2;
   assert.ok(c.x - half >= crop.x - 1e-9 && c.x + half <= crop.x + crop.w + 1e-9);
   assert.ok(c.x - half <= 0.6 && 0.6 <= c.x + half);
+});
+
+test('sound dips to zero at each cut and nowhere else', () => {
+  const p = { durationMs: 4000, cuts: [{ start: 1, end: 1.5 }], speeds: [], settings: { cut: { transition: 'zoom' } } };
+  const fade = cutFade(p, segments(p));
+  assert.deepEqual(fade.times, [1]);
+  const rate = 1000;
+  const left = new Float32Array(3500).fill(1);
+  const right = new Float32Array(3500).fill(1);
+  // In two pieces, as the sound arrives in chunks.
+  softenCuts([left.subarray(0, 1005), right.subarray(0, 1005)], 0, rate, fade);
+  softenCuts([left.subarray(1005), right.subarray(1005)], 1005, rate, fade);
+  assert.equal(left[1000], 0);
+  assert.ok(left[990] > 0.4 && left[990] < 0.6 && right[1010] > 0.4 && right[1010] < 0.6);
+  assert.equal(left[970], 1);
+  assert.equal(left[3000], 1);
+  // The dip transition fades for longer.
+  assert.ok(cutFade({ ...p, settings: { cut: { transition: 'fade', duration: 0.3 } } }, segments(p)).len > 0.1);
 });
 
 test('classic camera is still there', () => {
