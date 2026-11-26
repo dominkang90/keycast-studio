@@ -614,4 +614,9 @@ export default {
   "빠르게": "Snel",
   "탄력 있게": "Verend",
   "움직임 잔상": "Bewegingsonscherpte",
+  "지금 업데이트": "Nu bijwerken",
+  "내려받는 중 {0}%": "Downloaden {0}%",
+  "다시 시작해서 설치": "Herstarten en installeren",
+  "새 버전 {0}을 받았습니다. 다시 시작하면 설치됩니다.": "Versie {0} is gedownload. Herstart om te installeren.",
+  "새 버전을 받지 못했습니다. 내려받는 페이지를 엽니다.": "De nieuwe versie kon niet worden gedownload. De downloadpagina wordt geopend.",
 };

@@ -597,6 +597,7 @@ function registerIpc() {
     access: macAccess(),
     portable: PORTABLE ? { root: PORTABLE.root, oldRecordings: oldRecordingsDir() } : null,
     tray: !!tray && !tray.isDestroyed(),
+    updateInPlace: canUpdateInPlace(),
   }));
 
   // Screen capture through ffmpeg, which can leave the mouse pointer out of the picture.
@@ -941,6 +942,20 @@ function registerIpc() {
     return newerThan(latest, app.getVersion()) ? { version: latest } : null;
   });
   ipcMain.handle('update:open', () => shell.openExternal(RELEASES_PAGE));
+  // The installed Windows app updates itself: download the new installer, then run it quietly.
+  ipcMain.handle('update:download', async () => {
+    if (!canUpdateInPlace()) throw new Error('This copy cannot update itself');
+    const u = updater();
+    await u.checkForUpdates();
+    await u.downloadUpdate();
+    return true;
+  });
+  ipcMain.handle('update:install', () => {
+    if (!canUpdateInPlace()) return false;
+    // Quietly into the same folder, then start the new version.
+    setImmediate(() => updater().quitAndInstall(true, true));
+    return true;
+  });
   ipcMain.on('tray:words', (_e, words) => {
     const keys = ['open', 'record', 'keysOn', 'keysOff', 'small', 'quit'];
     if (words && keys.every((k) => typeof words[k] === 'string' && words[k].length < 60)) { trayWords = Object.fromEntries(keys.map((k) => [k, words[k]])); drawTray(); }
@@ -959,6 +974,35 @@ function registerIpc() {
   });
   // The English user guide is the README on GitHub; the address is fixed here, not passed in.
   ipcMain.handle('shell:openHelp', () => shell.openExternal('https://github.com/dominkang90/keycast-studio#readme'));
+}
+
+// ---------------------------------------------------------------- updating in place
+/**
+ * Only the installed Windows app replaces itself (the installer leaves its uninstaller next to the
+ * exe). The portable exe cannot replace the file it runs from, macOS needs a signed app, and the
+ * Linux release has no update file yet: those keep the "get it" link.
+ */
+function canUpdateInPlace() {
+  if (process.env.KEYCAST_FAKE_CURRENT) return true; // tests: an unpacked build acting as an older install
+  if (process.platform !== 'win32' || !app.isPackaged || PORTABLE || process.env.PORTABLE_EXECUTABLE_DIR) return false;
+  return fs.existsSync(path.join(path.dirname(process.execPath), 'Uninstall KeyCast Studio.exe'));
+}
+let autoUpdaterRef = null;
+function updater() {
+  if (autoUpdaterRef) return autoUpdaterRef;
+  const { autoUpdater } = require('electron-updater');
+  autoUpdater.autoDownload = false;
+  autoUpdater.autoInstallOnAppQuit = false;
+  if (process.env.KEYCAST_FAKE_CURRENT) {
+    autoUpdater.currentVersion = new autoUpdater.currentVersion.constructor(process.env.KEYCAST_FAKE_CURRENT);
+  }
+  let last = -1;
+  autoUpdater.on('download-progress', (p) => {
+    const pct = Math.floor(p.percent || 0);
+    if (pct !== last) { last = pct; studio?.webContents.send('update:progress', pct); }
+  });
+  autoUpdaterRef = autoUpdater;
+  return autoUpdater;
 }
 
 // ---------------------------------------------------------------- new version notice

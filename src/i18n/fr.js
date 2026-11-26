@@ -614,4 +614,9 @@ export default {
   "빠르게": "Rapide",
   "탄력 있게": "Avec rebond",
   "움직임 잔상": "Flou de mouvement",
+  "지금 업데이트": "Mettre à jour",
+  "내려받는 중 {0}%": "Téléchargement {0} %",
+  "다시 시작해서 설치": "Redémarrer et installer",
+  "새 버전 {0}을 받았습니다. 다시 시작하면 설치됩니다.": "La version {0} est téléchargée. Redémarrez pour l'installer.",
+  "새 버전을 받지 못했습니다. 내려받는 페이지를 엽니다.": "Impossible de télécharger la nouvelle version. Ouverture de la page de téléchargement.",
 };

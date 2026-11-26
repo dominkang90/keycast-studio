@@ -253,6 +253,9 @@ export const platform = {
   async setCompact(on) { return isDesktop && api.setCompact ? api.setCompact(on) : false; },
   async checkUpdate() { return isDesktop && api.checkUpdate ? api.checkUpdate() : null; },
   openUpdate() { if (isDesktop) api.openUpdate?.(); },
+  downloadUpdate() { return api.downloadUpdate(); },
+  installUpdate() { return api.installUpdate(); },
+  onUpdateProgress(fn) { return isDesktop && api.onUpdateProgress ? api.onUpdateProgress(fn) : () => {}; },
   trayWords(words) { if (isDesktop) api.trayWords?.(words); },
   onTray(fn) { if (isDesktop) api.onTray?.(fn); },
 };

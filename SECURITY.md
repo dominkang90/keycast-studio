@@ -22,8 +22,9 @@ Deleting a recording in the app deletes that whole folder. Uninstalling the app 
 ## What it sends over the internet
 
 - **The speech model download.** The first time you make subtitles, the Whisper model is downloaded from Hugging Face (`huggingface.co`) by Transformers.js. Your voice is processed on your computer and is never uploaded.
-- **The new version notice** (since 2.6.0). At most once a day the desktop app asks `api.github.com` for this project's latest release number (`electron/main.cjs`, `update:check`). Nothing about you or your recordings is sent; GitHub sees an ordinary request from your IP address. Nothing is downloaded or installed: the app only shows a line with a button that opens the release page. Switch it off in ⚙ Settings → New version notice.
-- No accounts, analytics, crash reports or automatic updates.
+- **The new version notice** (since 2.6.0). At most once a day the desktop app asks `api.github.com` for this project's latest release number (`electron/main.cjs`, `update:check`). Nothing about you or your recordings is sent; GitHub sees an ordinary request from your IP address. Nothing is downloaded or installed on its own: the app only shows a line with a button. Switch it off in ⚙ Settings → New version notice.
+- **Updating in place** (since 2.9.0, installed Windows app only). Only when you press **Update now**, the app downloads the new installer from this project's GitHub release (`electron-updater`, `update:download`), checks it against the SHA-512 listed in the release's `latest.yml`, and runs it quietly when you press **Restart to install**. The installer is not code-signed yet. The portable exe, macOS and Linux keep the button that opens the release page.
+- No accounts, analytics or crash reports, and nothing is updated without you pressing the button.
 - The browser version (`KeyCast-Studio-web.zip`) may load the speech runtime from `cdn.jsdelivr.net` as well.
 
 ## Checking a download

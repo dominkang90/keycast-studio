@@ -1,7 +1,7 @@
 {
   "name": "keycast-studio",
   "productName": "KeyCast Studio",
-  "version": "2.8.3",
+  "version": "2.9.0",
   "description": "Screen recorder that shows every key you press, polishes clicks with auto-zoom and turns your voice into subtitles.",
   "license": "MIT",
   "author": "dominkang90",
@@ -36,6 +36,7 @@
     "dist:linux": "npm run build:ui && electron-builder --linux --publish never"
   },
   "dependencies": {
+    "electron-updater": "^6.8.11",
     "koffi": "^3.3.8",
     "uiohook-napi": "^1.5.4"
   },

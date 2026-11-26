@@ -415,16 +415,49 @@ async function latestUpdate() {
   return updateInfo;
 }
 
+// Updating in place (installed Windows app): downloading goes on while the home screen redraws.
+let updateJob = null; // { stage: 'downloading' | 'ready', pct }
+let redrawUpdate = () => {};
+platform.onUpdateProgress((pct) => { if (updateJob?.stage === 'downloading') { updateJob.pct = pct; redrawUpdate(); } });
+function startUpdate() {
+  if (updateJob) return;
+  updateJob = { stage: 'downloading', pct: 0 };
+  redrawUpdate();
+  platform.downloadUpdate().then(() => { updateJob = { stage: 'ready' }; redrawUpdate(); }, (err) => {
+    console.error(err);
+    updateJob = null;
+    toast(T('새 버전을 받지 못했습니다. 내려받는 페이지를 엽니다.'), true);
+    platform.openUpdate();
+    redrawUpdate();
+  });
+}
+
 /** A place for the notice; filled when the answer comes, so the screen never waits for it. */
 function updateSlot(short = false) {
   const slot = h('div', { class: 'update-slot' });
   latestUpdate().then((u) => {
     if (!u || store.get('updateSkip', '') === u.version) return;
-    slot.replaceChildren(h('div', { class: 'banner update', role: 'status' },
-      h('span', { class: 'grow' }, T('🎉 새 버전 {0}이 나왔습니다.', u.version),
-        !short && state.info?.portable ? ` ${T('포터블은 새 exe로 바꾸기만 하면 KeyCast Data가 그대로 이어집니다.')}` : ''),
-      h('button', { class: 'btn small primary', onclick: () => platform.openUpdate() }, T('받으러 가기')),
-      h('button', { class: 'btn small ghost', title: T('이 버전은 다시 알리지 않습니다'), onclick: () => { store.set('updateSkip', u.version); slot.replaceChildren(); } }, short ? '✕' : T('건너뛰기'))));
+    const draw = () => {
+      if (!slot.isConnected && slot.childElementCount) return;
+      const inPlace = !!state.info?.updateInPlace;
+      let action;
+      if (updateJob?.stage === 'ready') {
+        action = h('button', { class: 'btn small primary', onclick: () => platform.installUpdate() }, T('다시 시작해서 설치'));
+      } else if (updateJob?.stage === 'downloading') {
+        action = h('button', { class: 'btn small', disabled: true }, T('내려받는 중 {0}%', updateJob.pct || 0));
+      } else if (inPlace) {
+        action = h('button', { class: 'btn small primary', onclick: startUpdate }, T('지금 업데이트'));
+      } else {
+        action = h('button', { class: 'btn small primary', onclick: () => platform.openUpdate() }, T('받으러 가기'));
+      }
+      slot.replaceChildren(h('div', { class: 'banner update', role: 'status' },
+        h('span', { class: 'grow' }, updateJob?.stage === 'ready' ? T('새 버전 {0}을 받았습니다. 다시 시작하면 설치됩니다.', u.version) : T('🎉 새 버전 {0}이 나왔습니다.', u.version),
+          !short && !inPlace && state.info?.portable ? ` ${T('포터블은 새 exe로 바꾸기만 하면 KeyCast Data가 그대로 이어집니다.')}` : ''),
+        action,
+        updateJob ? null : h('button', { class: 'btn small ghost', title: T('이 버전은 다시 알리지 않습니다'), onclick: () => { store.set('updateSkip', u.version); slot.replaceChildren(); } }, short ? '✕' : T('건너뛰기'))));
+    };
+    redrawUpdate = draw;
+    draw();
   });
   return slot;
 }
