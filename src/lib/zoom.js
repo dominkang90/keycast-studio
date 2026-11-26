@@ -160,8 +160,9 @@ const ease = (k) => (k < 0.5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2);
 /**
  * How a zoom moves in: smooth (slow start and end), quick (gets there fast, then settles)
  * or spring (goes a little past and comes back). Zooming out is always smooth.
+ * "classic" is the v2.7 camera, for anyone who preferred it.
  */
-export const ZOOM_FEELS = ['smooth', 'quick', 'spring'];
+export const ZOOM_FEELS = ['smooth', 'quick', 'spring', 'classic'];
 export function easeIn(k, feel) {
   if (feel === 'quick') return k >= 1 ? 1 : 1 - Math.pow(2, -10 * k);
   if (feel === 'spring') {
@@ -171,9 +172,179 @@ export function easeIn(k, feel) {
   return ease(k);
 }
 
-/** Camera at time t: zoom factor and the normalised point it looks at. */
-export function cameraAt(t, regions, cursor, opts = ZOOM_DEFAULTS) {
+/**
+ * Camera at time t: zoom factor and the normalised point it looks at.
+ * `crop` (normalised, optional) is the part of the recording the camera works inside.
+ */
+export function cameraAt(t, regions, cursor, opts = ZOOM_DEFAULTS, crop = null) {
   if (!opts.enabled || !regions.length) return { scale: 1, x: 0.5, y: 0.5 };
+  if (opts.feel === 'classic') return classicCamera(t, regions, cursor, opts);
+  const c = crop || FULL_CROP;
+  const plan = cameraPlan(regions, cursor, opts, c);
+  const f = Math.max(0, Math.min(plan.n - 1, t * PLAN_RATE));
+  const i = Math.floor(f);
+  const j = Math.min(plan.n - 1, i + 1);
+  const k = f - i;
+  const lerp = (a) => a[i] + (a[j] - a[i]) * k;
+  const w = lerp(plan.w);
+  // Back to the whole recording's coordinates, the way the compositor expects them.
+  return { scale: 1 / w, x: c.x + (lerp(plan.x) + w / 2) * c.w, y: c.y + (lerp(plan.y) + w / 2) * c.h };
+}
+
+// ------------------------------------------------------------------ camera plan (v2.8)
+// The camera is one rectangle (x, y = top-left, w = width = height, all inside the crop).
+// Every move goes from one rectangle to another along a path where the picture grows or
+// shrinks around one fixed point at an even rate, so zoom and pan start and stop together,
+// nothing slides sideways, and the rectangle never has to be pushed back inside the picture.
+// The whole path is worked out once per set of zooms and then looked up, so preview,
+// seeking and export agree.
+
+const PLAN_RATE = 60;
+const FULL_CROP = { x: 0, y: 0, w: 1, h: 1 };
+const FULL = { x: 0, y: 0, w: 1 };
+/** Zooms closer together than this (seconds) stay zoomed in and move across instead of going out and in. */
+export const CHAIN_GAP = 2;
+const plans = new WeakMap();
+const NO_CURSOR = {};
+
+const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+
+/** The rectangle a zoom looks at: the zoom point ends up most of the way toward the middle. */
+export function zoomRect(r, crop = FULL_CROP) {
+  const w = clamp(1 / Math.max(1, r.scale || 1), 0.05, 1);
+  const place = (c) => {
+    const f = 0.5 + (c - 0.5) * 0.4; // where across the screen the point ends up
+    return clamp(c - f * w, 0, 1 - w);
+  };
+  const cx = clamp(((r.x ?? 0.5) - crop.x) / crop.w, 0, 1);
+  const cy = clamp(((r.y ?? 0.5) - crop.y) / crop.h, 0, 1);
+  return { x: place(cx), y: place(cy), w };
+}
+
+/** Rectangle part way (k) from a to b, growing or shrinking around one fixed point. */
+export function between(a, b, k) {
+  const la = Math.log(a.w);
+  const lb = Math.log(b.w);
+  const w = Math.exp(la + (lb - la) * k);
+  if (Math.abs(lb - la) < 0.03) return { x: a.x + (b.x - a.x) * k, y: a.y + (b.y - a.y) * k, w };
+  // x and y follow w along a straight line: that is exactly a zoom around one fixed point.
+  const s = (w - a.w) / (b.w - a.w);
+  return { x: a.x + (b.x - a.x) * s, y: a.y + (b.y - a.y) * s, w };
+}
+
+const centreGap = (a, b) => Math.hypot(a.x + a.w / 2 - (b.x + b.w / 2), a.y + a.w / 2 - (b.y + b.w / 2)) / ((a.w + b.w) / 2);
+
+/** How long a move takes: longer for a bigger change, scaled by the "확대 속도" setting. */
+export function moveTime(a, b, ramp = 0.55) {
+  const s = Math.hypot(Math.log(b.w / a.w), centreGap(a, b));
+  return clamp(ramp * (0.5 + 0.9 * s), ramp * 0.6, ramp * 2.4);
+}
+
+/** Where the camera is headed over time: zoom rectangles, and the whole picture in between. */
+function targets(regions, crop) {
+  const rs = regions.filter((r) => r.end > r.start).slice().sort((a, b) => a.start - b.start);
+  const out = [];
+  for (let i = 0; i < rs.length; i++) {
+    const r = rs[i];
+    const next = rs[i + 1];
+    out.push({ t: r.start, rect: zoomRect(r, crop) });
+    // The next zoom starts soon (or already overlaps): stay zoomed in until it takes over.
+    if (next && next.start - r.end < CHAIN_GAP) continue;
+    out.push({ t: r.end, rect: FULL });
+  }
+  return out;
+}
+
+function cameraPlan(regions, cursor, opts, crop) {
+  const ramp = opts.ramp ?? 0.55;
+  const follow = !!(opts.follow && cursor && cursor.available);
+  const key = `${opts.feel}|${ramp}|${follow}|${crop.x},${crop.y},${crop.w},${crop.h}|` +
+    regions.map((r) => `${r.start},${r.end},${r.scale},${r.x},${r.y}`).join(';');
+  const owner = cursor || NO_CURSOR;
+  let byKey = plans.get(owner);
+  if (!byKey) plans.set(owner, (byKey = new Map()));
+  const hit = byKey.get(key);
+  if (hit) return hit;
+
+  const marks = targets(regions, crop);
+  const end = (marks.length ? marks[marks.length - 1].t : 0) + ramp * 2.4 + 1;
+  const n = Math.max(2, Math.ceil(end * PLAN_RATE) + 1);
+  const X = new Float32Array(n);
+  const Y = new Float32Array(n);
+  const W = new Float32Array(n);
+  const dt = 1 / PLAN_RATE;
+  let shown = { ...FULL };
+  let move = null;
+  let held = FULL;
+  let mi = 0;
+  // Following the pointer while zoomed in: the camera only moves once the pointer gets near
+  // the edge of what is shown, and then catches up smoothly (a damped spring).
+  let gx = 0.5;
+  let gy = 0.5;
+  let cx = 0.5;
+  let cy = 0.5;
+  let vx = 0;
+  let vy = 0;
+  const omega = 4.5;
+  for (let i = 0; i < n; i++) {
+    const t = i * dt;
+    while (mi < marks.length && marks[mi].t <= t + 1e-9) {
+      const m = marks[mi++];
+      const to = m.rect;
+      const from = { ...shown };
+      // Far apart at the same zoom: step back a little on the way across.
+      const lift = from.w < 0.999 && to.w < 0.999 ? Math.min(0.5, Math.max(0, 0.25 * (centreGap(from, to) - 1.2))) : 0;
+      move = { from, to, t0: m.t, d: moveTime(from, to, ramp), into: to.w < 0.999, lift };
+    }
+    if (move) {
+      const raw = Math.max(0, (t - move.t0) / move.d);
+      if (raw >= 1) {
+        held = move.to;
+        shown = { ...held };
+        move = null;
+        gx = cx = held.x + held.w / 2;
+        gy = cy = held.y + held.w / 2;
+        vx = vy = 0;
+      } else {
+        const k = move.into ? easeIn(raw, opts.feel) : ease(raw);
+        let r = between(move.from, move.to, k);
+        if (move.lift) {
+          const w = Math.min(1, r.w * (1 + move.lift * Math.sin(Math.PI * raw)));
+          r = { x: r.x + r.w / 2 - w / 2, y: r.y + r.w / 2 - w / 2, w };
+        }
+        const w = clamp(r.w, 0.05, 1);
+        shown = { x: clamp(r.x, 0, 1 - w), y: clamp(r.y, 0, 1 - w), w };
+      }
+    } else if (follow && held.w < 0.999) {
+      const w = held.w;
+      const p = cursor.smooth(t, 0.3);
+      if (p) {
+        const px = clamp((p.x - crop.x) / crop.w, 0, 1);
+        const py = clamp((p.y - crop.y) / crop.h, 0, 1);
+        const zone = w * 0.3;
+        if (px > gx + zone) gx = px - zone; else if (px < gx - zone) gx = px + zone;
+        if (py > gy + zone) gy = py - zone; else if (py < gy - zone) gy = py + zone;
+        gx = clamp(gx, w / 2, 1 - w / 2);
+        gy = clamp(gy, w / 2, 1 - w / 2);
+      }
+      vx += (omega * omega * (gx - cx) - 2 * omega * vx) * dt;
+      vy += (omega * omega * (gy - cy) - 2 * omega * vy) * dt;
+      cx += vx * dt;
+      cy += vy * dt;
+      shown = { x: clamp(cx - w / 2, 0, 1 - w), y: clamp(cy - w / 2, 0, 1 - w), w };
+    }
+    X[i] = shown.x;
+    Y[i] = shown.y;
+    W[i] = shown.w;
+  }
+  const plan = { n, x: X, y: Y, w: W };
+  if (byKey.size > 8) byKey.clear();
+  byKey.set(key, plan);
+  return plan;
+}
+
+/** The camera as it worked up to v2.7, kept as the "예전 방식" choice. */
+function classicCamera(t, regions, cursor, opts) {
   const now = rawCamera(t, regions, cursor, opts);
   if (!now.weight) return { scale: 1, x: 0.5, y: 0.5 };
   // Where the camera looks is averaged over a short stretch of time, so moving from one

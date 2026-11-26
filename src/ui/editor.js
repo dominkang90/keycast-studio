@@ -568,7 +568,7 @@ export async function openEditor(id, preloaded) {
             ? T('창을 녹화하면 클릭 위치를 알 수 없어 자동 확대가 만들어지지 않습니다. 타임라인 줌 줄을 더블클릭해 직접 넣을 수 있어요.')
             : T('이 녹화에는 마우스 위치 기록이 없습니다. 줌 줄을 더블클릭해 직접 넣을 수 있어요.')) : null,
           inlineSwitch(T('줌 효과 사용'), s.zoom.enabled, (v) => { s.zoom.enabled = v; markDirty(); }),
-          segField(T('움직임 느낌'), s.zoom.feel || 'smooth', [{ id: 'smooth', name: T('부드럽게') }, { id: 'quick', name: T('빠르게') }, { id: 'spring', name: T('탄력 있게') }], (v) => { s.zoom.feel = v; markDirty(); }),
+          segField(T('움직임 느낌'), s.zoom.feel || 'smooth', [{ id: 'smooth', name: T('부드럽게') }, { id: 'quick', name: T('빠르게') }, { id: 'spring', name: T('탄력 있게') }, { id: 'classic', name: T('예전 방식') }], (v) => { s.zoom.feel = v; markDirty(); }),
           rangeField(T('움직임 잔상'), s.zoom.motionBlur ?? 0.5, 0, 1, 0.05, (v) => { s.zoom.motionBlur = v; markDirty(); }, (v) => (v ? `${Math.round(v * 100)}%` : T('끔'))),
           h('button', { class: 'btn wide', disabled: noCursor, onclick: () => {
             project.zooms = [...project.zooms.filter((z) => !z.auto), ...autoZoomRegions(project.events, project.durationMs / 1000, s.zoom.scale)].sort((a, b) => a.start - b.start);

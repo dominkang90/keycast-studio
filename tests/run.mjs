@@ -6,7 +6,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { buildKeyGroups, visibleGroups, DRAG_LABEL, keepWithoutTyping } from '../src/lib/keys.js';
 import { segments, outDuration, srcToOut, outToSrc, mapCues } from '../src/lib/timemap.js';
-import { autoZoomRegions, cameraAt, CursorTrack, viewRect, easeIn } from '../src/lib/zoom.js';
+import { autoZoomRegions, cameraAt, CursorTrack, viewRect, easeIn, zoomRect, between } from '../src/lib/zoom.js';
 import { shapeSubtitles, toSRT, wrapLines, cueWords, SUBTITLE_STYLES } from '../src/lib/subtitles.js';
 import { drawSubtitle, drawClicks, CLICK_EFFECTS, cutPhase } from '../src/lib/compositor.js';
 import { HangulComposer, hangulText, jamoForKey } from '../src/lib/hangul.js';
@@ -179,9 +179,70 @@ test('camera glides from one zoom to the next without jumping', () => {
     worst = Math.max(worst, Math.abs(c.x - prev.x), Math.abs(c.y - prev.y));
     prev = c;
   }
-  assert.ok(worst < 0.015, `largest step between frames ${worst}`);
-  assert.ok(Math.abs(cameraAt(2.5, regions, null, { enabled: true }).x - 0.2) < 1e-9);
-  assert.ok(Math.abs(cameraAt(6, regions, null, { enabled: true }).x - 0.8) < 1e-9);
+  assert.ok(worst < 0.04, `largest step between frames ${worst}`);
+  const at = (r) => { const z = zoomRect(r); return z.x + z.w / 2; };
+  assert.ok(Math.abs(cameraAt(2.5, regions, null, { enabled: true }).x - at(regions[0])) < 1e-4);
+  assert.ok(Math.abs(cameraAt(6, regions, null, { enabled: true }).x - at(regions[1])) < 1e-4);
+});
+
+test('zoom and pan start and stop together', () => {
+  const regions = [{ id: 'a', start: 1, end: 5, scale: 2, x: 0.8, y: 0.3 }];
+  const o = { enabled: true, ramp: 0.55, follow: false, feel: 'smooth' };
+  const before = cameraAt(0.99, regions, null, o);
+  assert.equal(before.scale, 1);
+  // Part way in, both the zoom and the position have moved; once there, neither moves again.
+  const mid = cameraAt(1.25, regions, null, o);
+  assert.ok(mid.scale > 1.05 && mid.scale < 1.95);
+  assert.ok(mid.x > 0.52);
+  const a = cameraAt(2.5, regions, null, o);
+  const b = cameraAt(4.5, regions, null, o);
+  assert.ok(Math.abs(a.x - b.x) < 1e-6 && Math.abs(a.scale - b.scale) < 1e-6 && Math.abs(a.scale - 2) < 1e-3);
+});
+
+test('zooming in grows around one fixed point, never pushed back inside', () => {
+  const from = { x: 0, y: 0, w: 1 };
+  const to = zoomRect({ scale: 2.2, x: 0.85, y: 0.15 });
+  // Any point's spot on screen moves along a straight line through the fixed point; the
+  // rectangle stays inside the picture all the way.
+  const p = { x: to.x / (1 - to.w), y: to.y / (1 - to.w) };
+  for (let k = 0; k <= 1.0001; k += 0.05) {
+    const r = between(from, to, k);
+    assert.ok(r.x >= -1e-9 && r.y >= -1e-9 && r.x + r.w <= 1 + 1e-9 && r.y + r.w <= 1 + 1e-9, `inside at ${k}`);
+    assert.ok(Math.abs((p.x - r.x) / r.w - p.x) < 1e-9 && Math.abs((p.y - r.y) / r.w - p.y) < 1e-9, `fixed at ${k}`);
+  }
+  // Even rate: the zoom factor halfway is the geometric middle.
+  assert.ok(Math.abs(1 / between(from, to, 0.5).w - Math.sqrt(2.2)) < 1e-9);
+});
+
+test('clicks close together stay zoomed in; far apart in time zoom out between', () => {
+  const o = { enabled: true, ramp: 0.55, follow: false };
+  const near = [{ start: 1, end: 3, scale: 2, x: 0.2, y: 0.2 }, { start: 4.2, end: 6, scale: 2, x: 0.7, y: 0.6 }];
+  for (let t = 2; t < 5.5; t += 0.05) assert.ok(cameraAt(t, near, null, o).scale > 1.8, `zoomed at ${t.toFixed(2)}`);
+  const far = [{ start: 1, end: 3, scale: 2, x: 0.2, y: 0.2 }, { start: 7, end: 9, scale: 2, x: 0.7, y: 0.6 }];
+  assert.ok(cameraAt(5.5, far, null, o).scale < 1.01);
+  // A longer trip across takes longer.
+  const short = [{ start: 1, end: 3, scale: 2, x: 0.4, y: 0.4 }, { start: 3, end: 6, scale: 2, x: 0.45, y: 0.4 }];
+  const settle = (rs) => { let t = 3; while (Math.abs(cameraAt(t, rs, null, o).x - cameraAt(5.9, rs, null, o).x) > 1e-4) t += 0.01; return t - 3; };
+  assert.ok(settle(short) < settle([near[0], { start: 3, end: 6, scale: 2, x: 0.9, y: 0.9 }]));
+});
+
+test('camera follows the pointer only near the edge of the view', () => {
+  const ev = [{ t: 0.5, type: 'md', x: 0.5, y: 0.5 }];
+  // Small wiggles around the middle, then a long move to the right.
+  for (let i = 0; i < 60; i++) ev.push({ t: 1 + i * 0.05, type: 'mm', x: 0.5 + 0.03 * Math.sin(i), y: 0.5 + 0.03 * Math.cos(i) });
+  ev.push({ t: 4.5, type: 'mm', x: 0.95, y: 0.5 }, { t: 7, type: 'mm', x: 0.95, y: 0.5 });
+  const cur = new CursorTrack(ev);
+  const regions = [{ start: 0, end: 8, scale: 2, x: 0.5, y: 0.5 }];
+  const o = { enabled: true, ramp: 0.55, follow: true };
+  const a = cameraAt(1.5, regions, cur, o);
+  const b = cameraAt(3.5, regions, cur, o);
+  assert.ok(Math.abs(a.x - b.x) < 1e-6 && Math.abs(a.y - b.y) < 1e-6, 'still while the pointer stays near the middle');
+  assert.ok(cameraAt(7, regions, cur, o).x > 0.7, 'moves over once the pointer goes to the edge');
+});
+
+test('classic camera is still there', () => {
+  const regions = [{ start: 1, end: 4, scale: 2, x: 0.2, y: 0.2 }];
+  assert.ok(Math.abs(cameraAt(2.5, regions, null, { enabled: true, feel: 'classic' }).x - 0.2) < 1e-9);
 });
 
 test('cut-out parts and speed regions map times', () => {

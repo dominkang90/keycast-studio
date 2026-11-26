@@ -1058,7 +1058,7 @@ export function renderFrame(ctx, f) {
   drawBackground(ctx, W, H, s.frame, f.url);
   const rect = contentRect(W, H, srcW * crop.w, srcH * crop.h, s.frame);
   // The camera works inside the cropped picture; `view` is the part of the whole recording shown.
-  const cam = cameraAt(t, project.zooms || [], derived.cursor, s.zoom);
+  const cam = cameraAt(t, project.zooms || [], derived.cursor, s.zoom, crop);
   // Just around a cut: the transition picked in Edit > Cut (a small push-in, a dip or a blur).
   const cut = cutPhase(t, f.segs || segmentsOf(project), s.cut);
   if (cut.style === 'zoom' && cut.side > 0) cam.scale *= 1 + 0.07 * cut.k * cut.k;
@@ -1072,7 +1072,7 @@ export function renderFrame(ctx, f) {
   const blurAmount = s.zoom.motionBlur ?? 0;
   if (blurAmount > 0 && s.zoom.enabled && project.zooms?.length && cut.k === 0) {
     const dt = 1 / 30;
-    const back = viewOf(cameraAt(t - dt, project.zooms, derived.cursor, s.zoom));
+    const back = viewOf(cameraAt(t - dt, project.zooms, derived.cursor, s.zoom, crop));
     const move = (Math.abs(back.x - view.x) + Math.abs(back.y - view.y) + Math.abs(back.w - view.w)) / view.w;
     const strength = Math.min(1, Math.max(0, (move - 0.004) * 25)) * blurAmount;
     if (strength > 0.02) {
