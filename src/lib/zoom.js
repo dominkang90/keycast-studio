@@ -244,13 +244,17 @@ export function moveTime(a, b, ramp = 0.55) {
 function targets(regions, crop) {
   const rs = regions.filter((r) => r.end > r.start).slice().sort((a, b) => a.start - b.start);
   const out = [];
+  // Latest end so far: a short zoom inside a longer one must not end the longer one early.
+  let chainEnd = -Infinity;
   for (let i = 0; i < rs.length; i++) {
     const r = rs[i];
     const next = rs[i + 1];
+    chainEnd = Math.max(chainEnd, r.end);
     out.push({ t: r.start, rect: zoomRect(r, crop) });
     // The next zoom starts soon (or already overlaps): stay zoomed in until it takes over.
-    if (next && next.start - r.end < CHAIN_GAP) continue;
-    out.push({ t: r.end, rect: FULL });
+    if (next && next.start - chainEnd < CHAIN_GAP) continue;
+    out.push({ t: chainEnd, rect: FULL });
+    chainEnd = -Infinity;
   }
   return out;
 }

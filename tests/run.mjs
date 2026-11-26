@@ -240,6 +240,26 @@ test('camera follows the pointer only near the edge of the view', () => {
   assert.ok(cameraAt(7, regions, cur, o).x > 0.7, 'moves over once the pointer goes to the edge');
 });
 
+test('a short zoom inside a longer one does not end it early', () => {
+  const o = { enabled: true, ramp: 0.55, follow: false };
+  const nest = [{ start: 0, end: 10, scale: 1.8, x: 0.5, y: 0.5 }, { start: 3, end: 5, scale: 2, x: 0.6, y: 0.5 }];
+  assert.ok(cameraAt(8, nest, null, o).scale > 1.7);
+  assert.ok(cameraAt(12, nest, null, o).scale < 1.01);
+});
+
+test('zoom works inside a cropped picture', () => {
+  const crop = { x: 0.5, y: 0, w: 0.5, h: 1 };
+  const o = { enabled: true, ramp: 0.55, follow: false };
+  // A click in the middle of the crop is centred on it.
+  const mid = cameraAt(3, [{ start: 1, end: 5, scale: 2, x: 0.75, y: 0.5 }], null, o, crop);
+  assert.ok(Math.abs(mid.x - 0.75) < 1e-4 && Math.abs(mid.y - 0.5) < 1e-4 && Math.abs(mid.scale - 2) < 1e-3);
+  // A click near the crop's left edge stays in view, and the view stays inside the crop.
+  const c = cameraAt(3, [{ start: 1, end: 5, scale: 2, x: 0.6, y: 0.5 }], null, o, crop);
+  const half = (crop.w / c.scale) / 2;
+  assert.ok(c.x - half >= crop.x - 1e-9 && c.x + half <= crop.x + crop.w + 1e-9);
+  assert.ok(c.x - half <= 0.6 && 0.6 <= c.x + half);
+});
+
 test('classic camera is still there', () => {
   const regions = [{ start: 1, end: 4, scale: 2, x: 0.2, y: 0.2 }];
   assert.ok(Math.abs(cameraAt(2.5, regions, null, { enabled: true, feel: 'classic' }).x - 0.2) < 1e-9);
