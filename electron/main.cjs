@@ -106,6 +106,12 @@ const ISOLATION = {
   'Cross-Origin-Resource-Policy': 'same-origin',
 };
 
+// Only the app's own scripts run (plus the speech runtime's WebAssembly and its worker). The
+// speech model is downloaded over https, so connections stay open to https.
+const CSP = "default-src 'self'; script-src 'self' 'wasm-unsafe-eval' blob:; worker-src 'self' blob:; "
+  + "style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' blob:; font-src 'self' data:; "
+  + "connect-src 'self' https: data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'";
+
 function inside(root, target) {
   const rel = path.relative(root, target);
   return rel && !rel.startsWith('..') && !path.isAbsolute(rel);
@@ -121,6 +127,7 @@ async function serveFile(file, request) {
   }
   const type = MIME[path.extname(file).toLowerCase()] || 'application/octet-stream';
   const headers = { 'Content-Type': type, 'Accept-Ranges': 'bytes', 'Cache-Control': 'no-cache', ...ISOLATION };
+  if (type.startsWith('text/html')) headers['Content-Security-Policy'] = CSP;
   const range = request.headers.get('range');
   if (range) {
     const m = /bytes=(\d*)-(\d*)/.exec(range);
@@ -577,6 +584,22 @@ function projectDir(id) {
   return dir;
 }
 
+// The page may write outside the recordings folder only where the main process said so: the file
+// picked in the save window, the one-click export name, and the subtitle file (.srt) beside it.
+const grantedPaths = new Set();
+function grant(file) {
+  if (!file) return file;
+  const f = path.resolve(file);
+  grantedPaths.add(f);
+  grantedPaths.add(f.replace(/\.[^.\\/]+$/, '.srt'));
+  return file;
+}
+function granted(file) {
+  const f = path.resolve(String(file));
+  if (!grantedPaths.has(f)) throw new Error('This path was not chosen in a save window');
+  return f;
+}
+
 function safeName(name) {
   return String(name).replace(/[^a-zA-Z0-9._-]/g, '_');
 }
@@ -800,7 +823,7 @@ function registerIpc() {
   ipcMain.handle('keys:state', () => keysOnly);
 
   ipcMain.handle('file:open', async (_e, { projectId, name, absolutePath }) => {
-    const file = absolutePath || path.join(projectDir(projectId), safeName(name));
+    const file = absolutePath ? granted(absolutePath) : path.join(projectDir(projectId), safeName(name));
     const stream = fs.createWriteStream(file);
     await new Promise((resolve, reject) => { stream.once('open', resolve); stream.once('error', reject); });
     const handle = writerSeq++;
@@ -896,12 +919,12 @@ function registerIpc() {
 
   ipcMain.handle('dialog:save', async (_e, { defaultName, filters }) => {
     // scripted runs (KEYCAST_SAVE_DIR) save without the window
-    if (process.env.KEYCAST_SAVE_DIR) return path.join(process.env.KEYCAST_SAVE_DIR, defaultName);
+    if (process.env.KEYCAST_SAVE_DIR) return grant(path.join(process.env.KEYCAST_SAVE_DIR, path.basename(String(defaultName))));
     const result = await dialog.showSaveDialog(studio, {
       defaultPath: path.join(exportsDir(), defaultName),
       filters,
     });
-    return result.canceled ? null : result.filePath;
+    return result.canceled ? null : grant(result.filePath);
   });
 
   // One-click export: no dialog, the next free name in the Videos folder (a test run's own folder
@@ -914,16 +937,17 @@ function registerIpc() {
     const stem = safe.slice(0, safe.length - ext.length);
     let file = path.join(dir, safe);
     for (let n = 2; fs.existsSync(file); n++) file = path.join(dir, `${stem} (${n})${ext}`);
-    return file;
+    return grant(file);
   });
 
   ipcMain.handle('file:writeText', async (_e, file, text) => {
+    file = granted(file);
     await fsp.writeFile(file, text, 'utf8');
     return file;
   });
 
   ipcMain.handle('shell:reveal', (_e, file) => {
-    shell.showItemInFolder(file);
+    shell.showItemInFolder(granted(file));
     return true;
   });
 
@@ -1043,8 +1067,10 @@ function setupSelfTest(win) {
     fs.writeFileSync(path.join(SELFTEST, `${safeName(name)}.png`), img.toPNG());
     return true;
   });
-  ipcMain.handle('selftest:path', (_e, name) => path.join(SELFTEST, safeName(name)));
-  win.webContents.on('console-message', (_e, level, message) => {
+  ipcMain.handle('selftest:path', (_e, name) => grant(path.join(SELFTEST, safeName(name))));
+  win.webContents.on('console-message', (e, level, message) => {
+    // Electron 35 and newer pass one event object; older ones passed the level and the text.
+    if (typeof message !== 'string') { message = String(e.message); level = e.level; }
     log.push(`[${level}] ${message}`);
     if (message.startsWith('SELFTEST_DONE')) setTimeout(() => finish(message.includes('FAIL') ? 1 : 0), 300);
   });
