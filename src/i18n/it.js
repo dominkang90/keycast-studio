@@ -620,4 +620,7 @@ export default {
   "새 버전 {0}을 받았습니다. 다시 시작하면 설치됩니다.": "La versione {0} è stata scaricata. Riavvia per installarla.",
   "새 버전을 받지 못했습니다. 내려받는 페이지를 엽니다.": "Impossibile scaricare la nuova versione. Apro la pagina di download.",
   "바꾸기": "Sostituisci",
+  "작게 보기": "Barra piccola",
+  "크게 보기": "Barra completa",
+  "트레이로 숨기기": "Nascondi nell'area di notifica",
 };

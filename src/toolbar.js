@@ -51,6 +51,36 @@ stop.addEventListener('click', () => {
   api?.toolbarAction('stop');
 });
 
+// Small form (light, time, stop) and the usual bar. The window is as wide as the bar, so it grows
+// before the bar widens and shrinks after the bar has narrowed.
+const mini = document.getElementById('mini');
+const tray = document.getElementById('tray');
+const MORPH_MS = 420; // --morph in toolbar.html
+let miniTimer = 0;
+function setMini(on, instant = false) {
+  clearTimeout(miniTimer);
+  bar.classList.toggle('instant', instant);
+  mini.setAttribute('aria-label', on ? T('크게 보기') : T('작게 보기'));
+  mini.title = on ? T('크게 보기') : T('작게 보기');
+  try { localStorage.setItem('keycast.barMini', on ? '1' : ''); } catch { /* storage blocked */ }
+  if (on) {
+    bar.classList.add('mini');
+    miniTimer = setTimeout(() => api?.toolbarMini(true, instant), instant ? 0 : MORPH_MS);
+  } else {
+    api?.toolbarMini(false, instant);
+    miniTimer = setTimeout(() => bar.classList.remove('mini'), instant ? 0 : 60);
+  }
+}
+mini.addEventListener('click', () => setMini(!bar.classList.contains('mini')));
+// Out of the way entirely: the tray icon brings the bar back, and the shortcuts keep working.
+tray.title = T('트레이로 숨기기');
+tray.setAttribute('aria-label', T('트레이로 숨기기'));
+tray.addEventListener('click', () => api?.toolbarHide());
+let startMini = false;
+try { startMini = localStorage.getItem('keycast.barMini') === '1'; } catch { /* storage blocked */ }
+setMini(startMini, true);
+requestAnimationFrame(() => bar.classList.remove('instant'));
+
 api?.onStatus((s) => {
   time.textContent = fmt(s.elapsedMs);
   bar.classList.toggle('paused', s.paused);

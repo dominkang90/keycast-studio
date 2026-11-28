@@ -13,6 +13,8 @@ contextBridge.exposeInMainWorld('keycast', {
   beginRecording: (opts) => ipcRenderer.invoke('recording:begin', opts),
   endRecording: () => ipcRenderer.invoke('recording:end'),
   toolbarAction: (action) => ipcRenderer.send('toolbar:action', action),
+  toolbarMini: (on, recenter) => ipcRenderer.send('toolbar:mini', !!on, !!recenter),
+  toolbarHide: () => ipcRenderer.send('toolbar:hide'),
   sendStatus: (status) => ipcRenderer.send('recorder:status', status),
   onCommand: (fn) => on('recorder:command', fn),
   onStatus: (fn) => on('recorder:status', fn),

@@ -2,7 +2,7 @@
 
 import { platform, isDesktop } from '../lib/platform.js';
 import { fmt } from '../lib/timeline.js';
-import { setLabel, withIcon } from '../lib/icons.js';
+import { setLabel } from '../lib/icons.js';
 import { autoZoomRegions } from '../lib/zoom.js';
 import { h, toast, mount, topbar, selectField, langMenu, askConfirm } from './dom.js';
 import { state, store, shortcuts, savedLook, saveOptions, liveOverlaySettings, loadExtensions } from './state.js';
@@ -44,10 +44,15 @@ export async function refreshSources() {
 export async function showHome() {
   loadExtensions().catch(() => {});
   stopEditor();
-  mount(h('div', { class: 'home' }, h('div', { class: 'empty' }, T('불러오는 중…'))));
+  // The start screen (src/brand) shows these steps as its progress; later visits show the small mark.
+  const stage = (p) => window.dispatchEvent(new CustomEvent('kc-stage', { detail: p }));
+  mount(h('div', { class: 'kc-wait', role: 'status', 'aria-label': T('불러오는 중…') }, h('div', { class: 'kc-wait-cap' }), h('div', { class: 'kc-wait-track' })));
   if (!state.info) state.info = await platform.info();
-  await Promise.all([refreshSources(), loadDevices()]);
+  stage(0.5);
+  await Promise.all([refreshSources().then(() => stage(0.75)), loadDevices()]);
+  stage(0.9);
   const projects = await platform.listProjects().catch(() => []);
+  stage(1);
   renderHome(projects);
 }
 
@@ -104,34 +109,34 @@ export function renderHome(projects) {
     presetRow.replaceChildren(...PRESETS.map((p) => h('button', {
       class: `preset${cur?.id === p.id ? ' on' : ''}`, role: 'radio', 'aria-checked': String(cur?.id === p.id),
       onclick: () => { Object.assign(o, p.options); openChip = null; changed(); },
-    }, h('span', { class: 'preset-icon' }, ...withIcon(p.icon)), h('b', {}, p.name), h('span', { class: 'preset-note' }, p.note))));
+    }, p.name)));
   }
   function drawChips() {
     const micName = (micOptions.find((m) => m.id === (o.micId || '')) || micOptions[1] || micOptions[0]).name;
     const camName = (camOptions.find((c) => c.id === (o.webcamId || '')) || camOptions[0]).name;
     const toggle = (key, on, label, title, invertDefault = false) => h('button', {
-      class: `opt tog${on ? ' on' : ''}`, 'aria-pressed': String(on), title,
+      class: `opt tog${on ? ' on' : ''}`, role: 'switch', 'aria-checked': String(on), title,
       onclick: () => { o[key] = invertDefault ? !(o[key] !== false) : !o[key]; openChip = null; changed(); },
-    }, label);
+    }, label, h('span', { class: 'switch' }));
     const picker = (id, on, label, title) => h('button', {
       class: `opt pick${on ? ' on' : ''}${openChip === id ? ' open' : ''}`, 'aria-expanded': String(openChip === id), title,
       onclick: () => { openChip = openChip === id ? null : id; drawChips(); },
-    }, label, ' ▾');
+    }, label, h('span', { class: 'updown' }));
     chipRow.replaceChildren(...[
       picker('mic', !!o.micId, `🎙 ${o.micId ? micName : T('마이크 끔')}`, T('마이크 (자막을 만들 목소리)')),
-      state.info?.systemAudio === false ? null : toggle('systemAudio', !!o.systemAudio, o.systemAudio ? T('🔊 컴퓨터 소리') : T('🔇 컴퓨터 소리 끔'), T('컴퓨터 소리 함께 녹음')),
+      state.info?.systemAudio === false ? null : toggle('systemAudio', !!o.systemAudio, T('🔊 컴퓨터 소리'), T('컴퓨터 소리 함께 녹음')),
       state.cams.length ? picker('cam', !!o.webcamId, `📷 ${o.webcamId ? camName : T('웹캠 끔')}`, T('웹캠 (얼굴 말풍선)')) : null,
-      toggle('recordTyping', !!o.recordTyping, o.recordTyping ? T('⌨ 타이핑까지 기록') : T('⌨ 단축키만 기록'), T('끄면 단축키만 저장합니다. 비밀번호 같은 입력이 녹화 파일에 남지 않습니다')),
-      isDesktop ? toggle('liveOverlay', !!o.liveOverlay, o.liveOverlay ? T('👁 녹화 중 키 보기') : T('👁 녹화 중 키 숨김'), T('나에게만 보이고 녹화 파일에는 들어가지 않습니다')) : null,
-      isDesktop && state.info?.ffmpeg ? toggle('hideCursor', o.hideCursor !== false, o.hideCursor !== false ? T('🖱 부드러운 커서') : T('🖱 실제 커서'), T('전체 화면 녹화에서만. 편집 화면에서 크고 부드러운 커서를 대신 그려 넣습니다'), true) : null,
-      toggle('countdown', !!o.countdown, o.countdown ? T('⏱ 3초 뒤 시작') : T('⏱ 바로 시작'), T('3초 카운트다운')),
+      toggle('recordTyping', !!o.recordTyping, T('⌨ 타이핑까지 기록'), T('끄면 단축키만 저장합니다. 비밀번호 같은 입력이 녹화 파일에 남지 않습니다')),
+      isDesktop ? toggle('liveOverlay', !!o.liveOverlay, T('👁 녹화 중 키 보기'), T('나에게만 보이고 녹화 파일에는 들어가지 않습니다')) : null,
+      isDesktop && state.info?.ffmpeg ? toggle('hideCursor', o.hideCursor !== false, T('🖱 부드러운 커서'), T('전체 화면 녹화에서만. 편집 화면에서 크고 부드러운 커서를 대신 그려 넣습니다'), true) : null,
+      toggle('countdown', !!o.countdown, T('⏱ 3초 뒤 시작'), T('3초 카운트다운')),
     ].filter(Boolean));
     chipDetail.replaceChildren(
       openChip === 'mic' ? selectField(T('마이크 (자막을 만들 목소리)'), o.micId, micOptions, (v) => { o.micId = v; openChip = null; changed(); }) : '',
       openChip === 'cam' ? selectField(T('웹캠 (얼굴 말풍선)'), o.webcamId, camOptions, (v) => { o.webcamId = v; openChip = null; changed(); }) : '',
     );
     chipDetail.hidden = !openChip;
-    presetNote.textContent = presetOf(o) ? '' : T('직접 고른 설정');
+    presetNote.textContent = presetOf(o)?.note || T('직접 고른 설정');
   }
   const presetNote = h('span', { class: 'small muted' });
 

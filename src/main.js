@@ -17,4 +17,4 @@ window.addEventListener('beforeunload', () => {
   if (ed?.dirty) { ed.dirty = false; platform.saveProject(ed.project).catch(() => {}); }
 });
 
-showHome();
+export function launchStudio() { return showHome(); }
