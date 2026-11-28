@@ -60,7 +60,6 @@ let miniTimer = 0;
 function setMini(on, instant = false) {
   clearTimeout(miniTimer);
   bar.classList.toggle('instant', instant);
-  tray.tabIndex = on ? 0 : -1;
   mini.setAttribute('aria-label', on ? T('크게 보기') : T('작게 보기'));
   mini.title = on ? T('크게 보기') : T('작게 보기');
   try { localStorage.setItem('keycast.barMini', on ? '1' : ''); } catch { /* storage blocked */ }

@@ -293,7 +293,7 @@ function displayFor(displayId) {
   return displays.find((d) => String(d.id) === String(displayId)) || screen.getPrimaryDisplay();
 }
 
-const TOOLBAR_WIDTH = { full: 496, mini: 236 };
+const TOOLBAR_WIDTH = { full: 536, mini: 236 };
 function openToolbar(display) {
   const width = TOOLBAR_WIDTH.full;
   const height = 64;
