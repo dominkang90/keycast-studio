@@ -1,43 +1,8 @@
+@import "./brand/tokens.css";
+
 /* KeyCast Studio interface.
    Direction: calm, exact, tool-like. The world is an edit bay: a red tally light, timecode and
    key caps. The chrome is graphite and quiet; colour belongs to the picture being edited. */
-
-:root {
-  /* graphite ramp */
-  --bg-deep: #0f0f10;
-  --bg: #141415;
-  --surface: #19191b;
-  --raised: #232325;
-  --line: rgba(237, 237, 237, 0.08);
-  --line-strong: rgba(237, 237, 237, 0.16);
-  --line-input: rgba(237, 237, 237, 0.28); /* form edges need to be seen: 3:1 against the surface */
-  --text: #ededed;
-  --text-2: #a1a1a6;
-  --text-3: #85858b;
-  /* one accent for selection and focus; red only ever means recording */
-  --accent: #5b9dff;
-  --accent-soft: rgba(91, 157, 255, 0.2);
-  --rec: #ff453a;
-  --ok: #4cc38a;
-  --warn: #e3b341;
-  --danger: #e5484d;
-
-  /* spacing: 4px grid */
-  --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s5: 20px; --s6: 24px; --s8: 32px; --s10: 40px; --s12: 48px;
-  /* radius by size */
-  --r-key: 5px; --r-ctl: 8px; --r-card: 14px; --r-panel: 18px;
-  /* type scale */
-  --t-meta: 12px; --t-small: 13px; --t-body: 14px; --t-title: 16px; --t-page: 20px;
-  --font: "Segoe UI Variable Text", "Segoe UI Variable", "Segoe UI", "Malgun Gothic", "Apple SD Gothic Neo", "Noto Sans KR", system-ui, sans-serif;
-  --display: "Segoe UI Variable Display", "Segoe UI Variable", "Segoe UI", "Malgun Gothic", system-ui, sans-serif;
-  --mono: "Cascadia Mono", "Cascadia Code", Consolas, "Malgun Gothic", monospace;
-  /* motion: one curve, three lengths */
-  --ease: cubic-bezier(0.22, 1, 0.36, 1);
-  --fast: 150ms; --mid: 200ms; --slow: 420ms;
-  /* depth on dark comes from surface steps; only floating things get a shadow */
-  --float: 0 16px 48px rgba(0, 0, 0, 0.5);
-  color-scheme: dark;
-}
 
 html, body { background: #141415; }
 * { box-sizing: border-box; scrollbar-width: thin; scrollbar-color: rgba(237, 237, 237, 0.18) transparent; }
@@ -83,10 +48,10 @@ h1, h2, h3 { margin: 0; font-family: var(--display); font-weight: 600; }
 .btn.wide { width: 100%; }
 .btn.on { background: var(--accent-soft); border-color: var(--accent); color: var(--text); }
 /* the one loud control: starting a recording */
-.btn.rec { height: 48px; border-radius: var(--r-ctl); background: var(--rec); border-color: transparent; color: #fff; font-size: var(--t-title); font-weight: 600; box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18); }
+.btn.rec { height: 48px; border-radius: var(--r-ctl); background: var(--rec); border-color: transparent; color: var(--ink-on-rec); font-size: var(--t-title); font-weight: 600; box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18); }
 .btn.rec:hover { background: #ff5a50; }
 .recdot { width: 10px; height: 10px; border-radius: 50%; background: var(--rec); animation: blink 1.4s steps(2, jump-none) infinite; }
-.btn.rec .recdot { background: #fff; animation: none; }
+.btn.rec .recdot { background: var(--ink-on-rec); animation: none; }
 @keyframes blink { 50% { opacity: 0.25; } }
 
 /* ---------- form controls */
@@ -131,8 +96,7 @@ input[type="color"] { width: 36px; height: 28px; padding: 0; border: 1px solid v
 .topbar { height: 56px; flex: none; display: flex; align-items: center; gap: var(--s2); padding: 0 var(--s5); border-bottom: 1px solid var(--line); background: var(--bg-deep); }
 .brand { display: flex; align-items: center; gap: var(--s3); font: 600 15px/1 var(--display); letter-spacing: -0.01em; margin-right: var(--s2); }
 .brand i { font-style: normal; font-weight: 400; color: var(--text-2); }
-.brand-mark { width: 24px; height: 24px; border-radius: 50%; border: 1.5px solid var(--text); position: relative; flex: none; }
-.brand-mark::after { content: ""; position: absolute; left: 50%; top: 50%; width: 10px; height: 10px; margin: -5px 0 0 -5px; border-radius: 50%; background: var(--rec); }
+.brand-mark { width:24px; height:24px; flex:none; background:center / contain no-repeat url('./brand/keycap.svg'); }
 .topbar .lang-menu { width: auto; height: 32px; padding: 0 28px 0 10px; font-size: var(--t-meta); }
 .topbar input[type="text"] { height: 32px; background: transparent; border-color: transparent; font-weight: 500; }
 .topbar input[type="text"]:hover { border-color: var(--line-input); }
@@ -186,6 +150,13 @@ input[type="color"] { width: 36px; height: 28px; padding: 0; border: 1px solid v
 .countdown { position: fixed; inset: 0; background: rgba(15, 15, 16, 0.88); display: grid; place-items: center; z-index: 50; }
 .countdown span { font: 300 160px/1 var(--display); letter-spacing: -0.04em; color: var(--text); animation: count 0.85s var(--ease) both; }
 @keyframes count { from { transform: scale(1.25); opacity: 0; } to { transform: none; opacity: 1; } }
+/* start of a recording: the record button morphs into this (see morph() in ui/recording.js) */
+.rec-morph { flex: 1; display: grid; place-items: center; }
+.rec-pill { view-transition-name: rec; display: flex; align-items: center; gap: var(--s3); height: 52px; padding: 0 var(--s5); border-radius: var(--r-card); background: var(--surface); border: 1px solid var(--line-strong); box-shadow: var(--float); }
+.rec-pill b { font: 500 17px/1 var(--mono); letter-spacing: 0.08em; }
+.recbar { view-transition-name: rec; }
+::view-transition-group(rec) { animation-duration: 320ms; animation-timing-function: var(--ease); }
+::view-transition-old(root), ::view-transition-new(root) { animation-duration: var(--mid); }
 .recbar { display: flex; align-items: center; gap: var(--s3); justify-content: center; padding: var(--s12); }
 .recbar b { font: 500 28px/1 var(--mono); }
 
@@ -327,31 +298,32 @@ html[lang="zh-TW"] {
 .hero .sources.single { grid-template-columns: minmax(0, 520px); }
 .start { display: flex; flex-direction: column; gap: var(--s3); padding-left: var(--s8); border-left: 1px solid var(--line); }
 .start h2 { margin: 0; }
-.presets { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--s2); }
-.preset { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; padding: var(--s3); border: 1px solid var(--line); border-radius: var(--r-ctl); background: var(--bg-deep); color: var(--text); text-align: left; transition: border-color var(--fast) var(--ease), background-color var(--fast) var(--ease); }
-.preset:hover { border-color: var(--line-strong); background: var(--bg); }
-.preset.on { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
-.preset-icon { font-size: 20px; line-height: 1.2; }
-.preset b { font-weight: 600; font-size: var(--t-body); }
-.preset-note { font-size: var(--t-meta); color: var(--text-2); }
-.opts { display: flex; flex-wrap: wrap; gap: 6px; }
-.opt { display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 var(--s3); border-radius: 999px; border: 1px solid var(--line-strong); background: transparent; color: var(--text-3); font-size: var(--t-small); transition: background-color var(--fast) var(--ease), color var(--fast) var(--ease), border-color var(--fast) var(--ease); }
-.opt:hover { color: var(--text); border-color: var(--line-input); }
-.opt.on { background: var(--accent-soft); border-color: rgba(91, 157, 255, 0.45); color: var(--text); }
-/* An option that is off is still a choice, not a disabled button: readable text, and "on" also
-   shows a check mark so the state is not told by colour alone. */
-.opt.tog { color: var(--text-2); }
-.opt.tog.on { color: var(--text); }
-.opt.tog.on::after { content: '\2713'; font-size: 12px; color: var(--accent); margin-left: 2px; }
-.opt.open { border-color: var(--accent); }
+/* The start panel follows the platform's settings pattern: a segmented control for the purpose,
+   one grouped list with a row per setting (a switch, or a pop-up for devices), then the one
+   prominent button. */
+.start { gap: var(--s4); }
+.presets { display: grid; grid-template-columns: repeat(3, 1fr); padding: 2px; border-radius: 9px; background: rgba(118, 118, 128, 0.24); }
+.preset { height: 28px; padding: 0 var(--s2); border: 0; border-radius: 7px; background: none; color: var(--text); font-size: var(--t-small); font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: background-color var(--mid) var(--ease), box-shadow var(--mid) var(--ease); }
+.preset:hover:not(.on) { background: rgba(255, 255, 255, 0.05); }
+.preset.on { background: #636366; font-weight: 600; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35), inset 0 0.5px 0 rgba(255, 255, 255, 0.16); }
+.opts { display: flex; flex-direction: column; border-radius: 10px; background: rgba(118, 118, 128, 0.12); overflow: hidden; }
+.opt { position: relative; display: flex; align-items: center; gap: 10px; width: 100%; min-height: 40px; padding: 0 var(--s3); border: 0; background: none; color: var(--text); font-size: var(--t-small); text-align: left; transition: background-color var(--fast) var(--ease); }
+.opt + .opt::before { content: ""; position: absolute; top: 0; left: 38px; right: 0; height: 1px; background: var(--line); }
+.opt:hover { background: rgba(255, 255, 255, 0.04); }
+.opt:focus-visible { outline-offset: -2px; }
+.opt .icon { flex: none; width: 16px; height: 16px; color: var(--text-2); }
+.opt.pick:not(.on) { color: var(--text-2); }
+/* a switch says on or off by where its knob is, not by colour alone */
+.opt .switch { flex: none; margin-left: auto; position: relative; width: 34px; height: 20px; border-radius: 10px; background: rgba(120, 120, 128, 0.36); box-shadow: inset 0 0 0 0.5px rgba(0, 0, 0, 0.3); }
+.opt .switch::after { content: ""; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: #fff; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4); }
+.opt.on .switch { background: var(--accent); }
+.opt.on .switch::after { left: 16px; }
+.opt .updown { flex: none; margin-left: auto; width: 16px; height: 20px; border-radius: 5px; background: var(--accent) center / 16px 20px no-repeat url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 20'%3E%3Cpath d='M5 8l3-3 3 3M5 12l3 3 3-3' fill='none' stroke='white' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); }
+.opt.pick:not(.on) .updown { background-color: rgba(120, 120, 128, 0.5); }
 .opt-detail .field { margin: 0; }
-.btn.rec.hero-rec { height: 56px; width: 100%; font-size: 18px; margin-top: var(--s2); }
-.keys-line { display: flex; flex-wrap: wrap; align-items: center; gap: 6px var(--s2); font-size: var(--t-meta); color: var(--text-3); }
-.keys-line { gap: 4px var(--s4); }
-.keys-line code { font: var(--t-meta) var(--mono); color: var(--text-2); }
-.preset-icon .icon { width: 20px; height: 20px; color: var(--text-2); }
-.preset.on .preset-icon .icon { color: var(--accent); }
-.opt .icon { width: 15px; height: 15px; }
+.btn.rec.hero-rec { height: 44px; width: 100%; border-radius: 10px; font-size: 15px; box-shadow: none; }
+.keys-line { display: flex; flex-wrap: wrap; align-items: center; gap: 6px var(--s4); font-size: var(--t-meta); color: var(--text-3); }
+.keys-line code { font: 500 11px/18px var(--mono); padding: 0 5px; border-radius: var(--r-key); background: var(--raised); border: 1px solid var(--line-strong); border-bottom-width: 2px; color: var(--text-2); }
 .home-below { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: var(--s6); align-items: start; }
 .home-below .recent { min-width: 0; }
 .home-below .features { grid-template-columns: repeat(2, 1fr); margin-top: 0; padding: var(--s5); border: 1px dashed var(--line-strong); border-radius: var(--r-card); }

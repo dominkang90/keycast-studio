@@ -20,6 +20,12 @@ export async function countdown() {
   el.remove();
 }
 
+/** Change the screen with a morph: the part named "rec" before and after glides from one shape to the other. */
+function morph(update) {
+  if (!document.startViewTransition || matchMedia('(prefers-reduced-motion: reduce)').matches) { update(); return Promise.resolve(); }
+  return document.startViewTransition(update).finished.catch(() => {});
+}
+
 export async function startRecording() {
   const source = state.sources.find((s) => s.id === state.sourceId);
   if (!source) { toast(T('녹화할 화면을 먼저 고르세요.'), true); return; }
@@ -41,7 +47,13 @@ export async function startRecording() {
   });
   state.recorder = rec;
   try {
-    if (!isDesktop) showRecBar();
+    // The record button becomes the recording bar (browser) or a small pill that the recording
+    // bar window then grows out of (desktop: this window hides once the recording starts).
+    const button = document.querySelector('.home .btn.rec');
+    if (button) button.style.viewTransitionName = 'rec';
+    await morph(() => (isDesktop
+      ? mount(h('div', { class: 'rec-morph' }, h('div', { class: 'rec-pill' }, h('div', { class: 'recdot' }), h('b', {}, 'REC'))))
+      : showRecBar()));
     await rec.start();
   } catch (err) {
     console.error(err);

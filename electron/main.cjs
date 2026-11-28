@@ -233,7 +233,11 @@ function createTray() {
     icon = icon.resize(MAC ? { width: 18, height: 18 } : { width: 16, height: 16 });
     tray = new Tray(icon);
     tray.setToolTip('KeyCast Studio');
-    tray.on('click', () => { if (!MAC) showStudio(); });
+    tray.on('click', () => {
+      // While recording, the bar may have been hidden to the tray: bring that back first.
+      if (toolbar && !toolbar.isDestroyed() && !toolbar.isVisible()) { toolbar.showInactive(); return; }
+      if (!MAC) showStudio();
+    });
     drawTray();
   } catch (err) {
     console.error('Tray unavailable:', err);
@@ -289,8 +293,9 @@ function displayFor(displayId) {
   return displays.find((d) => String(d.id) === String(displayId)) || screen.getPrimaryDisplay();
 }
 
+const TOOLBAR_WIDTH = { full: 496, mini: 236 };
 function openToolbar(display) {
-  const width = 500;
+  const width = TOOLBAR_WIDTH.full;
   const height = 64;
   toolbar = new BrowserWindow({
     width, height,
@@ -704,6 +709,21 @@ function registerIpc() {
     if (action === 'toggle-keys') { toggleLiveKeys(); return; }
     if (action === 'toggle-keyrec') { toggleKeyRecording(); return; }
     studio?.webContents.send('recorder:command', action);
+  });
+
+  // The recording bar switches between its small and its usual form: the window follows, so only
+  // the bar itself is in the way of what is being recorded. Its left edge stays where it is (the
+  // bar must not jump while it changes); a bar that opens small is put in the middle once.
+  ipcMain.on('toolbar:mini', (e, on, recenter) => {
+    if (!toolbar || toolbar.isDestroyed() || e.sender !== toolbar.webContents) return;
+    const b = toolbar.getBounds();
+    const width = on ? TOOLBAR_WIDTH.mini : TOOLBAR_WIDTH.full;
+    const area = screen.getDisplayMatching(b).workArea;
+    toolbar.setBounds({ x: recenter ? Math.round(area.x + area.width / 2 - width / 2) : b.x, y: b.y, width, height: b.height });
+  });
+  // "Hide to the tray" on the small bar: a click on the tray icon shows it again.
+  ipcMain.on('toolbar:hide', (e) => {
+    if (toolbar && !toolbar.isDestroyed() && e.sender === toolbar.webContents) toolbar.hide();
   });
 
   ipcMain.on('recorder:status', (_e, status) => {

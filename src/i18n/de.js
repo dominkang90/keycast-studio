@@ -620,4 +620,7 @@ export default {
   "새 버전 {0}을 받았습니다. 다시 시작하면 설치됩니다.": "Version {0} ist geladen. Zum Installieren neu starten.",
   "새 버전을 받지 못했습니다. 내려받는 페이지를 엽니다.": "Die neue Version konnte nicht geladen werden. Die Download-Seite wird geöffnet.",
   "바꾸기": "Ersetzen",
+  "작게 보기": "Kleine Leiste",
+  "크게 보기": "Ganze Leiste",
+  "트레이로 숨기기": "In den Infobereich ausblenden",
 };

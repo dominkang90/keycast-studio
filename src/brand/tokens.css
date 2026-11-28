@@ -1,0 +1,39 @@
+/* KeyCast Studio: v2.9.1 baseline + Brand 01. */
+:root {
+  /* graphite ramp */
+  --bg-deep: #0f0f10;
+  --bg: #141415;
+  --surface: #19191b;
+  --raised: #232325;
+  --line: rgba(237, 237, 237, 0.08);
+  --line-strong: rgba(237, 237, 237, 0.16);
+  --line-input: rgba(237, 237, 237, 0.28); /* form edges need to be seen: 3:1 against the surface */
+  --text: #ededed;
+  --text-2: #a1a1a6;
+  --text-3: #85858b;
+  /* one accent for selection and focus; red only ever means recording */
+  --accent: #5b9dff;
+  --accent-soft: rgba(91, 157, 255, 0.2);
+  --rec: #ff453a;
+  --ok: #4cc38a;
+  --warn: #e3b341;
+  --danger: #e5484d;
+
+  /* spacing: 4px grid */
+  --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s5: 20px; --s6: 24px; --s8: 32px; --s10: 40px; --s12: 48px;
+  /* radius by size */
+  --r-key: 5px; --r-ctl: 8px; --r-card: 14px; --r-panel: 18px;
+  /* type scale */
+  --t-meta: 12px; --t-small: 13px; --t-body: 14px; --t-title: 16px; --t-page: 20px;
+  --font: "Segoe UI Variable Text", "Segoe UI Variable", "Segoe UI", "Malgun Gothic", "Apple SD Gothic Neo", "Noto Sans KR", system-ui, sans-serif;
+  --display: "Segoe UI Variable Display", "Segoe UI Variable", "Segoe UI", "Malgun Gothic", system-ui, sans-serif;
+  --mono: "Cascadia Mono", "Cascadia Code", Consolas, "Malgun Gothic", monospace;
+  /* motion: one curve, three lengths */
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --fast: 150ms; --mid: 200ms; --slow: 420ms;
+  /* depth on dark comes from surface steps; only floating things get a shadow */
+  --float: 0 16px 48px rgba(0, 0, 0, 0.5);
+  --boot-enter: 420ms; --boot-exit: 150ms; --boot-delay: 180ms;
+  --ink-on-rec: #0f0f10;
+  color-scheme: dark;
+}

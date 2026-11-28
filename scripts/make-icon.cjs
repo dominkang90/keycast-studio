@@ -6,11 +6,12 @@ const sharp = require('sharp');
 
 const dir = path.join(__dirname, '..', 'build');
 const svg = fs.readFileSync(path.join(dir, 'icon.svg'));
+const small = fs.readFileSync(path.join(dir, '..', 'brand', 'icon-small.svg'));
 const sizes = [256, 128, 64, 48, 32, 24, 16];
 
 (async () => {
   await sharp(svg, { density: 384 }).resize(512, 512).png().toFile(path.join(dir, 'icon.png'));
-  const pngs = await Promise.all(sizes.map((s) => sharp(svg, { density: 384 }).resize(s, s).png().toBuffer()));
+  const pngs = await Promise.all(sizes.map((s) => sharp(s <= 24 ? small : svg, { density: 384 }).resize(s, s).png().toBuffer()));
   // .ico holding PNG images (supported since Windows Vista)
   const head = Buffer.alloc(6 + 16 * sizes.length);
   head.writeUInt16LE(0, 0);
